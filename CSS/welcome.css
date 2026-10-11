@@ -210,38 +210,65 @@
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
 }
-.welcome-btn:hover:not(:disabled) {
+/* one hover for every button: navy fill, white text */
+.welcome-btn:hover:not(:disabled),
+.welcome-btn.is-solid:hover:not(:disabled) {
   background: var(--color-navy);
+  border-color: var(--color-navy);
   color: #fff;
 }
 .welcome-btn.is-solid {
-  background: var(--color-navy);
-  color: #fff;
-}
-.welcome-btn.is-solid:hover:not(:disabled) {
-  background: var(--color-primary);
   border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: #fff;
 }
 .welcome-btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
-.welcome-g {
-  font-weight: 900;
-  color: var(--color-primary);
+.welcome-ico {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
 }
-.welcome-btn:hover:not(:disabled) .welcome-g {
-  color: var(--color-accent);
+.welcome-ico svg {
+  width: 20px;
+  height: 20px;
+}
+.welcome-ico.is-google {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #fff;
+}
+.welcome-ico.is-google svg {
+  width: 14px;
+  height: 14px;
+}
+html[dir="rtl"] .welcome-ico.flip-rtl svg {
+  transform: scaleX(-1);
 }
 .welcome-link {
   align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   border: 0;
   background: none;
   color: var(--color-text-muted);
   font: inherit;
   font-size: 13px;
-  text-decoration: underline;
   cursor: pointer;
+}
+.welcome-link:hover {
+  color: var(--color-primary);
+}
+.welcome-link .welcome-ico svg {
+  width: 16px;
+  height: 16px;
+}
+html[dir="rtl"] .welcome-link .welcome-ico:first-child svg {
+  transform: scaleX(-1);
 }
 .welcome-msg {
   min-height: 20px;
