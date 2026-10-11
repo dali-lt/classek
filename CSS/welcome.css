@@ -1,16 +1,19 @@
 /* ClassLedger: welcome page (sign-in + role) and the student shell.
    Reuses the colour tokens and .lang-switch from style.css. */
 
+/* ---------- page: fills the whole screen height ---------- */
 .welcome-body {
-  min-height: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   justify-content: center;
-  padding: calc(16px + env(safe-area-inset-top, 0px)) 16px 28px;
+  padding: calc(16px + env(safe-area-inset-top, 0px)) 16px
+    calc(24px + env(safe-area-inset-bottom, 0px));
   background: var(--color-page);
 }
 .welcome {
   width: 100%;
-  max-width: 440px;
+  max-width: 460px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -40,24 +43,33 @@
   color: var(--color-text-muted);
   font-size: 14.5px;
 }
+/* the illustration takes whatever height is left and sits in the middle of it */
 .welcome-hero {
   width: 100%;
-  min-height: 190px;
+  flex: 1 1 auto;
+  min-height: 150px;
   display: grid;
   place-items: center;
 }
 .welcome-hero img {
   display: block;
-  max-width: min(300px, 82%);
-  max-height: 260px;
+  max-width: min(380px, 92%);
+  max-height: min(50vh, 420px);
   object-fit: contain;
+}
+@supports (height: 1dvh) {
+  .welcome-hero img {
+    max-height: min(50dvh, 420px);
+  }
 }
 .welcome-hero img.is-fallback {
   width: 120px;
   opacity: 0.35;
 }
+/* buttons stay at the bottom of the screen */
 #wPanel {
   width: 100%;
+  margin-top: auto;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -68,18 +80,20 @@
   font-size: 14px;
 }
 
-/* teacher / student cards */
+/* ---------- teacher / student cards ---------- */
 .role-cards {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
 .role-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 9px;
-  padding: 14px 10px;
+  min-height: 48px;
+  padding: 16px 10px 14px;
   border: 1.5px solid var(--color-border);
   border-radius: 18px;
   background: var(--color-surface);
@@ -87,13 +101,11 @@
   font: inherit;
   text-align: center;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
   transition:
     border-color 0.15s ease,
     background 0.15s ease,
     box-shadow 0.15s ease;
-}
-.role-card:hover {
-  border-color: var(--color-primary);
 }
 .role-card.is-picked {
   border-color: var(--color-primary);
@@ -126,13 +138,40 @@
   display: block;
   margin-top: 3px;
   color: var(--color-text-muted);
-  font-size: 11.5px;
+  font-size: 12px;
   line-height: 1.35;
 }
+/* tick shown on the chosen card, so the choice isn't only a colour change */
+.role-check {
+  position: absolute;
+  top: 8px;
+  inset-inline-end: 8px;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #fff;
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.role-check svg {
+  width: 12px;
+  height: 12px;
+}
+.role-card.is-picked .role-check {
+  opacity: 1;
+  transform: none;
+}
 
-/* pill buttons, same feel as the sign-in reference */
+/* ---------- pill buttons ----------
+   Both buttons share one look and one hover: navy fill, white text.
+   "Sign in" is white at rest, "Create account" / "Continue" are blue. */
 .welcome-btn {
-  min-height: 50px;
+  min-height: 52px;
+  padding: 0 22px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -145,41 +184,101 @@
   font-size: 15px;
   font-weight: 800;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-.welcome-btn:hover:not(:disabled) {
-  background: var(--color-navy);
-  color: #fff;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease,
+    transform 0.1s ease;
 }
 .welcome-btn.is-solid {
-  background: var(--color-navy);
+  border-color: var(--color-primary);
+  background: var(--color-primary);
   color: #fff;
 }
-.welcome-btn.is-solid:hover:not(:disabled) {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
+.welcome-btn .wl-icon {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  display: block;
+}
+.welcome-btn .wl-icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+/* hover only where a real pointer exists, so phones don't keep a stuck hover */
+@media (hover: hover) {
+  .welcome-btn:hover:not(:disabled),
+  .welcome-btn.is-solid:hover:not(:disabled) {
+    border-color: var(--color-navy);
+    background: var(--color-navy);
+    color: #fff;
+  }
+  .welcome-link:hover:not(:disabled) {
+    background: var(--color-light-blue);
+    color: var(--color-navy);
+  }
+  .role-card:hover {
+    border-color: var(--color-primary);
+  }
+}
+/* pressed state: same colour on touch and mouse */
+.welcome-btn:active:not(:disabled),
+.welcome-btn.is-solid:active:not(:disabled) {
+  border-color: var(--color-navy);
+  background: var(--color-navy);
+  color: #fff;
+  transform: scale(0.985);
 }
 .welcome-btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
-.welcome-g {
-  font-weight: 900;
-  color: var(--color-primary);
+/* keyboard focus: clearly visible on every control */
+.welcome-btn:focus-visible,
+.welcome-link:focus-visible,
+.role-card:focus-visible,
+.welcome .lang-btn:focus-visible {
+  outline: 3px solid var(--color-navy);
+  outline-offset: 3px;
 }
-.welcome-btn:hover:not(:disabled) .welcome-g {
-  color: var(--color-accent);
-}
+
+/* quiet text buttons (Back / Use another account) */
 .welcome-link {
   align-self: center;
+  min-height: 44px;
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   border: 0;
+  border-radius: 999px;
   background: none;
   color: var(--color-text-muted);
   font: inherit;
-  font-size: 13px;
-  text-decoration: underline;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s ease, color 0.15s ease;
 }
+.welcome-link:active {
+  background: var(--color-light-blue);
+  color: var(--color-navy);
+}
+.welcome-link .wl-icon {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+.welcome-link .wl-icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+/* arrows point the other way in Arabic */
+[dir="rtl"] .icon-dir {
+  transform: scaleX(-1);
+}
+
 .welcome-msg {
   min-height: 20px;
   margin: 0;
@@ -187,7 +286,38 @@
   font-size: 13px;
 }
 .welcome-msg.is-error {
-  color: var(--color-danger);
+  color: #b3261e; /* darker than --color-danger so it passes AA on the pale page */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .welcome *,
+  .welcome *::before,
+  .welcome *::after {
+    transition: none !important;
+  }
+  .welcome-btn:active:not(:disabled) {
+    transform: none;
+  }
+}
+
+/* wide screens: a little more room for the illustration and buttons */
+@media (min-width: 900px) {
+  .welcome {
+    max-width: 480px;
+  }
+  .welcome-body {
+    padding-top: calc(28px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px));
+  }
+}
+/* short phones / landscape: keep the buttons reachable */
+@media (max-height: 560px) {
+  .welcome-hero {
+    min-height: 90px;
+  }
+  .welcome-hero img {
+    max-height: 120px;
+  }
 }
 
 /* ================= Student shell ================= */

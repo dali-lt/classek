@@ -70,6 +70,19 @@ var ICON_TEACHER =
 var ICON_STUDENT =
   '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg>';
 
+var ICON_GOOGLE =
+  '<svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"/></svg>';
+var ICON_CREATE =
+  '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>';
+var ICON_NEXT =
+  '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+var ICON_BACK =
+  '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>';
+var ICON_SWITCH =
+  '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>';
+var ICON_CHECK =
+  '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
+
 var lang = readLang();
 var state = { view: "loading", picked: null };
 var handlers = {}; // filled in once Firebase is ready
@@ -111,6 +124,13 @@ function el(tag, cls, text) {
   if (text != null) node.textContent = text;
   return node;
 }
+// decorative icon for a button (the text next to it carries the meaning)
+function icon(svg, extraClass) {
+  var node = el("span", "wl-icon" + (extraClass ? " " + extraClass : ""));
+  node.setAttribute("aria-hidden", "true");
+  node.innerHTML = svg; // static, trusted SVG
+  return node;
+}
 function msg(text, isError) {
   var node = $("wMsg");
   node.textContent = text || "";
@@ -126,7 +146,10 @@ function roleCard(role, titleKey, hintKey, icon) {
   ic.innerHTML = icon; // static, trusted SVG
   var text = el("span", "role-text");
   text.append(el("b", "", t(titleKey)), el("small", "", t(hintKey)));
-  card.append(ic, text);
+  var tick = el("span", "role-check");
+  tick.setAttribute("aria-hidden", "true");
+  tick.innerHTML = ICON_CHECK; // static, trusted SVG
+  card.append(tick, ic, text);
   card.addEventListener("click", function () {
     state.picked = role;
     savePick(role);
@@ -161,12 +184,13 @@ function render() {
     var next = el("button", "welcome-btn");
     next.type = "button";
     next.disabled = !state.picked;
-    next.append(el("span", "welcome-g", "G"), el("span", "", t("google")));
+    next.append(icon(ICON_GOOGLE), el("span", "", t("google")));
     next.addEventListener("click", function () {
       if (handlers.signIn) handlers.signIn("create");
     });
-    var back = el("button", "welcome-link", t("back"));
+    var back = el("button", "welcome-link");
     back.type = "button";
+    back.append(icon(ICON_BACK, "icon-dir"), el("span", "", t("back")));
     back.addEventListener("click", function () {
       state.view = "signedout";
       state.picked = null;
@@ -174,14 +198,16 @@ function render() {
     });
     panel.append(next, back);
   } else if (choosing) {
-    var go = el("button", "welcome-btn", t("cont"));
+    var go = el("button", "welcome-btn is-solid");
     go.type = "button";
+    go.append(el("span", "", t("cont")), icon(ICON_NEXT, "icon-dir"));
     go.disabled = !state.picked;
     go.addEventListener("click", function () {
       if (handlers.saveRole) handlers.saveRole();
     });
-    var other = el("button", "welcome-link", t("other"));
+    var other = el("button", "welcome-link");
     other.type = "button";
+    other.append(icon(ICON_SWITCH), el("span", "", t("other")));
     other.addEventListener("click", function () {
       if (handlers.signOut) handlers.signOut();
     });
@@ -189,12 +215,13 @@ function render() {
   } else {
     var google = el("button", "welcome-btn");
     google.type = "button";
-    google.append(el("span", "welcome-g", "G"), el("span", "", t("signInBtn")));
+    google.append(icon(ICON_GOOGLE), el("span", "", t("signInBtn")));
     google.addEventListener("click", function () {
       if (handlers.signIn) handlers.signIn("signin");
     });
-    var create = el("button", "welcome-btn is-solid", t("createBtn"));
+    var create = el("button", "welcome-btn is-solid");
     create.type = "button";
+    create.append(icon(ICON_CREATE), el("span", "", t("createBtn")));
     create.addEventListener("click", function () {
       state.view = "create";
       state.picked = null;
