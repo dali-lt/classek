@@ -61,6 +61,16 @@ var STR = {
     pCorrect: "Correct answer",
     pYours: "Your answer",
     pRetake: "Retake the test",
+    pRight: "Correct!",
+    pWrong: "Not quite",
+    pNoIdea: "No worries",
+    pPerfect: "Perfect score!",
+    pGreat: "Great job!",
+    pGood: "Good start!",
+    pKeep: "Keep going, you’ll get there!",
+    pChipQ: "{n} questions",
+    pChipTime: "About 5 min",
+    pChipNoGrade: "No grade",
     pDone: "Done",
     pLoadFail: "Couldn’t load the questions. Try again.",
     pSaveFail: "Your result couldn’t be saved, but here it is.",
@@ -123,6 +133,16 @@ var STR = {
     pCorrect: "الجواب الصحيح",
     pYours: "جوابك",
     pRetake: "عاود الاختبار",
+    pRight: "صحيح!",
+    pWrong: "موش بالضبط",
+    pNoIdea: "ما يهمش",
+    pPerfect: "نتيجة ممتازة!",
+    pGreat: "برافو عليك!",
+    pGood: "بداية باهية!",
+    pKeep: "كمّل، تتحسن شوية بشوية!",
+    pChipQ: "{n} أسئلة",
+    pChipTime: "تقريبا 5 دقايق",
+    pChipNoGrade: "بلا نقطة",
     pDone: "تمّ",
     pLoadFail: "ما نجمناش نحمّلو الأسئلة. عاود جرّب.",
     pSaveFail: "ما نجمناش نحفظو نتيجتك، أما هاهي.",
@@ -442,6 +462,7 @@ function domainRows(domains) {
   Object.keys(domains).forEach(function (key) {
     var d = domains[key];
     var row = el("div", "domain-row");
+    row.dataset.d = key;
     var head = el("div", "domain-head");
     head.append(
       el("span", "", domainLabel(key)),
@@ -489,7 +510,7 @@ async function openTest() {
   if (menuIsOpen()) closeMenu();
   if (modalIsOpen()) closeModal();
   $("tOverlay").classList.add("open");
-  renderTest();
+  renderTest("in");
   var ok = await loadTestData();
   test.loadFailed = !ok;
   if (ok)
@@ -541,7 +562,7 @@ async function finishTest() {
     answers: answers,
   };
   placement = doc;
-  renderTest();
+  renderTest("in");
   renderPlacementCard();
   try {
     await savePlacement(doc);
@@ -557,83 +578,326 @@ function pBtn(label, cls, onClick) {
   return b;
 }
 
-function renderTest() {
+/* ---- deck of cards: icons, colours ---- */
+function ico(svg, cls) {
+  var span = el("span", cls || "tc-ico");
+  span.innerHTML = svg; // static, trusted SVG
+  return span;
+}
+var S = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">';
+var I_CODE = S + '<path d="m8 8-4 4 4 4"/><path d="m16 8 4 4-4 4"/><path d="m13.5 5-3 14"/></svg>';
+var I_TERM = S + '<rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="m7 9 3 3-3 3"/><path d="M13 15h4"/></svg>';
+var I_FLOW = S + '<circle cx="6" cy="5.5" r="2.5"/><circle cx="18" cy="18.5" r="2.5"/><path d="M6 8v4a3 3 0 0 0 3 3h6.5"/><path d="m13 12.5 2.5 2.5-2.5 2.5" transform="translate(0 -1)"/></svg>';
+var I_PALETTE = S + '<path d="M12 3a9 9 0 1 0 0 18c1.4 0 2-1 1.6-2.2-.4-1.2.3-2.3 1.6-2.3H17a4 4 0 0 0 4-4C21 6.9 17 3 12 3z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10.5" cy="7.5" r="1"/><circle cx="15" cy="7.8" r="1"/></svg>';
+var I_BRACES = S + '<path d="M8 4c-2 0-3 1-3 3v2c0 1.5-.8 3-2 3 1.2 0 2 1.5 2 3v2c0 2 1 3 3 3"/><path d="M16 4c2 0 3 1 3 3v2c0 1.5.8 3 2 3-1.2 0-2 1.5-2 3v2c0 2-1 3-3 3"/></svg>';
+var I_SERVER = S + '<rect x="3" y="4" width="18" height="6.5" rx="2"/><rect x="3" y="13.5" width="18" height="6.5" rx="2"/><path d="M7 7.3h.01M7 16.8h.01"/></svg>';
+var I_DB = S + '<ellipse cx="12" cy="5.5" rx="8" ry="3"/><path d="M4 5.5v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/><path d="M4 11.5v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>';
+var I_GLOBE = S + '<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18 14 14 0 0 1 0-18z"/></svg>';
+var I_CHECK = S.replace('stroke-width="2"', 'stroke-width="3"') + '<path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
+var I_X = S.replace('stroke-width="2"', 'stroke-width="3"') + '<path d="m7 7 10 10M17 7 7 17"/></svg>';
+var I_HELP = S + '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.4a2.6 2.6 0 1 1 3.6 2.4c-.7.4-1.1 1-1.1 1.8"/><path d="M12 17h.01"/></svg>';
+var I_TROPHY = S + '<path d="M8 21h8M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg>';
+var I_ROCKET = S + '<path d="M5 15c-1.5 1.3-2 5-2 5s3.7-.5 5-2"/><path d="M14 4c3-1 6-1 6-1s0 3-1 6l-6 6-5-5z"/><circle cx="15" cy="9" r="1.3"/></svg>';
+var I_CARDS = S + '<rect x="7" y="3" width="13" height="17" rx="2.5" transform="rotate(8 13.5 11.5)"/><rect x="4" y="4" width="13" height="17" rx="2.5"/><path d="M8 11.5h5M8 15h3"/></svg>';
+var I_ARROW = S + '<path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>';
+var TOPICS = {
+  algo: { color: "#7c5cff", icon: I_FLOW },
+  python: { color: "#0464de", icon: I_TERM },
+  html: { color: "#f4801a", icon: I_CODE },
+  css: { color: "#12a4d9", icon: I_PALETTE },
+  js: { color: "#e0a800", icon: I_BRACES },
+  php: { color: "#5b6bd6", icon: I_SERVER },
+  mysql: { color: "#14a085", icon: I_DB },
+};
+function topicOf(key) {
+  return TOPICS[key] || { color: "#0464de", icon: I_CODE };
+}
+var DOMAIN_ICON = { programmation: I_TERM, sti: I_GLOBE };
+function levelClass(p) {
+  return p >= 0.8 ? "is-high" : p >= 0.4 ? "is-mid" : "is-low";
+}
+
+function testCard() {
+  return document.querySelector("#tOverlay .test-modal");
+}
+function animateCard(cls) {
+  var card = testCard();
+  ["is-entering", "is-flipping", "is-leaving"].forEach(function (c) {
+    card.classList.remove(c);
+  });
+  void card.offsetWidth; // restart the animation
+  card.classList.add(cls);
+  card.addEventListener(
+    "animationend",
+    function done() {
+      card.classList.remove(cls);
+      card.removeEventListener("animationend", done);
+    },
+  );
+}
+// the current card flies away, then fn() deals the next one
+function leaveThen(fn) {
+  var card = testCard();
+  card.classList.remove("is-entering", "is-flipping");
+  card.classList.add("is-leaving");
+  setTimeout(function () {
+    card.classList.remove("is-leaving");
+    fn();
+  }, 260);
+}
+
+function renderTest(anim) {
   $("tTitle").textContent = test.step === "result" ? t("pResult") : t("pTitle");
   var body = $("tBody");
   body.textContent = "";
+  if (test.step === "intro") renderIntroCard(body);
+  else if (test.step === "q") renderQuestionCard(body);
+  else renderResultCard(body);
+  if (anim) animateCard("is-entering");
+}
 
-  if (test.step === "intro") {
-    body.append(el("h3", "", t("pIntroTitle")), el("p", "test-text", t("pIntro")));
-    if (test.loadFailed) body.append(el("p", "set-msg", t("pLoadFail")));
-    var actions = el("div", "test-actions");
-    var start = pBtn(t("pStart"), "", function () {
+function renderIntroCard(body) {
+  var hero = el("div", "tc-hero");
+  hero.append(ico(I_CARDS, "tc-hero-ico"));
+  body.append(hero, el("h3", "tc-h", t("pIntroTitle")), el("p", "tc-p", t("pIntro")));
+  var n = testData ? testData.questions.length : 10;
+  var chips = el("div", "tc-chips");
+  [
+    [I_CODE, tf("pChipQ", { n: n }), "c1"],
+    [I_HELP, t("pChipTime"), "c2"],
+    [I_CHECK, t("pChipNoGrade"), "c3"],
+  ].forEach(function (c) {
+    var chip = el("span", "tc-chip " + c[2]);
+    chip.append(ico(c[0]), el("span", "", c[1]));
+    chips.append(chip);
+  });
+  body.append(chips);
+  if (test.loadFailed) body.append(el("p", "set-msg", t("pLoadFail")));
+  var actions = el("div", "test-actions");
+  var start = pBtn(t("pStart"), "", function () {
+    leaveThen(function () {
       test.step = "q";
       test.i = 0;
-      renderTest();
+      renderTest("in");
     });
-    start.disabled = !testData || test.loadFailed;
-    actions.append(pBtn(t("pSkip"), "is-ghost", closeTest), start);
-    body.append(actions);
-    return;
+  });
+  start.append(ico(I_ARROW, "tc-ico tc-flip"));
+  start.disabled = !testData || test.loadFailed;
+  actions.append(pBtn(t("pSkip"), "is-ghost", closeTest), start);
+  body.append(actions);
+}
+
+function renderQuestionCard(body) {
+  var qs = testData.questions;
+  var q = qs[test.i];
+  var topic = topicOf(q.topic);
+  var card = testCard();
+  card.style.setProperty("--tc", topic.color);
+
+  // one segment per question: green / red once answered
+  var segRow = el("div", "tc-segs");
+  var segs = qs.map(function (item, idx) {
+    var pick = test.picks[item.id];
+    var cls = "tc-seg";
+    if (pick !== undefined) cls += pick === item.answer ? " is-right" : " is-wrong";
+    else if (idx === test.i) cls += " is-current";
+    var seg = el("i", cls);
+    segRow.append(seg);
+    return seg;
+  });
+  body.append(segRow);
+
+  var head = el("div", "tc-head");
+  var badge = el("span", "tc-topic");
+  badge.append(ico(topic.icon, "tc-topic-ico"), el("span", "", String(q.topic || "").toUpperCase() + " · " + domainLabel(q.domain)));
+  head.append(badge, el("span", "tc-count", tf("pQuestion", { n: test.i + 1, total: qs.length })));
+  body.append(head);
+
+  var qText = el("p", "tc-q", q.q);
+  qText.setAttribute("dir", "ltr");
+  body.append(qText);
+  if (q.code) {
+    var codeBox = el("pre", "test-code");
+    codeBox.setAttribute("dir", "ltr");
+    codeBox.textContent = q.code;
+    body.append(codeBox);
   }
 
-  if (test.step === "q") {
-    var qs = testData.questions;
-    var q = qs[test.i];
-    var prog = el("div", "test-progress");
-    prog.append(
-      el("span", "", tf("pQuestion", { n: test.i + 1, total: qs.length })),
-      el("span", "test-chip", domainLabel(q.domain)),
-    );
-    var bar = el("div", "domain-bar");
-    var fill = el("i");
-    fill.style.width = Math.round((test.i / qs.length) * 100) + "%";
-    bar.append(fill);
-    var qText = el("p", "test-question", q.q);
-    qText.setAttribute("dir", "ltr");
-    body.append(prog, bar, qText);
-    if (q.code) {
-      var codeBox = el("pre", "test-code");
-      codeBox.setAttribute("dir", "ltr");
-      codeBox.textContent = q.code;
-      body.append(codeBox);
-    }
+  var list = el("div", "tc-opts");
+  var opts = [];
+  test.perm[q.id].forEach(function (orig, pos) {
+    var b = el("button", "qopt");
+    b.type = "button";
+    b.setAttribute("dir", "ltr");
+    var mark = el("span", "qopt-mark");
+    b.append(el("span", "qopt-letter", String.fromCharCode(65 + pos)), el("span", "qopt-text", q.choices[orig]), mark);
+    b.addEventListener("click", function () {
+      test.picks[q.id] = orig;
+      reveal(orig, true);
+    });
+    opts.push({ btn: b, orig: orig, mark: mark });
+    list.append(b);
+  });
+  var skip = el("button", "qopt qopt-skip");
+  skip.type = "button";
+  skip.append(ico(I_HELP), el("span", "", t("pDontKnow")));
+  skip.addEventListener("click", function () {
+    test.picks[q.id] = -1;
+    reveal(-1, true);
+  });
+  list.append(skip);
+  body.append(list);
 
-    var list = el("div", "test-choices");
-    var pick = test.picks[q.id];
-    var next = pBtn(test.i === qs.length - 1 ? t("pFinish") : t("pNext"), "", function () {
-      if (test.i === qs.length - 1) finishTest();
+  var fb = el("div", "tc-fb");
+  fb.hidden = true;
+  fb.setAttribute("aria-live", "polite");
+  body.append(fb);
+
+  var last = test.i === qs.length - 1;
+  var next = pBtn(last ? t("pFinish") : t("pNext"), "tc-next", function () {
+    next.disabled = true;
+    leaveThen(function () {
+      if (last) finishTest();
       else {
         test.i++;
-        renderTest();
+        renderTest("in");
       }
     });
-    next.disabled = pick === undefined;
-    function choice(label, value, extra) {
-      var b = el("button", "test-choice" + (extra ? " " + extra : "") + (pick === value ? " is-picked" : ""), label);
-      b.type = "button";
-      if (value >= 0) b.setAttribute("dir", "ltr");
-      b.setAttribute("aria-pressed", String(pick === value));
-      b.addEventListener("click", function () {
-        test.picks[q.id] = value;
-        renderTest();
-      });
-      return b;
-    }
-    test.perm[q.id].forEach(function (orig) {
-      list.append(choice(q.choices[orig], orig));
-    });
-    list.append(choice(t("pDontKnow"), -1, "is-skip"));
-    var actions2 = el("div", "test-actions");
-    actions2.append(next);
-    body.append(list, actions2);
-    return;
-  }
+  });
+  next.append(ico(I_ARROW, "tc-ico tc-flip"));
+  next.disabled = true;
+  var actions = el("div", "test-actions");
+  actions.append(next);
+  body.append(actions);
 
-  // result
+  function reveal(value, animate) {
+    var ok = value === q.answer;
+    opts.forEach(function (o) {
+      o.btn.disabled = true;
+      if (o.orig === q.answer) {
+        o.btn.classList.add("is-right");
+        o.mark.append(ico(I_CHECK));
+      } else if (o.orig === value) {
+        o.btn.classList.add("is-wrong");
+        o.mark.append(ico(I_X));
+      } else o.btn.classList.add("is-dim");
+    });
+    skip.disabled = true;
+    skip.classList.add(value === -1 ? "is-chosen" : "is-dim");
+    segs[test.i].className = "tc-seg " + (ok ? "is-right" : "is-wrong");
+
+    var kind = ok ? "is-right" : value === -1 ? "is-idk" : "is-wrong";
+    fb.className = "tc-fb " + kind + (animate ? " pop" : "");
+    fb.textContent = "";
+    var badgeIcon = ico(ok ? I_CHECK : value === -1 ? I_HELP : I_X, "tc-fb-ico");
+    var text = el("div", "tc-fb-text");
+    text.append(el("b", "", ok ? t("pRight") : value === -1 ? t("pNoIdea") : t("pWrong")));
+    if (!ok) {
+      var ans = el("span", "tc-fb-ans", t("pCorrect") + ": " + q.choices[q.answer]);
+      ans.setAttribute("dir", "ltr");
+      text.append(ans);
+    }
+    if (q.explain) text.append(el("span", "tc-fb-why", q.explain));
+    fb.append(badgeIcon, text);
+    fb.hidden = false;
+    next.disabled = false;
+    if (animate) {
+      next.classList.add("is-ready");
+      if (!ok && value !== -1) {
+        card.classList.remove("is-shaking");
+        void card.offsetWidth;
+        card.classList.add("is-shaking");
+      }
+      setTimeout(function () {
+        fb.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      }, 60);
+    }
+  }
+  if (test.picks[q.id] !== undefined) reveal(test.picks[q.id], false);
+}
+
+function confetti(host, n) {
+  var colors = ["#0464de", "#aee37b", "#f4801a", "#e0473e", "#7c5cff", "#12a4d9"];
+  for (var i = 0; i < n; i++) {
+    var piece = el("i", "tc-conf");
+    piece.style.left = Math.round(Math.random() * 100) + "%";
+    piece.style.background = colors[i % colors.length];
+    piece.style.animationDelay = (Math.random() * 0.5).toFixed(2) + "s";
+    piece.style.animationDuration = (1.4 + Math.random() * 1.2).toFixed(2) + "s";
+    piece.style.width = 6 + Math.round(Math.random() * 6) + "px";
+    piece.style.height = 8 + Math.round(Math.random() * 8) + "px";
+    host.append(piece);
+  }
+}
+
+function renderResultCard(body) {
   var r = test.result;
-  body.append(el("p", "test-score", tf("pOverall", { n: r.correct, total: r.total })));
-  body.append(domainRows(r.domains));
+  var pct = r.total ? r.correct / r.total : 0;
+  var card = testCard();
+  card.style.setProperty("--tc", "#0464de");
+  var moodKey = pct >= 0.9 ? "pPerfect" : pct >= 0.6 ? "pGreat" : pct >= 0.3 ? "pGood" : "pKeep";
+
+  var top = el("div", "tc-result-top");
+  confetti(top, pct >= 0.6 ? 34 : pct >= 0.3 ? 16 : 0);
+
+  // animated ring
+  var C = 2 * Math.PI * 52;
+  var ring = el("div", "tc-ring");
+  var NS = "http://www.w3.org/2000/svg";
+  var svg = document.createElementNS(NS, "svg");
+  svg.setAttribute("viewBox", "0 0 120 120");
+  svg.setAttribute("aria-hidden", "true");
+  svg.innerHTML =
+    '<defs><linearGradient id="tcGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0464de"/><stop offset="1" stop-color="#aee37b"/></linearGradient></defs>' +
+    '<circle class="tc-ring-track" cx="60" cy="60" r="52"/>' +
+    '<circle class="tc-ring-fill" cx="60" cy="60" r="52" stroke="url(#tcGrad)" stroke-dasharray="' + C.toFixed(1) + '" stroke-dashoffset="' + C.toFixed(1) + '"/>';
+  var num = el("div", "tc-ring-num");
+  var big = el("b", "", "0");
+  num.append(big, el("small", "", "/ " + r.total));
+  ring.append(svg, num);
+  var medal = ico(pct >= 0.6 ? I_TROPHY : I_ROCKET, "tc-medal");
+  top.append(ring, medal);
+  body.append(top, el("h3", "tc-h tc-mood", t(moodKey)));
+
+  var fillCircle = svg.querySelector(".tc-ring-fill");
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () {
+      fillCircle.style.strokeDashoffset = (C * (1 - pct)).toFixed(1);
+    });
+  });
+  var t0 = null;
+  function tick(ts) {
+    if (t0 === null) t0 = ts;
+    var k = Math.min(1, (ts - t0) / 900);
+    big.textContent = String(Math.round(r.correct * (1 - Math.pow(1 - k, 3))));
+    if (k < 1 && document.body.contains(big)) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+
+  // one tile per domain
+  var tiles = el("div", "tc-tiles");
+  Object.keys(r.domains).forEach(function (key, idx) {
+    var d = r.domains[key];
+    var p = pctOf(d);
+    var tile = el("div", "tc-tile");
+    tile.dataset.d = key;
+    tile.style.animationDelay = 0.15 + idx * 0.12 + "s";
+    var th = el("div", "tc-tile-head");
+    th.append(ico(DOMAIN_ICON[key] || I_CODE, "tc-tile-ico"), el("b", "", domainLabel(key)));
+    var score = el("div", "tc-tile-score");
+    score.append(el("b", "", String(d.correct)), el("small", "", "/ " + d.total));
+    var bar = el("div", "tc-tile-bar");
+    var fill = el("i");
+    bar.append(fill);
+    var lvl = el("span", "tc-level " + levelClass(p), levelWord(p));
+    tile.append(th, score, bar, lvl);
+    tiles.append(tile);
+    setTimeout(function () {
+      fill.style.width = Math.round(p * 100) + "%";
+    }, 350 + idx * 120);
+  });
+  body.append(tiles);
+
   var keys = Object.keys(r.domains);
   var pcts = keys.map(function (k) {
     return pctOf(r.domains[k]);
@@ -645,39 +909,45 @@ function renderTest() {
     var weakest = keys[pcts.indexOf(Math.min.apply(null, pcts))];
     reco = tf("pRecoWeak", { domain: domainLabel(weakest) });
   }
-  body.append(el("p", "test-reco", reco));
+  var banner = el("div", "tc-reco");
+  banner.append(ico(I_ROCKET, "tc-reco-ico"), el("span", "", reco));
+  body.append(banner);
   if (test.saveFailed) body.append(el("p", "set-msg", t("pSaveFail")));
 
   var missed = testData.questions.filter(function (q) {
     return test.picks[q.id] !== q.answer;
   });
   if (missed.length) {
-    var det = el("details", "test-review");
+    var det = el("details", "tc-review");
     det.append(el("summary", "", t("pReview") + " (" + missed.length + ")"));
     missed.forEach(function (q) {
-      var item = el("div", "review-item");
-      var yours = test.picks[q.id];
+      var item = el("div", "tc-rev-item");
       item.setAttribute("dir", "ltr");
-      item.append(el("b", "", q.q));
+      var yours = test.picks[q.id];
+      var head = el("div", "tc-rev-q");
+      head.append(ico(I_X, "tc-rev-x"), el("b", "", q.q));
+      item.append(head);
       if (q.code) {
         var codeRev = el("pre", "test-code");
         codeRev.textContent = q.code;
         item.append(codeRev);
       }
-      item.append(el("div", "ok", t("pCorrect") + ": " + q.choices[q.answer]));
       item.append(
-        el("div", "", t("pYours") + ": " + (typeof yours === "number" && yours >= 0 ? q.choices[yours] : t("pDontKnow"))),
+        el("div", "tc-rev-yours", t("pYours") + ": " + (typeof yours === "number" && yours >= 0 ? q.choices[yours] : t("pDontKnow"))),
+        el("div", "tc-rev-ok", t("pCorrect") + ": " + q.choices[q.answer]),
       );
-      if (q.explain) item.append(el("div", "test-text", q.explain));
+      if (q.explain) item.append(el("div", "tc-rev-why", q.explain));
       det.append(item);
     });
     body.append(det);
   }
-  var actions3 = el("div", "test-actions");
-  actions3.append(pBtn(t("pDone"), "", function () {
-    $("tOverlay").classList.remove("open");
-  }));
-  body.append(actions3);
+  var actions = el("div", "test-actions");
+  actions.append(
+    pBtn(t("pDone"), "", function () {
+      $("tOverlay").classList.remove("open");
+    }),
+  );
+  body.append(actions);
 }
 
 /* ---------------- avatar menu (phone) ---------------- */

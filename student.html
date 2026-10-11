@@ -16,6 +16,7 @@
     />
     <link rel="stylesheet" href="CSS/style.css" />
     <link rel="stylesheet" href="CSS/welcome.css" />
+    <link rel="stylesheet" href="CSS/test.css" />
   </head>
   <body class="student-body">
     <div class="student-wrap" id="studentApp" hidden>
@@ -83,17 +84,21 @@
       </div>
     </div>
 
-    <!-- Placement test -->
-    <div class="modal-overlay" id="tOverlay">
-      <div class="modal modal-fixed test-modal" role="dialog" aria-modal="true" aria-labelledby="tTitle">
-        <button type="button" class="modal-x" id="tClose">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
-            <path d="m6 6 12 12M18 6 6 18" />
-          </svg>
-        </button>
-        <div class="modal-scroll">
-          <h2 id="tTitle"></h2>
-          <div id="tBody"></div>
+    <!-- Placement test: a deck of cards -->
+    <div class="modal-overlay test-overlay" id="tOverlay">
+      <div class="deck">
+        <span class="deck-ghost g1" aria-hidden="true"></span>
+        <span class="deck-ghost g2" aria-hidden="true"></span>
+        <div class="modal modal-fixed test-modal" role="dialog" aria-modal="true" aria-labelledby="tTitle">
+          <button type="button" class="modal-x" id="tClose">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+              <path d="m6 6 12 12M18 6 6 18" />
+            </svg>
+          </button>
+          <div class="modal-scroll">
+            <h2 id="tTitle" class="sr-only"></h2>
+            <div id="tBody"></div>
+          </div>
         </div>
       </div>
     </div>
