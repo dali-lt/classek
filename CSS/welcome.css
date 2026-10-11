@@ -505,3 +505,237 @@ html[dir="rtl"] .welcome-link .welcome-ico:first-child svg {
     display: none;
   }
 }
+
+/* ================= Placement test ================= */
+.placement-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+}
+.placement-card .pc-text {
+  flex: 1;
+  min-width: 0;
+}
+.placement-card h3 {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+.placement-card p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 13.5px;
+}
+.pc-bars {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+.pc-btn {
+  min-height: 42px;
+  padding: 8px 18px;
+  border: 1.5px solid var(--color-primary);
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.pc-btn:hover:not(:disabled) {
+  background: var(--color-navy);
+  border-color: var(--color-navy);
+}
+.pc-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.pc-btn.is-ghost {
+  background: var(--color-surface);
+  color: var(--color-navy);
+  border-color: var(--color-border);
+}
+.pc-btn.is-ghost:hover:not(:disabled) {
+  color: #fff;
+}
+.domain-row {
+  display: grid;
+  gap: 5px;
+}
+.domain-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+.domain-head small {
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+.domain-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--color-light-blue);
+  overflow: hidden;
+}
+.domain-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-primary);
+}
+.test-modal .modal-scroll > h2 {
+  padding-inline-end: 44px;
+}
+.test-text {
+  margin: 0 0 16px;
+  color: var(--color-text-muted);
+  font-size: 14px;
+}
+.test-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+.test-actions .pc-btn {
+  flex: 1;
+}
+.test-progress {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  color: var(--color-text-muted);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.test-chip {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--color-light-blue);
+  color: var(--color-primary);
+  font-size: 12px;
+}
+.test-question {
+  margin: 14px 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+.test-choices {
+  display: grid;
+  gap: 8px;
+}
+.test-choice {
+  padding: 12px 14px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 14.5px;
+  text-align: start;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.test-choice:hover {
+  border-color: var(--color-primary);
+}
+.test-choice.is-picked {
+  border-color: var(--color-primary);
+  background: var(--color-light-blue);
+  font-weight: 700;
+}
+.test-choice.is-skip {
+  color: var(--color-text-muted);
+  border-style: dashed;
+}
+.test-score {
+  margin: 0 0 14px;
+  font-size: 15px;
+}
+.test-reco {
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--color-light-blue);
+  font-size: 14px;
+  font-weight: 700;
+}
+.test-review {
+  margin-top: 14px;
+}
+.test-review summary {
+  cursor: pointer;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+.review-item {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  font-size: 13.5px;
+}
+.review-item b {
+  display: block;
+  margin-bottom: 4px;
+  white-space: pre-wrap;
+}
+.review-item .ok {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+@media (max-width: 720px) {
+  .placement-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* settings box: one row per option */
+.set-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  margin-bottom: 8px;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 14.5px;
+  font-weight: 600;
+  text-align: start;
+  cursor: pointer;
+}
+.set-row:hover {
+  border-color: var(--color-primary);
+  background: var(--color-light-blue);
+}
+
+/* code snippets inside test questions */
+.test-code {
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  border-radius: 12px;
+  background: var(--color-navy);
+  color: #eaf2ff;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 13.5px;
+  line-height: 1.5;
+  text-align: left;
+}

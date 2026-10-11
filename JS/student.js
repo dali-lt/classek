@@ -17,6 +17,7 @@ var STR = {
     signOut: "Sign out",
     account: "My account",
     settings: "Settings",
+    retakeTest: "Retake the level test",
     dangerTitle: "Delete account",
     dangerText:
       "This permanently deletes your account and your data (details, progress). It cannot be undone.",
@@ -41,6 +42,34 @@ var STR = {
     saveFail: "Couldn’t save. Try again.",
     genderMale: "Male",
     genderFemale: "Female",
+    pTitle: "Placement test",
+    pIntroTitle: "Let’s see where you stand",
+    pIntro:
+      "10 quick questions on the basics of Programmation and STI. About 5 minutes, no grade, no pressure. It helps us suggest where to start.",
+    pStart: "Start the test",
+    pSkip: "Skip for now",
+    pNext: "Next",
+    pFinish: "Finish",
+    pDontKnow: "I don’t know",
+    pQuestion: "Question {n} of {total}",
+    pResult: "Your result",
+    pOverall: "Overall: {n} / {total}",
+    pRecoWeak: "Start with {domain}.",
+    pRecoBoth: "You’re solid on both sides. Pick any chapter.",
+    pRecoLow: "Start with the basics of both sides.",
+    pReview: "Review your answers",
+    pCorrect: "Correct answer",
+    pYours: "Your answer",
+    pRetake: "Retake the test",
+    pDone: "Done",
+    pLoadFail: "Couldn’t load the questions. Try again.",
+    pSaveFail: "Your result couldn’t be saved, but here it is.",
+    pCardTodoTitle: "Take the placement test",
+    pCardTodoText: "10 questions, about 5 minutes. We’ll suggest where to start.",
+    pCardDoneTitle: "Your level",
+    pLevelHigh: "Solid",
+    pLevelMid: "Getting there",
+    pLevelLow: "Needs the basics",
   },
   ar: {
     hello: "مرحبا",
@@ -51,6 +80,7 @@ var STR = {
     signOut: "تسجيل الخروج",
     account: "حسابي",
     settings: "الإعدادات",
+    retakeTest: "عاود اختبار المستوى",
     dangerTitle: "حذف الحساب",
     dangerText: "هذا يحذف حسابك وبياناتك (المعلومات والتقدم) نهائيا. ما ينجمش يتراجع.",
     typeToConfirm: "اكتب DELETE للتأكيد",
@@ -74,6 +104,34 @@ var STR = {
     saveFail: "ما نجمناش نحفظو. عاود جرّب.",
     genderMale: "ذكر",
     genderFemale: "أنثى",
+    pTitle: "اختبار تحديد المستوى",
+    pIntroTitle: "نشوفو وين وصلت",
+    pIntro:
+      "10 أسئلة سريعة على أساسيات Programmation و STI. حوالي 5 دقايق، من غير نقطة ومن غير ضغط. يعاوننا نقترحو عليك من وين تبدا.",
+    pStart: "ابدا الاختبار",
+    pSkip: "نعملو بعد",
+    pNext: "التالي",
+    pFinish: "إنهاء",
+    pDontKnow: "ما نعرفش",
+    pQuestion: "السؤال {n} من {total}",
+    pResult: "نتيجتك",
+    pOverall: "المجموع: {n} / {total}",
+    pRecoWeak: "ابدا بـ {domain}.",
+    pRecoBoth: "مستواك مليح في الجزئين. اختار أي فصل.",
+    pRecoLow: "ابدا بأساسيات الجزئين.",
+    pReview: "راجع أجوبتك",
+    pCorrect: "الجواب الصحيح",
+    pYours: "جوابك",
+    pRetake: "عاود الاختبار",
+    pDone: "تمّ",
+    pLoadFail: "ما نجمناش نحمّلو الأسئلة. عاود جرّب.",
+    pSaveFail: "ما نجمناش نحفظو نتيجتك، أما هاهي.",
+    pCardTodoTitle: "اعمل اختبار تحديد المستوى",
+    pCardTodoText: "10 أسئلة، حوالي 5 دقايق. نقترحو عليك من وين تبدا.",
+    pCardDoneTitle: "مستواك",
+    pLevelHigh: "قوي",
+    pLevelMid: "في الطريق",
+    pLevelLow: "يحتاج الأساسيات",
   },
 };
 
@@ -96,6 +154,13 @@ try {
 function t(key) {
   return STR[lang][key];
 }
+function tf(key, vars) {
+  var out = STR[lang][key];
+  Object.keys(vars || {}).forEach(function (k) {
+    out = out.replace("{" + k + "}", vars[k]);
+  });
+  return out;
+}
 function $(id) {
   return document.getElementById(id);
 }
@@ -114,6 +179,10 @@ var justSaved = false;
 var saveProfile = null; // set once Firebase is ready
 var removeAccount = null; // set once Firebase is ready
 var signOutNow = null; // set once Firebase is ready
+var placement = null; // saved placement result / skip marker, null = never seen
+var placementLoaded = false;
+var savePlacement = null; // set once Firebase is ready
+var testData = null; // questions loaded from data/placement-test.json
 var settingsText = ""; // survives re-rendering of the settings box
 var settingsOpen = false;
 var isPhone = window.matchMedia("(max-width: 720px)");
@@ -145,6 +214,7 @@ function renderPage() {
   $("pGear").setAttribute("aria-label", t("settings"));
   $("pGear").title = t("settings");
   $("setClose").setAttribute("aria-label", t("close"));
+  $("tClose").setAttribute("aria-label", t("close"));
   if (!currentUser) return;
 
   var first = shownNames().first;
@@ -174,6 +244,8 @@ function renderPage() {
   empty.append(el("b", "", t("emptyTitle")), el("span", "", t("emptyText")));
   list.append(empty);
 
+  renderPlacementCard();
+  if (testIsOpen()) renderTest();
   if (modalIsOpen()) renderModal();
   if (settingsIsOpen()) renderSettings();
   if (menuIsOpen()) renderMenu();
@@ -323,6 +395,291 @@ function renderModal() {
   fFirst.input.focus();
 }
 
+/* ---------------- placement test ---------------- */
+var test = { step: "intro", i: 0, perm: {}, picks: {}, result: null, saveFailed: false, loadFailed: false };
+
+function testIsOpen() {
+  return $("tOverlay").classList.contains("open");
+}
+function shuffled(n) {
+  var a = [];
+  for (var i = 0; i < n; i++) a.push(i);
+  for (var j = n - 1; j > 0; j--) {
+    var k = Math.floor(Math.random() * (j + 1));
+    var tmp = a[j];
+    a[j] = a[k];
+    a[k] = tmp;
+  }
+  return a;
+}
+async function loadTestData() {
+  if (testData) return true;
+  try {
+    var res = await fetch("data/placement-test.json", { cache: "no-cache" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    var data = await res.json();
+    if (!data || !Array.isArray(data.questions) || !data.questions.length) throw new Error("empty");
+    testData = data;
+    return true;
+  } catch (e) {
+    console.warn("Couldn’t load the placement questions:", e);
+    return false;
+  }
+}
+function domainLabel(key) {
+  var d = testData && testData.domains && testData.domains[key];
+  if (d && lang === "ar" && d.label_ar) return d.label_ar;
+  return d && d.label ? d.label : key;
+}
+function pctOf(d) {
+  return d && d.total ? d.correct / d.total : 0;
+}
+function levelWord(p) {
+  return p >= 0.8 ? t("pLevelHigh") : p >= 0.4 ? t("pLevelMid") : t("pLevelLow");
+}
+function domainRows(domains) {
+  var wrap = el("div", "pc-bars");
+  Object.keys(domains).forEach(function (key) {
+    var d = domains[key];
+    var row = el("div", "domain-row");
+    var head = el("div", "domain-head");
+    head.append(
+      el("span", "", domainLabel(key)),
+      el("small", "", d.correct + " / " + d.total + " · " + levelWord(pctOf(d))),
+    );
+    var bar = el("div", "domain-bar");
+    var fill = el("i");
+    fill.style.width = Math.round(pctOf(d) * 100) + "%";
+    bar.append(fill);
+    row.append(head, bar);
+    wrap.append(row);
+  });
+  return wrap;
+}
+
+function renderPlacementCard() {
+  var host = $("sPlacement");
+  host.textContent = "";
+  if (!placementLoaded) return;
+  var card = el("div", "placement-card");
+  var text = el("div", "pc-text");
+  if (placement && placement.status === "done" && placement.domains) {
+    text.append(el("h3", "", t("pCardDoneTitle")));
+    text.append(domainRows(placement.domains));
+    var again = el("button", "pc-btn is-ghost", t("pRetake"));
+    again.type = "button";
+    again.addEventListener("click", function () {
+      openTest();
+    });
+    card.append(text, again);
+  } else {
+    text.append(el("h3", "", t("pCardTodoTitle")), el("p", "", t("pCardTodoText")));
+    var go = el("button", "pc-btn", t("pStart"));
+    go.type = "button";
+    go.addEventListener("click", function () {
+      openTest();
+    });
+    card.append(text, go);
+  }
+  host.append(card);
+}
+
+async function openTest() {
+  test = { step: "intro", i: 0, perm: {}, picks: {}, result: null, saveFailed: false, loadFailed: false };
+  if (menuIsOpen()) closeMenu();
+  if (modalIsOpen()) closeModal();
+  $("tOverlay").classList.add("open");
+  renderTest();
+  var ok = await loadTestData();
+  test.loadFailed = !ok;
+  if (ok)
+    testData.questions.forEach(function (q) {
+      test.perm[q.id] = shuffled(q.choices.length);
+    });
+  renderTest();
+}
+async function closeTest() {
+  $("tOverlay").classList.remove("open");
+  // closing before finishing counts as "skip for now": the test won't pop up again by itself
+  if (!placement && savePlacement) {
+    placement = { status: "skipped" };
+    try {
+      await savePlacement(placement);
+    } catch (e) {}
+    renderPlacementCard();
+  }
+}
+function scoreTest() {
+  var domains = {};
+  var total = 0;
+  var right = 0;
+  testData.questions.forEach(function (q) {
+    var d = domains[q.domain] || (domains[q.domain] = { correct: 0, total: 0 });
+    d.total++;
+    total++;
+    if (test.picks[q.id] === q.answer) {
+      d.correct++;
+      right++;
+    }
+  });
+  return { correct: right, total: total, domains: domains };
+}
+async function finishTest() {
+  var res = scoreTest();
+  test.result = res;
+  test.step = "result";
+  var answers = {};
+  testData.questions.forEach(function (q) {
+    answers[q.id] = typeof test.picks[q.id] === "number" ? test.picks[q.id] : -1;
+  });
+  var doc = {
+    status: "done",
+    testId: testData.id || "placement",
+    correct: res.correct,
+    total: res.total,
+    domains: res.domains,
+    answers: answers,
+  };
+  placement = doc;
+  renderTest();
+  renderPlacementCard();
+  try {
+    await savePlacement(doc);
+  } catch (e) {
+    test.saveFailed = true;
+    renderTest();
+  }
+}
+function pBtn(label, cls, onClick) {
+  var b = el("button", "pc-btn" + (cls ? " " + cls : ""), label);
+  b.type = "button";
+  b.addEventListener("click", onClick);
+  return b;
+}
+
+function renderTest() {
+  $("tTitle").textContent = test.step === "result" ? t("pResult") : t("pTitle");
+  var body = $("tBody");
+  body.textContent = "";
+
+  if (test.step === "intro") {
+    body.append(el("h3", "", t("pIntroTitle")), el("p", "test-text", t("pIntro")));
+    if (test.loadFailed) body.append(el("p", "set-msg", t("pLoadFail")));
+    var actions = el("div", "test-actions");
+    var start = pBtn(t("pStart"), "", function () {
+      test.step = "q";
+      test.i = 0;
+      renderTest();
+    });
+    start.disabled = !testData || test.loadFailed;
+    actions.append(pBtn(t("pSkip"), "is-ghost", closeTest), start);
+    body.append(actions);
+    return;
+  }
+
+  if (test.step === "q") {
+    var qs = testData.questions;
+    var q = qs[test.i];
+    var prog = el("div", "test-progress");
+    prog.append(
+      el("span", "", tf("pQuestion", { n: test.i + 1, total: qs.length })),
+      el("span", "test-chip", domainLabel(q.domain)),
+    );
+    var bar = el("div", "domain-bar");
+    var fill = el("i");
+    fill.style.width = Math.round((test.i / qs.length) * 100) + "%";
+    bar.append(fill);
+    var qText = el("p", "test-question", q.q);
+    qText.setAttribute("dir", "ltr");
+    body.append(prog, bar, qText);
+    if (q.code) {
+      var codeBox = el("pre", "test-code");
+      codeBox.setAttribute("dir", "ltr");
+      codeBox.textContent = q.code;
+      body.append(codeBox);
+    }
+
+    var list = el("div", "test-choices");
+    var pick = test.picks[q.id];
+    var next = pBtn(test.i === qs.length - 1 ? t("pFinish") : t("pNext"), "", function () {
+      if (test.i === qs.length - 1) finishTest();
+      else {
+        test.i++;
+        renderTest();
+      }
+    });
+    next.disabled = pick === undefined;
+    function choice(label, value, extra) {
+      var b = el("button", "test-choice" + (extra ? " " + extra : "") + (pick === value ? " is-picked" : ""), label);
+      b.type = "button";
+      if (value >= 0) b.setAttribute("dir", "ltr");
+      b.setAttribute("aria-pressed", String(pick === value));
+      b.addEventListener("click", function () {
+        test.picks[q.id] = value;
+        renderTest();
+      });
+      return b;
+    }
+    test.perm[q.id].forEach(function (orig) {
+      list.append(choice(q.choices[orig], orig));
+    });
+    list.append(choice(t("pDontKnow"), -1, "is-skip"));
+    var actions2 = el("div", "test-actions");
+    actions2.append(next);
+    body.append(list, actions2);
+    return;
+  }
+
+  // result
+  var r = test.result;
+  body.append(el("p", "test-score", tf("pOverall", { n: r.correct, total: r.total })));
+  body.append(domainRows(r.domains));
+  var keys = Object.keys(r.domains);
+  var pcts = keys.map(function (k) {
+    return pctOf(r.domains[k]);
+  });
+  var reco;
+  if (pcts.every(function (p) { return p >= 0.8; })) reco = t("pRecoBoth");
+  else if (pcts.every(function (p) { return p < 0.4; })) reco = t("pRecoLow");
+  else {
+    var weakest = keys[pcts.indexOf(Math.min.apply(null, pcts))];
+    reco = tf("pRecoWeak", { domain: domainLabel(weakest) });
+  }
+  body.append(el("p", "test-reco", reco));
+  if (test.saveFailed) body.append(el("p", "set-msg", t("pSaveFail")));
+
+  var missed = testData.questions.filter(function (q) {
+    return test.picks[q.id] !== q.answer;
+  });
+  if (missed.length) {
+    var det = el("details", "test-review");
+    det.append(el("summary", "", t("pReview") + " (" + missed.length + ")"));
+    missed.forEach(function (q) {
+      var item = el("div", "review-item");
+      var yours = test.picks[q.id];
+      item.setAttribute("dir", "ltr");
+      item.append(el("b", "", q.q));
+      if (q.code) {
+        var codeRev = el("pre", "test-code");
+        codeRev.textContent = q.code;
+        item.append(codeRev);
+      }
+      item.append(el("div", "ok", t("pCorrect") + ": " + q.choices[q.answer]));
+      item.append(
+        el("div", "", t("pYours") + ": " + (typeof yours === "number" && yours >= 0 ? q.choices[yours] : t("pDontKnow"))),
+      );
+      if (q.explain) item.append(el("div", "test-text", q.explain));
+      det.append(item);
+    });
+    body.append(det);
+  }
+  var actions3 = el("div", "test-actions");
+  actions3.append(pBtn(t("pDone"), "", function () {
+    $("tOverlay").classList.remove("open");
+  }));
+  body.append(actions3);
+}
+
 /* ---------------- avatar menu (phone) ---------------- */
 function menuIsOpen() {
   return !$("sMenu").hidden;
@@ -389,7 +746,16 @@ function renderSettings() {
   var body = $("setBody");
   body.textContent = "";
 
-  // one entry for now: delete account (more options will join this list later)
+  var retake = el("button", "set-row");
+  retake.type = "button";
+  retake.append(el("span", "", t("retakeTest")));
+  retake.addEventListener("click", function () {
+    closeSettings();
+    openTest();
+  });
+  body.append(retake);
+
+  // delete account (more options will join this list later)
   var details = el("details", "acct-details");
   details.append(el("summary", "acct-summary", t("dangerTitle")));
   var danger = el("div", "acct-danger");
@@ -448,6 +814,10 @@ async function main() {
   $("pClose").addEventListener("click", closeModal);
   $("pGear").addEventListener("click", openSettings);
   $("setClose").addEventListener("click", closeSettings);
+  $("tClose").addEventListener("click", function () {
+    if (test.step === "result") $("tOverlay").classList.remove("open");
+    else closeTest();
+  });
   $("setOverlay").addEventListener("click", function (e) {
     if (e.target === $("setOverlay")) closeSettings();
   });
@@ -460,6 +830,7 @@ async function main() {
   document.addEventListener("keydown", function (e) {
     if (e.key !== "Escape") return;
     if (settingsIsOpen()) closeSettings();
+    else if (testIsOpen()) $("tClose").click();
     else if (modalIsOpen()) closeModal();
     else if (menuIsOpen()) closeMenu();
   });
@@ -536,6 +907,20 @@ async function main() {
       }
       await sdk.deleteUser(u);
     };
+    var placementRef = sdk.doc(db, "users", u.uid, "progress", "placement");
+    savePlacement = function (p) {
+      return sdk.setDoc(placementRef, Object.assign({}, p, { updatedAt: sdk.serverTimestamp() }));
+    };
+    try {
+      var pl = await sdk.getDoc(placementRef);
+      placement = pl.exists() ? pl.data() : null;
+    } catch (e) {
+      console.warn("Couldn’t load the placement result:", e);
+      placement = { status: "unknown" }; // don't pop the test up when we can't tell
+    }
+    placementLoaded = true;
+    renderPlacementCard();
+    if (!placement) openTest(); // first visit: offer the test once (skippable)
     try {
       var ps = await sdk.getDoc(profileRef);
       if (ps.exists()) {
@@ -553,6 +938,7 @@ async function main() {
     }
     profileLoaded = true;
     renderPage();
+
   });
 }
 

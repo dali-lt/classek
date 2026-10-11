@@ -1,0 +1,159 @@
+{
+  "id": "placement-v1",
+  "title": "Test de niveau - Informatique",
+  "domains": {
+    "programmation": {
+      "label": "Programmation",
+      "label_ar": "البرمجة"
+    },
+    "sti": {
+      "label": "STI (Web)",
+      "label_ar": "STI (الويب)"
+    }
+  },
+  "questions": [
+    {
+      "id": "q01",
+      "domain": "programmation",
+      "topic": "algo",
+      "q": "Quelle structure répète un traitement tant qu'une condition est vraie ?",
+      "choices": [
+        "Si … alors … sinon",
+        "Tant que … faire",
+        "Selon … faire",
+        "Lire … Écrire"
+      ],
+      "answer": 1,
+      "explain": "« Tant que » teste la condition avant chaque tour : tant qu'elle est vraie, le traitement recommence."
+    },
+    {
+      "id": "q02",
+      "domain": "programmation",
+      "topic": "algo",
+      "q": "Quelle est la valeur de x à la fin de ces instructions ?",
+      "code": "x ← 5\nx ← x + 2",
+      "choices": [
+        "5",
+        "2",
+        "7",
+        "52"
+      ],
+      "answer": 2,
+      "explain": "On calcule d'abord x + 2 avec x = 5, soit 7, puis on range 7 dans x."
+    },
+    {
+      "id": "q03",
+      "domain": "programmation",
+      "topic": "algo",
+      "q": "Avec a = 3 et b = 8, que s'affiche-t-il ?",
+      "code": "Si (a > b) alors\n  Écrire(\"A\")\nSinon\n  Écrire(\"B\")\nFin Si",
+      "choices": [
+        "A",
+        "B",
+        "A puis B",
+        "Rien"
+      ],
+      "answer": 1,
+      "explain": "3 > 8 est faux, donc le programme exécute la partie « Sinon » et affiche B."
+    },
+    {
+      "id": "q04",
+      "domain": "programmation",
+      "topic": "python",
+      "q": "Quelle instruction Python affiche le mot Bonjour à l'écran ?",
+      "choices": [
+        "echo \"Bonjour\"",
+        "write(\"Bonjour\")",
+        "print(\"Bonjour\")",
+        "console.log(\"Bonjour\")"
+      ],
+      "answer": 2,
+      "explain": "En Python on affiche avec la fonction print(). echo est du PHP et console.log du JavaScript."
+    },
+    {
+      "id": "q05",
+      "domain": "programmation",
+      "topic": "python",
+      "q": "Qu'affiche ce programme Python ?",
+      "code": "for i in range(3):\n    print(i)",
+      "choices": [
+        "1 2 3",
+        "0 1 2",
+        "0 1 2 3",
+        "3"
+      ],
+      "answer": 1,
+      "explain": "range(3) produit 0, 1, 2 : la valeur de départ est 0 et 3 est exclu."
+    },
+    {
+      "id": "q06",
+      "domain": "sti",
+      "topic": "html",
+      "q": "Quelle balise HTML permet de créer un lien hypertexte ?",
+      "choices": [
+        "<link>",
+        "<href>",
+        "<url>",
+        "<a>"
+      ],
+      "answer": 3,
+      "explain": "La balise <a> avec l'attribut href crée un lien : <a href=\"page.html\">Texte</a>."
+    },
+    {
+      "id": "q07",
+      "domain": "sti",
+      "topic": "css",
+      "q": "Quelle propriété CSS change la couleur du texte ?",
+      "choices": [
+        "color",
+        "font-color",
+        "text-color",
+        "background-color"
+      ],
+      "answer": 0,
+      "explain": "La propriété color définit la couleur du texte. background-color change la couleur du fond."
+    },
+    {
+      "id": "q08",
+      "domain": "sti",
+      "topic": "js",
+      "q": "Quelle instruction JavaScript affiche une boîte de message à l'utilisateur ?",
+      "choices": [
+        "msg(\"Salut\")",
+        "alert(\"Salut\")",
+        "echo(\"Salut\")",
+        "print(\"Salut\")"
+      ],
+      "answer": 1,
+      "explain": "alert() ouvre une boîte de dialogue avec le message donné."
+    },
+    {
+      "id": "q09",
+      "domain": "sti",
+      "topic": "php",
+      "q": "Par quel symbole commence le nom d'une variable en PHP ?",
+      "choices": [
+        "@",
+        "#",
+        "&",
+        "$"
+      ],
+      "answer": 3,
+      "explain": "Toute variable PHP commence par $, par exemple $nom = \"Ali\";"
+    },
+    {
+      "id": "q10",
+      "domain": "sti",
+      "topic": "mysql",
+      "q": "Quelle requête SQL sélectionne tous les enregistrements de la table eleves ?",
+      "choices": [
+        "GET ALL FROM eleves;",
+        "SHOW eleves;",
+        "SELECT * FROM eleves;",
+        "FETCH * eleves;"
+      ],
+      "answer": 2,
+      "explain": "SELECT * FROM table; renvoie toutes les colonnes de tous les enregistrements."
+    }
+  ]
+}

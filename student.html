@@ -49,6 +49,9 @@
         <p id="sSub"></p>
       </section>
 
+      <div id="sPlacement"></div>
+
+
       <section class="student-section">
         <h2 id="sChaptersTitle"></h2>
         <div class="student-chapters" id="sChapters"></div>
@@ -80,6 +83,21 @@
       </div>
     </div>
 
+    <!-- Placement test -->
+    <div class="modal-overlay" id="tOverlay">
+      <div class="modal modal-fixed test-modal" role="dialog" aria-modal="true" aria-labelledby="tTitle">
+        <button type="button" class="modal-x" id="tClose">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+            <path d="m6 6 12 12M18 6 6 18" />
+          </svg>
+        </button>
+        <div class="modal-scroll">
+          <h2 id="tTitle"></h2>
+          <div id="tBody"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- Settings box -->
     <div class="modal-overlay" id="setOverlay">
       <div class="modal modal-fixed" role="dialog" aria-modal="true" aria-labelledby="setTitle">
@@ -94,6 +112,7 @@
         </div>
       </div>
     </div>
+
 
     <script src="JS/firebase-config.js"></script>
     <script type="module" src="JS/student.js"></script>
