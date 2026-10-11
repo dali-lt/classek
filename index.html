@@ -14,36 +14,39 @@
       href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="CSS/style.css?v=2" />
-    <link rel="stylesheet" href="CSS/welcome.css?v=2" />
+    <link rel="stylesheet" href="CSS/style.css" />
+    <link rel="stylesheet" href="CSS/welcome.css" />
   </head>
   <body class="welcome-body">
-    <section class="welcome">
-      <div class="welcome-top">
-        <img
-          class="welcome-logo"
-          src="Images/logo-wordmark.svg"
-          alt="ClassLedger"
-        />
-        <div class="lang-switch" id="langSwitch">
-          <button type="button" class="lang-btn" data-lang="en">EN</button>
-          <button type="button" class="lang-btn" data-lang="ar">AR</button>
-        </div>
-      </div>
-
-      <h1 id="wTitle"></h1>
-      <p class="welcome-sub" id="wSub"></p>
-
-      <!-- Put your illustration at Images/welcome-hero.svg (logo shows until then) -->
-      <div class="welcome-hero">
+    <div class="welcome-shell">
+      <!-- the picture: pinned to the top on phones, to the side on big screens -->
+      <aside class="welcome-visual">
         <img id="wHero" src="Images/welcome-hero.svg" alt="" />
-      </div>
+      </aside>
 
-      <div id="wPanel"></div>
-      <p class="welcome-msg" id="wMsg" role="status" aria-live="polite"></p>
-    </section>
+      <section class="welcome">
+        <div class="welcome-top">
+          <img
+            class="welcome-logo"
+            src="Images/logo-wordmark.svg"
+            alt="ClassLedger"
+          />
+          <div class="lang-switch" id="langSwitch">
+            <button type="button" class="lang-btn" data-lang="en">EN</button>
+            <button type="button" class="lang-btn" data-lang="ar">AR</button>
+          </div>
+        </div>
+
+        <div class="welcome-main">
+          <h1 id="wTitle"></h1>
+          <p class="welcome-sub" id="wSub"></p>
+          <div id="wPanel"></div>
+          <p class="welcome-msg" id="wMsg" role="status" aria-live="polite"></p>
+        </div>
+      </section>
+    </div>
 
     <script src="JS/firebase-config.js"></script>
-    <script type="module" src="JS/welcome.js?v=2"></script>
+    <script type="module" src="JS/welcome.js"></script>
   </body>
 </html>

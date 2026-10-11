@@ -2,25 +2,59 @@
    Reuses the colour tokens and .lang-switch from style.css. */
 
 .welcome-body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: #fff;
+}
+.welcome-shell {
+  position: relative;
   min-height: 100vh;
   min-height: 100dvh;
   display: flex;
-  justify-content: center;
-  padding: calc(16px + env(safe-area-inset-top, 0px)) 16px
-    calc(22px + env(safe-area-inset-bottom, 0px));
-  background: var(--color-page);
+  flex-direction: column;
 }
+
+/* picture: phone = pinned to the top, grows to fill the free height */
+.welcome-visual {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 230px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: var(--color-page);
+  border-radius: 0 0 32px 32px;
+}
+.welcome-visual img {
+  position: absolute;
+  inset: calc(60px + env(safe-area-inset-top, 0px)) 24px 14px;
+  width: calc(100% - 48px);
+  height: calc(100% - 74px - env(safe-area-inset-top, 0px));
+  object-fit: contain;
+}
+.welcome-visual img.is-fallback {
+  position: static;
+  width: 120px;
+  height: auto;
+  opacity: 0.35;
+}
+
 .welcome {
   width: 100%;
-  max-width: 440px;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 22px 20px calc(22px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
   text-align: center;
 }
 .welcome-top {
-  width: 100%;
+  position: absolute;
+  top: calc(14px + env(safe-area-inset-top, 0px));
+  inset-inline: 16px;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -31,8 +65,15 @@
   height: 20px;
   width: auto;
 }
+.welcome-main {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 .welcome h1 {
-  margin: 12px 0 0;
+  margin: 0;
   font-size: clamp(26px, 7vw, 34px);
   font-weight: 900;
   line-height: 1.15;
@@ -42,24 +83,41 @@
   color: var(--color-text-muted);
   font-size: 14.5px;
 }
-.welcome-hero {
-  width: 100%;
-  flex: 1 1 auto; /* takes the free height, so the buttons sit at the bottom */
-  min-height: 190px;
-  display: grid;
-  place-items: center;
-}
-.welcome-hero img {
-  display: block;
-  width: auto;
-  max-width: 100%;
-  height: clamp(190px, 38vh, 440px);
-  height: clamp(190px, 38dvh, 440px);
-  object-fit: contain;
-}
-.welcome-hero img.is-fallback {
-  width: 120px;
-  opacity: 0.35;
+
+/* big screens: two halves, the picture pinned to the side edge */
+@media (min-width: 900px) {
+  .welcome-shell {
+    flex-direction: row;
+  }
+  .welcome-visual {
+    order: 2;
+    flex: 1 1 54%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    border-radius: 0;
+    border-start-start-radius: 40px;
+    border-end-start-radius: 40px;
+  }
+  .welcome-visual img {
+    inset: 72px 56px;
+    width: calc(100% - 112px);
+    height: calc(100% - 144px);
+  }
+  .welcome {
+    order: 1;
+    flex: 1 1 46%;
+    max-width: none;
+    margin: 0;
+    padding: 40px clamp(32px, 5vw, 88px);
+    justify-content: center;
+  }
+  .welcome-top {
+    inset-inline-start: clamp(32px, 5vw, 88px);
+    inset-inline-end: 28px;
+  }
+  .welcome-main {
+    margin: 0 auto;
+  }
 }
 #wPanel {
   width: 100%;
