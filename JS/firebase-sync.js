@@ -207,15 +207,6 @@ async function main() {
         button(t("signIn"), ICON_USER, function () {
           signIn(false);
         }),
-        button(t("createAccount"), ICON_USER, function () {
-          // details first (own form), then Google creates the account with them
-          app.openProfile({
-            create: true,
-            onSubmit: function () {
-              signIn(true);
-            },
-          });
-        }),
       );
       mount.append(el("p", "cloud-hint", t("hint")), row);
       return;

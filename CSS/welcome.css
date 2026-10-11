@@ -151,6 +151,14 @@
   background: var(--color-navy);
   color: #fff;
 }
+.welcome-btn.is-solid {
+  background: var(--color-navy);
+  color: #fff;
+}
+.welcome-btn.is-solid:hover:not(:disabled) {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
 .welcome-btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
@@ -216,15 +224,34 @@
 .student-user {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
   min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
 }
-.student-user img {
-  width: 28px;
-  height: 28px;
+.student-user:hover img,
+.student-user:hover .student-initial,
+.student-user:focus-visible img,
+.student-user:focus-visible .student-initial {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 25%, transparent);
+}
+.student-user img,
+.student-initial {
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   object-fit: cover;
   background: var(--color-light-blue);
+  transition: box-shadow 0.15s ease;
+}
+.student-initial {
+  display: grid;
+  place-items: center;
+  color: var(--color-primary);
+  font-weight: 800;
 }
 .student-out {
   min-height: 36px;

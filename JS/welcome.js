@@ -13,7 +13,12 @@ var HOME = { teacher: "teacher", student: "student" };
 var STR = {
   en: {
     title: "Welcome! Let’s get to it.",
-    sub: "Pick your side, then continue with Google.",
+    sub: "Sign in, or create a new account.",
+    createTitle: "Create your account",
+    createSub: "Are you a teacher or a student?",
+    signInBtn: "Sign in with Google",
+    createBtn: "Create account",
+    back: "Back",
     chooseTitle: "One last step",
     chooseSub: "Tell us who you are so we show you the right space.",
     roleTeacher: "I’m a teacher",
@@ -34,7 +39,12 @@ var STR = {
   },
   ar: {
     title: "مرحبا! يلا نبداو",
-    sub: "اختار شكون أنت، وبعد كمّل بحساب Google.",
+    sub: "ادخل بحسابك، ولا اعمل حساب جديد.",
+    createTitle: "إنشاء حساب",
+    createSub: "أنت أستاذ ولا تلميذ؟",
+    signInBtn: "الدخول بحساب Google",
+    createBtn: "إنشاء حساب",
+    back: "رجوع",
     chooseTitle: "خطوة أخيرة",
     chooseSub: "قلنا شكون أنت باش نوروك المساحة المناسبة.",
     roleTeacher: "أنا أستاذ",
@@ -61,7 +71,7 @@ var ICON_STUDENT =
   '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg>';
 
 var lang = readLang();
-var state = { view: "loading", picked: readPick() };
+var state = { view: "loading", picked: null };
 var handlers = {}; // filled in once Firebase is ready
 
 function readLang() {
@@ -127,8 +137,9 @@ function roleCard(role, titleKey, hintKey, icon) {
 
 function render() {
   var choosing = state.view === "choose";
-  $("wTitle").textContent = choosing ? t("chooseTitle") : t("title");
-  $("wSub").textContent = choosing ? t("chooseSub") : t("sub");
+  var creating = state.view === "create";
+  $("wTitle").textContent = choosing ? t("chooseTitle") : creating ? t("createTitle") : t("title");
+  $("wSub").textContent = choosing ? t("chooseSub") : creating ? t("createSub") : t("sub");
   var panel = $("wPanel");
   panel.textContent = "";
 
@@ -137,14 +148,32 @@ function render() {
     return;
   }
 
-  var cards = el("div", "role-cards");
-  cards.append(
-    roleCard("teacher", "roleTeacher", "roleTeacherHint", ICON_TEACHER),
-    roleCard("student", "roleStudent", "roleStudentHint", ICON_STUDENT),
-  );
-  panel.append(cards);
+  if (choosing || creating) {
+    var cards = el("div", "role-cards");
+    cards.append(
+      roleCard("teacher", "roleTeacher", "roleTeacherHint", ICON_TEACHER),
+      roleCard("student", "roleStudent", "roleStudentHint", ICON_STUDENT),
+    );
+    panel.append(cards);
+  }
 
-  if (choosing) {
+  if (creating) {
+    var next = el("button", "welcome-btn");
+    next.type = "button";
+    next.disabled = !state.picked;
+    next.append(el("span", "welcome-g", "G"), el("span", "", t("google")));
+    next.addEventListener("click", function () {
+      if (handlers.signIn) handlers.signIn("create");
+    });
+    var back = el("button", "welcome-link", t("back"));
+    back.type = "button";
+    back.addEventListener("click", function () {
+      state.view = "signedout";
+      state.picked = null;
+      render();
+    });
+    panel.append(next, back);
+  } else if (choosing) {
     var go = el("button", "welcome-btn", t("cont"));
     go.type = "button";
     go.disabled = !state.picked;
@@ -160,11 +189,18 @@ function render() {
   } else {
     var google = el("button", "welcome-btn");
     google.type = "button";
-    google.append(el("span", "welcome-g", "G"), el("span", "", t("google")));
+    google.append(el("span", "welcome-g", "G"), el("span", "", t("signInBtn")));
     google.addEventListener("click", function () {
-      if (handlers.signIn) handlers.signIn();
+      if (handlers.signIn) handlers.signIn("signin");
     });
-    panel.append(google);
+    var create = el("button", "welcome-btn is-solid", t("createBtn"));
+    create.type = "button";
+    create.addEventListener("click", function () {
+      state.view = "create";
+      state.picked = null;
+      render();
+    });
+    panel.append(google, create);
   }
 }
 
@@ -200,6 +236,7 @@ async function main() {
     hero.src = "Images/logo-icon.svg";
   });
   setLang(lang, false);
+  clearPick();
 
   var cfg = window.CLASSLEDGER_FIREBASE_CONFIG;
   if (!cfg || !cfg.apiKey || !cfg.projectId || /^PASTE/i.test(cfg.apiKey)) {
@@ -238,8 +275,12 @@ async function main() {
     return role === "teacher" || role === "student" ? role : null;
   }
 
-  handlers.signIn = async function () {
+  handlers.signIn = async function (mode) {
     msg("");
+    if (mode === "signin") {
+      state.picked = null; // plain sign-in never assigns a role
+      clearPick();
+    }
     try {
       await sdk.signInWithPopup(auth, new sdk.GoogleAuthProvider());
       // onAuthStateChanged below takes it from here
@@ -284,6 +325,7 @@ async function main() {
   sdk.onAuthStateChanged(auth, async function (u) {
     if (!u) {
       state.view = "signedout";
+      state.picked = null;
       render();
       return;
     }
