@@ -312,7 +312,11 @@ async function main() {
         .map(function (d) {
           return d.ref;
         })
-        .concat([sdk.doc(db, "users", uid, "meta", "groups"), sdk.doc(db, "users", uid, "meta", "profile")]);
+        .concat([
+          sdk.doc(db, "users", uid, "meta", "groups"),
+          sdk.doc(db, "users", uid, "meta", "profile"),
+          sdk.doc(db, "users", uid, "meta", "account"),
+        ]);
       for (var i = 0; i < refs.length; i += 400) {
         var batch = sdk.writeBatch(db);
         refs.slice(i, i + 400).forEach(function (ref) {
