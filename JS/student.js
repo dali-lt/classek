@@ -70,6 +70,8 @@ var STR = {
     pRight: "Correct!",
     pWrong: "Not quite",
     pNoIdea: "No worries",
+    pTimeUp: "Time’s up!",
+    pChipTimed: "Timed questions",
     pPerfect: "Perfect score!",
     pGreat: "Great job!",
     pGood: "Good start!",
@@ -148,6 +150,8 @@ var STR = {
     pRight: "صحيح!",
     pWrong: "موش بالضبط",
     pNoIdea: "ما يهمش",
+    pTimeUp: "الوقت خلص!",
+    pChipTimed: "وقت لكل سؤال",
     pPerfect: "نتيجة ممتازة!",
     pGreat: "برافو عليك!",
     pGood: "بداية باهية!",
@@ -435,7 +439,7 @@ function renderModal() {
 }
 
 /* ---------------- placement test ---------------- */
-var test = { step: "intro", i: 0, perm: {}, picks: {}, result: null, saveFailed: false, loadFailed: false };
+var test = { step: "intro", i: 0, perm: {}, picks: {}, timeouts: {}, result: null, saveFailed: false, loadFailed: false };
 
 function testIsOpen() {
   return $("tOverlay").classList.contains("open");
@@ -492,9 +496,14 @@ function levelBadge(p, extra, cls) {
 }
 // Two nested half-rings, like the teacher dashboard gauge: the first domain is the outer ring and
 // fills from the left, the second is the inner ring and fills from the right. Overall score in the middle.
+function orderedKeys(domains) {
+  return Object.keys(domains).sort(function (a, b) {
+    return (a === "programmation" ? 0 : 1) - (b === "programmation" ? 0 : 1);
+  });
+}
 function levelGauge(res) {
   var NS = "http://www.w3.org/2000/svg";
-  var keys = Object.keys(res.domains);
+  var keys = orderedKeys(res.domains);
   var wrap = el("div", "lv-board");
   var gauge = el("div", "lv-gauge");
   var svg = document.createElementNS(NS, "svg");
@@ -597,14 +606,14 @@ async function viewResults() {
     var v = placement.answers ? placement.answers[q.id] : undefined;
     picks[q.id] = typeof v === "number" ? v : -1;
   });
-  test = { step: "result", i: 0, perm: {}, picks: picks, result: placement, saveFailed: false, loadFailed: false };
+  test = { step: "result", i: 0, perm: {}, picks: picks, timeouts: {}, result: placement, saveFailed: false, loadFailed: false };
   if (menuIsOpen()) closeMenu();
   $("tOverlay").classList.add("open");
   renderTest("in");
 }
 
 async function openTest() {
-  test = { step: "intro", i: 0, perm: {}, picks: {}, result: null, saveFailed: false, loadFailed: false };
+  test = { step: "intro", i: 0, perm: {}, picks: {}, timeouts: {}, result: null, saveFailed: false, loadFailed: false };
   if (menuIsOpen()) closeMenu();
   if (modalIsOpen()) closeModal();
   $("tOverlay").classList.add("open");
@@ -618,6 +627,7 @@ async function openTest() {
   renderTest();
 }
 async function closeTest() {
+  stopTimer();
   $("tOverlay").classList.remove("open");
   // closing before finishing counts as "skip for now": the test won't pop up again by itself
   if (!placement && savePlacement) {
@@ -702,6 +712,7 @@ var I_CHART = S + '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>';
 var I_EYE = S + '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
 var I_SPROUT = S + '<path d="M12 21v-9"/><path d="M12 12c0-4 2.5-6 7-6 0 4-2.5 6-7 6z"/><path d="M12 15c0-3-2-5-6-5 0 3 2 5 6 5z"/></svg>';
 var I_TARGET = S + '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/></svg>';
+var I_CLOCK = S + '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2"/><path d="M9.5 3h5"/></svg>';
 var I_ARROW = S + '<path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>';
 var TOPICS = {
   algo: { color: "#032c7b", icon: I_FLOW },
@@ -750,6 +761,7 @@ function leaveThen(fn) {
 }
 
 function renderTest(anim) {
+  stopTimer();
   $("tTitle").textContent = test.step === "result" ? t("pResult") : t("pTitle");
   var body = $("tBody");
   body.textContent = "";
@@ -771,7 +783,7 @@ function renderIntroCard(body) {
   var chips = el("div", "tc-chips");
   [
     [I_CODE, tf("pChipQ", { n: n }), "c1"],
-    [I_HELP, t("pChipTime"), "c2"],
+    [I_CLOCK, t("pChipTimed"), "c2"],
     [I_CHECK, t("pChipNoGrade"), "c3"],
   ].forEach(function (c) {
     var chip = el("span", "tc-chip " + c[2]);
@@ -792,6 +804,25 @@ function renderIntroCard(body) {
   start.disabled = !testData || test.loadFailed;
   actions.append(pBtn(t("pSkip"), "is-ghost", closeTest), start);
   body.append(actions);
+}
+
+// Time for one question, from how much there is to read: wording, code lines and answer length.
+function timeFor(q) {
+  if (typeof q.time === "number" && q.time > 0) return q.time;
+  var words = String(q.q || "").split(/\s+/).length;
+  var lines = q.code ? String(q.code).split("\n").filter(Boolean).length : 0;
+  var chars = (q.choices || []).reduce(function (n, c) {
+    return n + String(c).length;
+  }, 0);
+  var sec = 15 + words * 0.8 + lines * 8 + chars / 20;
+  return Math.max(25, Math.min(90, Math.round(sec / 5) * 5));
+}
+var qTimer = null;
+function stopTimer() {
+  if (qTimer) {
+    clearInterval(qTimer);
+    qTimer = null;
+  }
 }
 
 function renderQuestionCard(body) {
@@ -819,8 +850,17 @@ function renderQuestionCard(body) {
   var head = el("div", "tc-head");
   var badge = el("span", "tc-topic");
   badge.append(ico(topic.icon, "tc-topic-ico"), el("span", "tc-topic-name", String(q.topic || "").toUpperCase()), el("span", "tc-topic-dom", " · " + domainLabel(q.domain)));
-  head.append(badge, el("span", "tc-count", tf("pQuestion", { n: test.i + 1, total: qs.length })));
-  fixedHead.append(head);
+  var right = el("span", "tc-right");
+  var clock = el("span", "tc-clock");
+  clock.append(ico(I_CLOCK, "tc-clock-ico"), el("b", "", ""));
+  right.append(el("span", "tc-count", tf("pQuestion", { n: test.i + 1, total: qs.length })), clock);
+  head.append(badge, right);
+  var tbar = el("div", "tc-timer");
+  var tfill = el("i");
+  tbar.append(tfill);
+  fixedHead.append(head, tbar);
+  var limit = timeFor(q);
+  clock.querySelector("b").textContent = limit + "s";
 
   var qText = el("p", "tc-q", q.q);
   qText.setAttribute("dir", "ltr");
@@ -880,7 +920,10 @@ function renderQuestionCard(body) {
   body.append(actions);
 
   function reveal(value, animate) {
+    stopTimer();
+    tbar.classList.add("is-stopped");
     var ok = value === q.answer;
+    var timedOut = !!(test.timeouts && test.timeouts[q.id]);
     opts.forEach(function (o) {
       o.btn.disabled = true;
       if (o.orig === q.answer) {
@@ -892,7 +935,7 @@ function renderQuestionCard(body) {
       } else o.btn.classList.add("is-dim");
     });
     skip.disabled = true;
-    skip.classList.add(value === -1 ? "is-chosen" : "is-dim");
+    skip.classList.add(value === -1 && !timedOut ? "is-chosen" : "is-dim");
     segs[test.i].className = "tc-seg " + (ok ? "is-right" : "is-wrong");
 
     var kind = ok ? "is-right" : value === -1 ? "is-idk" : "is-wrong";
@@ -900,7 +943,7 @@ function renderQuestionCard(body) {
     fb.textContent = "";
     var badgeIcon = ico(ok ? I_CHECK : value === -1 ? I_HELP : I_X, "tc-fb-ico");
     var text = el("div", "tc-fb-text");
-    text.append(el("b", "", ok ? t("pRight") : value === -1 ? t("pNoIdea") : t("pWrong")));
+    text.append(el("b", "", ok ? t("pRight") : timedOut ? t("pTimeUp") : value === -1 ? t("pNoIdea") : t("pWrong")));
     if (!ok) {
       var ans = el("span", "tc-fb-ans", t("pCorrect") + ": " + q.choices[q.answer]);
       ans.setAttribute("dir", "ltr");
@@ -922,7 +965,29 @@ function renderQuestionCard(body) {
       }, 60);
     }
   }
-  if (test.picks[q.id] !== undefined) reveal(test.picks[q.id], false);
+  if (test.picks[q.id] !== undefined) {
+    reveal(test.picks[q.id], false);
+    tfill.style.width = "0";
+  } else {
+    var endAt = Date.now() + limit * 1000;
+    stopTimer();
+    qTimer = setInterval(function () {
+      if (!document.body.contains(tbar)) return stopTimer();
+      var left = Math.max(0, endAt - Date.now());
+      tfill.style.width = ((left / (limit * 1000)) * 100).toFixed(1) + "%";
+      clock.querySelector("b").textContent = Math.ceil(left / 1000) + "s";
+      var low = left <= Math.min(10000, limit * 1000 * 0.3);
+      tbar.classList.toggle("is-low", low);
+      clock.classList.toggle("is-low", low);
+      if (left <= 0) {
+        stopTimer();
+        test.picks[q.id] = -1;
+        test.timeouts[q.id] = true;
+        reveal(-1, true);
+      }
+    }, 200);
+    tfill.style.width = "100%";
+  }
 }
 
 function confetti(host, n) {
@@ -993,7 +1058,7 @@ function renderResultCard(body) {
 
   // one tile per domain
   var tiles = el("div", "tc-tiles");
-  Object.keys(r.domains).forEach(function (key, idx) {
+  orderedKeys(r.domains).forEach(function (key, idx) {
     var d = r.domains[key];
     var p = pctOf(d);
     var tile = el("div", "tc-tile");

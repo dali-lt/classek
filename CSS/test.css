@@ -1040,8 +1040,8 @@ html[dir="rtl"] .tc-flip svg {
   display: grid;
   place-items: center;
   border-radius: 18px;
-  background: var(--color-navy);
-  color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-navy);
 }
 .pc-alert::before,
 .pc-alert::after {
@@ -1377,4 +1377,156 @@ html[dir="rtl"] .lv-mid .lv-overall {
 }
 .tc-reco-ico {
   background: var(--color-navy);
+}
+
+/* ---------- per-question timer ---------- */
+.tc-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+}
+.tc-clock {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--color-light-blue);
+  color: var(--color-navy);
+  font-size: 12.5px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  transition: background 0.25s ease, color 0.25s ease;
+}
+.tc-clock-ico {
+  display: grid;
+}
+.tc-clock-ico svg {
+  width: 14px;
+  height: 14px;
+}
+.tc-clock.is-low {
+  background: color-mix(in srgb, #e0473e 16%, var(--color-surface));
+  color: #b3322b;
+  animation: clockBeat 1s ease-in-out infinite;
+}
+@keyframes clockBeat {
+  50% {
+    transform: scale(1.07);
+  }
+}
+.tc-timer {
+  height: 5px;
+  margin-top: 10px;
+  border-radius: 999px;
+  background: var(--color-light-blue);
+  overflow: hidden;
+}
+.tc-timer i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--tc, #0464de);
+  transition: width 0.2s linear, background 0.3s ease;
+}
+html[dir="rtl"] .tc-timer i {
+  margin-inline-start: auto;
+}
+.tc-timer.is-low i {
+  background: #e0473e;
+}
+.tc-timer.is-stopped i {
+  transition: none;
+  opacity: 0.35;
+}
+@media (max-width: 420px) {
+  .tc-right {
+    gap: 6px;
+  }
+  .tc-count {
+    font-size: 12px;
+  }
+}
+
+/* ---------- result card: fits without scrolling, answers review scrolls on demand ---------- */
+.tc-result-top {
+  min-height: 0;
+  padding: 20px 0 22px;
+}
+.tc-result-top .tc-ring {
+  width: 124px;
+  height: 124px;
+}
+.tc-result-top .tc-ring-num b {
+  font-size: 38px;
+}
+.tc-medal {
+  top: 14px;
+  inset-inline-end: calc(50% - 88px);
+  width: 42px;
+  height: 42px;
+}
+.tc-medal svg {
+  width: 22px;
+  height: 22px;
+}
+.tc-mood-box {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin: 14px 0 12px;
+}
+.tc-mood-box .tc-mood {
+  flex: 1 1 auto;
+  font-size: 19px;
+  text-align: start;
+}
+.tc-mood-box .tc-mood-badge {
+  flex: none;
+}
+.tc-reco {
+  margin-top: 10px;
+  padding: 10px 12px;
+}
+.tc-review {
+  margin-top: 10px;
+}
+.tc-result-top + .tc-mood-box + .tc-tiles {
+  margin-top: 0;
+}
+
+/* ---------- level card: header holds the button on big screens ---------- */
+.placement-card.is-done {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+.placement-card.is-done .pc-text {
+  display: contents;
+}
+@media (min-width: 760px) {
+  .placement-card.is-done {
+    grid-template-columns: 1fr auto;
+    gap: 6px 20px;
+  }
+  .placement-card.is-done .pc-text {
+    display: contents;
+  }
+  .placement-card.is-done .pc-head {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .placement-card.is-done .pc-actions {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: center;
+  }
+  .placement-card.is-done .lv-board {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
 }
