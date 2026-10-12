@@ -39,6 +39,7 @@ var STR = {
     avPickGender: "Choose your gender first to see the avatars.",
     avFail: "Couldn’t use this image. Try another one.",
     avPicked: "Selected",
+    avBg: "Background colour",
     profileLevel: "Level / section",
     profileLevelHint: "e.g. Bac Informatique",
     profileEmail: "Email",
@@ -126,6 +127,7 @@ var STR = {
     avPickGender: "اختار الجنس الأول باش تظهرلك الصور.",
     avFail: "ما نجمتش نستعمل هالصورة. جرّب وحدة أخرى.",
     avPicked: "مختارة",
+    avBg: "لون الخلفية",
     profileLevel: "المستوى / الشعبة",
     profileLevelHint: "مثلا: باك إعلامية",
     profileEmail: "الإيميل",
@@ -233,6 +235,21 @@ function cleanAvatar(v) {
   if (/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/.test(v) && v.length < 200000) return v;
   return "";
 }
+// background colours for the site avatars: the brand colours except the darkest one
+var AVATAR_BGS = { azure: "#032c7b", royal: "#0464de", lime: "#aee37b", frost: "#e9fff4" };
+function cleanBg(v) {
+  return typeof v === "string" && AVATAR_BGS[v] ? v : "";
+}
+function avatarBgFor(src, bg) {
+  return src && src.indexOf("Images/") === 0 ? bg || "frost" : "";
+}
+function tintCover(src, bg) {
+  var banner = document.querySelector("#pOverlay .profile-banner");
+  if (!banner) return;
+  var k = avatarBgFor(src, bg);
+  if (k) banner.setAttribute("data-bg", k);
+  else banner.removeAttribute("data-bg");
+}
 function avatarSrc() {
   return profile.avatar || (currentUser && currentUser.photoURL) || "";
 }
@@ -276,13 +293,15 @@ function photoToDataUrl(file) {
     img.src = url;
   });
 }
-function paintAvatar(host, src, initialText) {
+function paintAvatar(host, src, initialText, bg) {
   host.textContent = "";
   if (src) {
     var img = el("img", "avatar" + (src.indexOf("Images/") === 0 ? " is-preset" : ""));
     img.alt = "";
     img.referrerPolicy = "no-referrer";
     img.src = src;
+    var bgKey = avatarBgFor(src, bg);
+    if (bgKey) img.style.background = AVATAR_BGS[bgKey];
     host.append(img);
   } else {
     var ini = el("div", "avatar me-initial");
@@ -293,7 +312,7 @@ function paintAvatar(host, src, initialText) {
 }
 
 var currentUser = null;
-var profile = { firstName: "", lastName: "", gender: "", phone: "", level: "", avatar: "" };
+var profile = { firstName: "", lastName: "", gender: "", phone: "", level: "", avatar: "", avatarBg: "" };
 var profileLoaded = false;
 var editing = false;
 var justSaved = false;
@@ -354,6 +373,8 @@ function renderPage() {
     img.alt = "";
     img.referrerPolicy = "no-referrer";
     img.src = hSrc;
+    var hBg = avatarBgFor(hSrc, profile.avatarBg);
+    if (hBg) img.style.background = AVATAR_BGS[hBg];
     user.append(img);
   } else {
     var ini = el("span", "student-initial", (first || currentUser.email || "?").charAt(0).toUpperCase());
@@ -411,7 +432,8 @@ function renderModal() {
   var fullName = [names.first, names.last].filter(Boolean).join(" ");
   $("pTitle").textContent = fullName || t("profileNoName");
 
-  paintAvatar($("pAvatar"), avatarSrc(), fullName);
+  paintAvatar($("pAvatar"), avatarSrc(), fullName, profile.avatarBg);
+  tintCover(avatarSrc(), profile.avatarBg);
 
   var body = $("pBody");
   body.textContent = "";
@@ -419,9 +441,8 @@ function renderModal() {
   if (!editing) {
     var g = genderText(profile.gender);
     var plDone = placement && placement.status === "done" && placement.total;
-    if (g || profile.level || plDone) {
+    if (profile.level || plDone) {
       var meta = el("div", "profile-meta");
-      if (g) meta.append(el("span", "profile-chip", g));
       if (profile.level) meta.append(el("span", "profile-chip", profile.level));
       if (plDone) {
         var pp = placement.correct / placement.total;
@@ -502,6 +523,7 @@ function renderModal() {
 
   // ---- profile photo picker ----
   var pending = profile.avatar;
+  var pendingBg = profile.avatarBg;
   var photoBox = el("div", "av-box");
   photoBox.append(el("span", "me-row-label", t("profilePhoto")));
   var avRow = el("div", "av-row");
@@ -522,8 +544,10 @@ function renderModal() {
   panel.hidden = true;
   function previewNow() {
     var src = pending || (currentUser && currentUser.photoURL) || "";
-    paintAvatar(avPreview, src, (fFirst.input.value || names.first || "").trim());
-    paintAvatar($("pAvatar"), src, (fFirst.input.value || names.first || "").trim());
+    var nm = (fFirst.input.value || names.first || "").trim();
+    paintAvatar(avPreview, src, nm, pendingBg);
+    paintAvatar($("pAvatar"), src, nm, pendingBg);
+    tintCover(src, pendingBg);
   }
   function drawGrid() {
     panel.textContent = "";
@@ -542,6 +566,7 @@ function renderModal() {
       var im = el("img");
       im.alt = "";
       im.src = path;
+      b.style.background = AVATAR_BGS[pendingBg || "frost"];
       b.append(im);
       b.addEventListener("click", function () {
         pending = path;
@@ -551,6 +576,22 @@ function renderModal() {
       grid.append(b);
     });
     panel.append(grid);
+    panel.append(el("span", "av-bg-label", t("avBg")));
+    var sw = el("div", "av-swatches");
+    Object.keys(AVATAR_BGS).forEach(function (key) {
+      var b = el("button", "av-sw" + ((pendingBg || "frost") === key ? " is-on" : ""));
+      b.type = "button";
+      b.style.background = AVATAR_BGS[key];
+      b.setAttribute("aria-label", key);
+      b.setAttribute("aria-pressed", (pendingBg || "frost") === key ? "true" : "false");
+      b.addEventListener("click", function () {
+        pendingBg = key;
+        previewNow();
+        drawGrid();
+      });
+      sw.append(b);
+    });
+    panel.append(sw);
   }
   var upBtn = avBtn(t("avUpload"), I_UPLOAD, function () {
     fileIn.click();
@@ -600,6 +641,7 @@ function renderModal() {
       phone: fPhone.input.value.trim(),
       level: lSelect.value,
       avatar: cleanAvatar(pending),
+      avatarBg: cleanBg(pendingBg),
     };
     saveBtn.disabled = true;
     try {
@@ -1557,6 +1599,7 @@ async function main() {
           phone: String(d.phone || ""),
           level: String(d.level || ""),
           avatar: cleanAvatar(d.avatar),
+          avatarBg: cleanBg(d.avatarBg),
         };
       }
     } catch (e) {
