@@ -113,7 +113,7 @@ html[dir="rtl"] .test-modal {
   align-items: center;
   gap: 5px;
   height: 34px;
-  margin: -9px 0 10px;
+  margin: -9px 0 6px;
   padding-inline-end: 46px;
 }
 .tc-seg {
@@ -801,11 +801,7 @@ html[dir="rtl"] .tc-flip svg {
   background: linear-gradient(90deg, #4aa52f, #aee37b);
 }
 
-@media (max-width: 360px) {
-  .tc-tiles {
-    grid-template-columns: 1fr;
-  }
-}
+
 @media (prefers-reduced-motion: reduce) {
   .test-modal.is-entering,
   .test-modal.is-leaving,
@@ -822,5 +818,313 @@ html[dir="rtl"] .tc-flip svg {
   .tc-ring-fill,
   .tc-tile-bar i {
     transition: none;
+  }
+}
+
+/* ---------- fixed header of a question card (progress + topic stay put) ---------- */
+.tc-fixed {
+  flex: none;
+  padding: 26px 22px 12px;
+  border-bottom: 1px solid var(--color-light-blue);
+  background: var(--color-surface);
+  position: relative;
+  z-index: 1;
+}
+.tc-fixed[hidden] {
+  display: none;
+}
+.tc-fixed + .modal-scroll {
+  padding-top: 16px;
+}
+.tc-fixed .tc-head {
+  margin-bottom: 0;
+  flex-wrap: nowrap;
+}
+.tc-topic {
+  min-width: 0;
+  max-width: 100%;
+}
+.tc-topic-name {
+  white-space: nowrap;
+}
+.tc-topic-dom {
+  white-space: pre;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tc-count {
+  flex: none;
+  white-space: nowrap;
+}
+@media (max-width: 420px) {
+  .tc-topic-dom {
+    display: none;
+  }
+}
+
+/* ---------- result: two domain tiles stay side by side ---------- */
+.tc-tiles {
+  grid-template-columns: 1fr 1fr;
+}
+@media (max-width: 420px) {
+  .tc-tile {
+    padding: 11px 10px;
+  }
+  .tc-tile-head {
+    gap: 6px;
+    font-size: 12px;
+  }
+  .tc-tile-head b {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .tc-tile-ico {
+    width: 26px;
+    height: 26px;
+  }
+  .tc-tile-score b {
+    font-size: 26px;
+  }
+  .tc-level {
+    font-size: 10.5px;
+    padding: 3px 8px;
+  }
+}
+
+/* ---------- "Your level" card on the student home ---------- */
+.placement-card {
+  position: relative;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+  overflow: hidden;
+  padding: 20px;
+  border-radius: 22px;
+}
+.placement-card::after {
+  content: "";
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  height: 5px;
+  background: linear-gradient(90deg, #0464de, #aee37b);
+}
+.pc-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.pc-head-text {
+  flex: 1;
+  min-width: 0;
+}
+.placement-card h3 {
+  margin: 0;
+  font-size: 17px;
+}
+.placement-card p {
+  margin: 3px 0 0;
+}
+.pc-ico {
+  width: 46px;
+  height: 46px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 15px;
+  background: linear-gradient(135deg, #0464de, #032c7b);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(4, 100, 222, 0.28);
+}
+.pc-ico svg {
+  width: 24px;
+  height: 24px;
+}
+.pc-score {
+  flex: none;
+  padding: 6px 14px;
+  border-radius: 14px;
+  background: var(--color-navy);
+  color: var(--color-accent);
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+}
+.pc-score b {
+  font-size: 22px;
+  font-weight: 900;
+}
+.pc-score small {
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0.8;
+}
+.pc-bars {
+  gap: 14px;
+  margin-top: 16px;
+}
+.domain-head {
+  align-items: center;
+}
+.domain-name {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+.domain-ico {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #0464de, #032c7b);
+  color: #fff;
+}
+.domain-row[data-d="sti"] .domain-ico {
+  background: linear-gradient(135deg, #4aa52f, #aee37b);
+  color: #01092d;
+}
+.domain-ico svg {
+  width: 16px;
+  height: 16px;
+}
+.domain-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+.domain-meta .tc-level {
+  margin-top: 0;
+}
+.domain-bar {
+  height: 10px;
+}
+.domain-bar i {
+  transition: width 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.pc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.pc-actions .pc-btn {
+  flex: 1 1 150px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.pc-actions .tc-ico svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* new student: an alert card that asks for attention */
+.placement-card.is-todo {
+  border-color: color-mix(in srgb, #0464de 35%, var(--color-surface));
+  background:
+    radial-gradient(circle at 100% 0%, rgba(174, 227, 123, 0.4), transparent 50%),
+    var(--color-surface);
+  animation: alertGlow 2.4s ease-in-out infinite;
+}
+.pc-alert {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  background: var(--color-navy);
+  color: var(--color-accent);
+}
+.pc-alert::before,
+.pc-alert::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 2px solid #aee37b;
+  animation: alertRing 2.4s ease-out infinite;
+}
+.pc-alert::after {
+  animation-delay: 1.2s;
+}
+.pc-bell {
+  display: grid;
+  transform-origin: 50% 12%;
+  animation: bellRing 2.4s ease-in-out infinite;
+}
+.pc-bell svg {
+  width: 27px;
+  height: 27px;
+}
+.pc-new {
+  display: inline-block;
+  margin-bottom: 5px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #aee37b;
+  color: #01092d;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.pc-btn.is-pulse {
+  animation: btnPulse 2.4s ease-in-out infinite;
+}
+@keyframes alertGlow {
+  50% {
+    box-shadow: 0 0 0 5px rgba(4, 100, 222, 0.1), 0 10px 28px rgba(4, 100, 222, 0.14);
+  }
+}
+@keyframes alertRing {
+  from {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.55);
+  }
+}
+@keyframes bellRing {
+  0%, 55%, 100% {
+    transform: rotate(0);
+  }
+  62% {
+    transform: rotate(16deg);
+  }
+  70% {
+    transform: rotate(-14deg);
+  }
+  78% {
+    transform: rotate(10deg);
+  }
+  86% {
+    transform: rotate(-6deg);
+  }
+}
+@keyframes btnPulse {
+  0%, 60%, 100% {
+    box-shadow: 0 0 0 0 rgba(4, 100, 222, 0);
+  }
+  30% {
+    box-shadow: 0 0 0 7px rgba(4, 100, 222, 0.22);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .placement-card.is-todo,
+  .pc-alert::before,
+  .pc-alert::after,
+  .pc-bell,
+  .pc-btn.is-pulse {
+    animation: none;
   }
 }

@@ -61,6 +61,10 @@ var STR = {
     pCorrect: "Correct answer",
     pYours: "Your answer",
     pRetake: "Retake the test",
+    pViewResults: "View my results",
+    pNewBadge: "Start here",
+    pCardTodoBtn: "Take the test",
+    pCardDoneSub: "Based on your placement test",
     pRight: "Correct!",
     pWrong: "Not quite",
     pNoIdea: "No worries",
@@ -133,6 +137,10 @@ var STR = {
     pCorrect: "الجواب الصحيح",
     pYours: "جوابك",
     pRetake: "عاود الاختبار",
+    pViewResults: "شوف النتيجة",
+    pNewBadge: "ابدا من هنا",
+    pCardTodoBtn: "اعمل الاختبار",
+    pCardDoneSub: "على أساس اختبار تحديد المستوى",
     pRight: "صحيح!",
     pWrong: "موش بالضبط",
     pNoIdea: "ما يهمش",
@@ -461,17 +469,22 @@ function domainRows(domains) {
   var wrap = el("div", "pc-bars");
   Object.keys(domains).forEach(function (key) {
     var d = domains[key];
+    var p = pctOf(d);
     var row = el("div", "domain-row");
     row.dataset.d = key;
     var head = el("div", "domain-head");
-    head.append(
-      el("span", "", domainLabel(key)),
-      el("small", "", d.correct + " / " + d.total + " · " + levelWord(pctOf(d))),
-    );
+    var left = el("span", "domain-name");
+    left.append(ico(DOMAIN_ICON[key] || I_CODE, "domain-ico"), el("b", "", domainLabel(key)));
+    var right = el("span", "domain-meta");
+    right.append(el("small", "", d.correct + " / " + d.total), el("span", "tc-level " + levelClass(p), levelWord(p)));
+    head.append(left, right);
     var bar = el("div", "domain-bar");
     var fill = el("i");
-    fill.style.width = Math.round(pctOf(d) * 100) + "%";
+    fill.style.width = "0";
     bar.append(fill);
+    setTimeout(function () {
+      fill.style.width = Math.round(p * 100) + "%";
+    }, 120);
     row.append(head, bar);
     wrap.append(row);
   });
@@ -482,27 +495,58 @@ function renderPlacementCard() {
   var host = $("sPlacement");
   host.textContent = "";
   if (!placementLoaded) return;
-  var card = el("div", "placement-card");
+  var done = placement && placement.status === "done" && placement.domains;
+  var card = el("div", "placement-card " + (done ? "is-done" : "is-todo"));
   var text = el("div", "pc-text");
-  if (placement && placement.status === "done" && placement.domains) {
-    text.append(el("h3", "", t("pCardDoneTitle")));
-    text.append(domainRows(placement.domains));
-    var again = el("button", "pc-btn is-ghost", t("pRetake"));
-    again.type = "button";
-    again.addEventListener("click", function () {
+  var actions = el("div", "pc-actions");
+  if (done) {
+    var head = el("div", "pc-head");
+    head.append(ico(I_CHART, "pc-ico"));
+    var ht = el("div", "pc-head-text");
+    ht.append(el("h3", "", t("pCardDoneTitle")), el("p", "", t("pCardDoneSub")));
+    var tot = el("span", "pc-score");
+    tot.append(el("b", "", String(placement.correct)), el("small", "", "/ " + placement.total));
+    head.append(ht, tot);
+    text.append(head, domainRows(placement.domains));
+    var view = pBtn(t("pViewResults"), "", function () {
+      viewResults();
+    });
+    view.prepend(ico(I_EYE, "tc-ico"));
+    var again = pBtn(t("pRetake"), "is-ghost", function () {
       openTest();
     });
-    card.append(text, again);
+    actions.append(view, again);
   } else {
-    text.append(el("h3", "", t("pCardTodoTitle")), el("p", "", t("pCardTodoText")));
-    var go = el("button", "pc-btn", t("pStart"));
-    go.type = "button";
-    go.addEventListener("click", function () {
+    var halo = el("div", "pc-alert");
+    halo.append(ico(I_BELL, "pc-bell"));
+    var tt = el("div", "pc-head-text");
+    var badge = el("span", "pc-new", t("pNewBadge"));
+    tt.append(badge, el("h3", "", t("pCardTodoTitle")), el("p", "", t("pCardTodoText")));
+    var row = el("div", "pc-head");
+    row.append(halo, tt);
+    text.append(row);
+    var go = pBtn(t("pCardTodoBtn"), "is-pulse", function () {
       openTest();
     });
-    card.append(text, go);
+    go.append(ico(I_ARROW, "tc-ico tc-flip"));
+    actions.append(go);
   }
+  card.append(text, actions);
   host.append(card);
+}
+
+async function viewResults() {
+  if (!placement || !placement.domains) return;
+  if (!(await loadTestData())) return;
+  var picks = {};
+  testData.questions.forEach(function (q) {
+    var v = placement.answers ? placement.answers[q.id] : undefined;
+    picks[q.id] = typeof v === "number" ? v : -1;
+  });
+  test = { step: "result", i: 0, perm: {}, picks: picks, result: placement, saveFailed: false, loadFailed: false };
+  if (menuIsOpen()) closeMenu();
+  $("tOverlay").classList.add("open");
+  renderTest("in");
 }
 
 async function openTest() {
@@ -599,6 +643,9 @@ var I_HELP = S + '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.4a2.6 2.6 0 1 1
 var I_TROPHY = S + '<path d="M8 21h8M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg>';
 var I_ROCKET = S + '<path d="M5 15c-1.5 1.3-2 5-2 5s3.7-.5 5-2"/><path d="M14 4c3-1 6-1 6-1s0 3-1 6l-6 6-5-5z"/><circle cx="15" cy="9" r="1.3"/></svg>';
 var I_CARDS = S + '<rect x="7" y="3" width="13" height="17" rx="2.5" transform="rotate(8 13.5 11.5)"/><rect x="4" y="4" width="13" height="17" rx="2.5"/><path d="M8 11.5h5M8 15h3"/></svg>';
+var I_BELL = S + '<path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>';
+var I_CHART = S + '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>';
+var I_EYE = S + '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
 var I_ARROW = S + '<path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>';
 var TOPICS = {
   algo: { color: "#032c7b", icon: I_FLOW },
@@ -650,6 +697,8 @@ function renderTest(anim) {
   $("tTitle").textContent = test.step === "result" ? t("pResult") : t("pTitle");
   var body = $("tBody");
   body.textContent = "";
+  $("tHead").textContent = "";
+  $("tHead").hidden = true;
   if (test.step === "intro") renderIntroCard(body);
   else if (test.step === "q") renderQuestionCard(body);
   else renderResultCard(body);
@@ -705,13 +754,15 @@ function renderQuestionCard(body) {
     segRow.append(seg);
     return seg;
   });
-  body.append(segRow);
+  var fixedHead = $("tHead");
+  fixedHead.hidden = false;
+  fixedHead.append(segRow);
 
   var head = el("div", "tc-head");
   var badge = el("span", "tc-topic");
-  badge.append(ico(topic.icon, "tc-topic-ico"), el("span", "", String(q.topic || "").toUpperCase() + " · " + domainLabel(q.domain)));
+  badge.append(ico(topic.icon, "tc-topic-ico"), el("span", "tc-topic-name", String(q.topic || "").toUpperCase()), el("span", "tc-topic-dom", " · " + domainLabel(q.domain)));
   head.append(badge, el("span", "tc-count", tf("pQuestion", { n: test.i + 1, total: qs.length })));
-  body.append(head);
+  fixedHead.append(head);
 
   var qText = el("p", "tc-q", q.q);
   qText.setAttribute("dir", "ltr");
