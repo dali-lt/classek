@@ -32,6 +32,13 @@ var STR = {
     profileLastName: "Last name",
     profileGender: "Gender",
     profilePhone: "Phone",
+    profilePhoto: "Profile photo",
+    avUpload: "Upload photo",
+    avChoose: "Choose an avatar",
+    avGoogle: "Use my Google photo",
+    avPickGender: "Choose your gender first to see the avatars.",
+    avFail: "Couldn’t use this image. Try another one.",
+    avPicked: "Selected",
     profileLevel: "Level / section",
     profileLevelHint: "e.g. Bac Informatique",
     profileEmail: "Email",
@@ -112,6 +119,13 @@ var STR = {
     profileLastName: "اللقب",
     profileGender: "الجنس",
     profilePhone: "الهاتف",
+    profilePhoto: "صورة البروفيل",
+    avUpload: "حمّل صورة من جهازك",
+    avChoose: "اختار صورة",
+    avGoogle: "استعمل صورة Google",
+    avPickGender: "اختار الجنس الأول باش تظهرلك الصور.",
+    avFail: "ما نجمتش نستعمل هالصورة. جرّب وحدة أخرى.",
+    avPicked: "مختارة",
     profileLevel: "المستوى / الشعبة",
     profileLevelHint: "مثلا: باك إعلامية",
     profileEmail: "الإيميل",
@@ -207,8 +221,79 @@ function el(tag, cls, text) {
   return node;
 }
 
+// ---- profile photo: one of the 10 site avatars, a small photo from the device, or the Google photo ----
+var AVATARS = {
+  male: [1, 3, 5, 7, 9],
+  female: [2, 4, 6, 8, 10],
+};
+var LEVELS = ["2ème Informatique", "3ème Informatique", "4ème Informatique (Bac)"];
+function cleanAvatar(v) {
+  v = typeof v === "string" ? v : "";
+  if (/^Images\/slide-(10|[1-9])\.svg$/.test(v)) return v;
+  if (/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/.test(v) && v.length < 200000) return v;
+  return "";
+}
+function avatarSrc() {
+  return profile.avatar || (currentUser && currentUser.photoURL) || "";
+}
+function levelOption(v) {
+  v = String(v || "");
+  if (LEVELS.indexOf(v) >= 0) return v;
+  if (/bac|4/i.test(v)) return LEVELS[2];
+  if (/3/.test(v)) return LEVELS[1];
+  if (/2/.test(v)) return LEVELS[0];
+  return "";
+}
+// photo from the device -> small square JPEG (about 15-30 KB) that fits in the profile document
+function photoToDataUrl(file) {
+  return new Promise(function (resolve, reject) {
+    if (!file || !/^image\//.test(file.type) || file.size > 12 * 1024 * 1024) return reject(new Error("bad file"));
+    var url = URL.createObjectURL(file);
+    var img = new Image();
+    img.onload = function () {
+      try {
+        var size = 256;
+        var c = document.createElement("canvas");
+        c.width = c.height = size;
+        var ctx = c.getContext("2d");
+        var side = Math.min(img.naturalWidth, img.naturalHeight);
+        var sx = (img.naturalWidth - side) / 2;
+        var sy = (img.naturalHeight - side) / 2;
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(0, 0, size, size);
+        ctx.drawImage(img, sx, sy, side, side, 0, 0, size, size);
+        var out = c.toDataURL("image/jpeg", 0.85);
+        URL.revokeObjectURL(url);
+        resolve(out);
+      } catch (e) {
+        reject(e);
+      }
+    };
+    img.onerror = function () {
+      URL.revokeObjectURL(url);
+      reject(new Error("bad image"));
+    };
+    img.src = url;
+  });
+}
+function paintAvatar(host, src, initialText) {
+  host.textContent = "";
+  if (src) {
+    var img = el("img", "avatar" + (src.indexOf("Images/") === 0 ? " is-preset" : ""));
+    img.alt = "";
+    img.referrerPolicy = "no-referrer";
+    img.src = src;
+    host.append(img);
+  } else {
+    var ini = el("div", "avatar me-initial");
+    if (initialText) ini.textContent = initialText.charAt(0).toUpperCase();
+    else ini.innerHTML = ICON_USER; // static, trusted SVG
+    host.append(ini);
+  }
+}
+
 var currentUser = null;
-var profile = { firstName: "", lastName: "", gender: "", phone: "", level: "" };
+var profile = { firstName: "", lastName: "", gender: "", phone: "", level: "", avatar: "" };
 var profileLoaded = false;
 var editing = false;
 var justSaved = false;
@@ -263,11 +348,12 @@ function renderPage() {
   user.setAttribute("aria-label", t("account"));
   user.title = t("account");
   user.textContent = "";
-  if (currentUser.photoURL) {
-    var img = el("img");
+  var hSrc = avatarSrc();
+  if (hSrc) {
+    var img = el("img", hSrc.indexOf("Images/") === 0 ? "is-preset" : "");
     img.alt = "";
     img.referrerPolicy = "no-referrer";
-    img.src = currentUser.photoURL;
+    img.src = hSrc;
     user.append(img);
   } else {
     var ini = el("span", "student-initial", (first || currentUser.email || "?").charAt(0).toUpperCase());
@@ -325,20 +411,7 @@ function renderModal() {
   var fullName = [names.first, names.last].filter(Boolean).join(" ");
   $("pTitle").textContent = fullName || t("profileNoName");
 
-  var av = $("pAvatar");
-  av.textContent = "";
-  if (currentUser && currentUser.photoURL) {
-    var img = el("img", "avatar");
-    img.alt = "";
-    img.referrerPolicy = "no-referrer";
-    img.src = currentUser.photoURL;
-    av.append(img);
-  } else {
-    var ini = el("div", "avatar me-initial");
-    if (fullName) ini.textContent = fullName.charAt(0).toUpperCase();
-    else ini.innerHTML = ICON_USER; // static, trusted SVG
-    av.append(ini);
-  }
+  paintAvatar($("pAvatar"), avatarSrc(), fullName);
 
   var body = $("pBody");
   body.textContent = "";
@@ -407,9 +480,115 @@ function renderModal() {
   gLabel.append(gSelect);
   var fPhone = field(t("profilePhone"), profile.phone, "tel", 30);
   fPhone.input.setAttribute("dir", "ltr");
-  var fLevel = field(t("profileLevel"), profile.level, "text", 60, t("profileLevelHint"));
+  var lLabel = el("label", "me-field");
+  lLabel.append(el("span", "me-row-label", t("profileLevel")));
+  var lSelect = el("select", "me-input");
+  var legacy = String(profile.level || "");
+  var chosen = levelOption(legacy);
+  var optList = [["", "—"]].concat(
+    LEVELS.map(function (v) {
+      return [v, v];
+    }),
+  );
+  if (legacy && !chosen) optList.push([legacy, legacy]); // keep an old free-text value instead of losing it
+  optList.forEach(function (pair) {
+    var opt = el("option", "", pair[1]);
+    opt.value = pair[0];
+    lSelect.append(opt);
+  });
+  lSelect.value = chosen || legacy;
+  lLabel.append(lSelect);
   var errorLine = el("p", "me-hint");
-  form.append(fFirst.label, fLast.label, gLabel, fPhone.label, fLevel.label, errorLine);
+
+  // ---- profile photo picker ----
+  var pending = profile.avatar;
+  var photoBox = el("div", "av-box");
+  photoBox.append(el("span", "me-row-label", t("profilePhoto")));
+  var avRow = el("div", "av-row");
+  var avPreview = el("div", "av-preview");
+  var avBtns = el("div", "av-btns");
+  var fileIn = el("input");
+  fileIn.type = "file";
+  fileIn.accept = "image/*";
+  fileIn.hidden = true;
+  function avBtn(label, icon, onClick) {
+    var b = el("button", "av-btn");
+    b.type = "button";
+    b.append(ico(icon, "av-btn-ico"), el("span", "", label));
+    b.addEventListener("click", onClick);
+    return b;
+  }
+  var panel = el("div", "av-panel");
+  panel.hidden = true;
+  function previewNow() {
+    var src = pending || (currentUser && currentUser.photoURL) || "";
+    paintAvatar(avPreview, src, (fFirst.input.value || names.first || "").trim());
+    paintAvatar($("pAvatar"), src, (fFirst.input.value || names.first || "").trim());
+  }
+  function drawGrid() {
+    panel.textContent = "";
+    var list = AVATARS[gSelect.value];
+    if (!list) {
+      panel.append(el("p", "av-hint", t("avPickGender")));
+      return;
+    }
+    var grid = el("div", "av-grid");
+    list.forEach(function (n) {
+      var path = "Images/slide-" + n + ".svg";
+      var b = el("button", "av-opt" + (pending === path ? " is-on" : ""));
+      b.type = "button";
+      b.setAttribute("aria-label", t("avChoose") + " " + n);
+      b.setAttribute("aria-pressed", pending === path ? "true" : "false");
+      var im = el("img");
+      im.alt = "";
+      im.src = path;
+      b.append(im);
+      b.addEventListener("click", function () {
+        pending = path;
+        previewNow();
+        drawGrid();
+      });
+      grid.append(b);
+    });
+    panel.append(grid);
+  }
+  var upBtn = avBtn(t("avUpload"), I_UPLOAD, function () {
+    fileIn.click();
+  });
+  var chooseBtn = avBtn(t("avChoose"), I_SMILE, function () {
+    panel.hidden = !panel.hidden;
+    chooseBtn.classList.toggle("is-open", !panel.hidden);
+    if (!panel.hidden) drawGrid();
+  });
+  avBtns.append(upBtn, chooseBtn);
+  if (currentUser && currentUser.photoURL) {
+    var gBtn = avBtn(t("avGoogle"), I_GLOBE, function () {
+      pending = "";
+      previewNow();
+      if (!panel.hidden) drawGrid();
+    });
+    avBtns.append(gBtn);
+  }
+  fileIn.addEventListener("change", async function () {
+    var f = fileIn.files && fileIn.files[0];
+    fileIn.value = "";
+    if (!f) return;
+    try {
+      pending = await photoToDataUrl(f);
+      errorLine.textContent = "";
+      previewNow();
+      if (!panel.hidden) drawGrid();
+    } catch (e) {
+      errorLine.textContent = t("avFail");
+    }
+  });
+  gSelect.addEventListener("change", function () {
+    if (!panel.hidden) drawGrid();
+  });
+  avRow.append(avPreview, avBtns);
+  photoBox.append(avRow, panel, fileIn);
+  previewNow();
+  form.append(photoBox, fFirst.label, fLast.label, gLabel, fPhone.label, lLabel, errorLine);
   var saveBtn = pButton(t("profileSave"), ICON_CHECK, null, "submit");
   form.append(saveBtn);
   form.addEventListener("submit", async function (e) {
@@ -419,7 +598,8 @@ function renderModal() {
       lastName: fLast.input.value.trim(),
       gender: gSelect.value,
       phone: fPhone.input.value.trim(),
-      level: fLevel.input.value.trim(),
+      level: lSelect.value,
+      avatar: cleanAvatar(pending),
     };
     saveBtn.disabled = true;
     try {
@@ -713,6 +893,8 @@ var I_EYE = S + '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><ci
 var I_SPROUT = S + '<path d="M12 21v-9"/><path d="M12 12c0-4 2.5-6 7-6 0 4-2.5 6-7 6z"/><path d="M12 15c0-3-2-5-6-5 0 3 2 5 6 5z"/></svg>';
 var I_TARGET = S + '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/></svg>';
 var I_CLOCK = S + '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2"/><path d="M9.5 3h5"/></svg>';
+var I_UPLOAD = S + '<path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>';
+var I_SMILE = S + '<circle cx="12" cy="12" r="9"/><path d="M8.5 14a4.2 4.2 0 0 0 7 0"/><path d="M9 9.5h.01M15 9.5h.01"/></svg>';
 var I_ARROW = S + '<path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>';
 var TOPICS = {
   algo: { color: "#032c7b", icon: I_FLOW },
@@ -1374,6 +1556,7 @@ async function main() {
           gender: d.gender === "male" || d.gender === "female" ? d.gender : "",
           phone: String(d.phone || ""),
           level: String(d.level || ""),
+          avatar: cleanAvatar(d.avatar),
         };
       }
     } catch (e) {

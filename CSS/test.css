@@ -1530,3 +1530,125 @@ html[dir="rtl"] .tc-timer i {
     grid-row: 2;
   }
 }
+
+/* ---------- profile photo picker ---------- */
+.avatar.is-preset,
+.student-user img.is-preset {
+  background: #fff;
+  object-fit: cover;
+}
+.av-box {
+  display: grid;
+  gap: 8px;
+}
+.av-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.av-preview {
+  width: 68px;
+  height: 68px;
+  flex: none;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #fff;
+  border: 2px solid var(--color-light-blue);
+  display: grid;
+  place-items: center;
+}
+.av-preview .avatar,
+.av-preview .me-initial {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  object-fit: cover;
+  font-weight: 800;
+}
+.av-preview .me-initial svg {
+  width: 30px;
+  height: 30px;
+}
+.av-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+.av-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 6px 13px;
+  border: 1.5px solid var(--color-border, #dbe5f2);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-navy);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.av-btn:hover,
+.av-btn.is-open {
+  background: var(--color-navy);
+  border-color: var(--color-navy);
+  color: #fff;
+}
+.av-btn-ico {
+  display: grid;
+}
+.av-btn-ico svg {
+  width: 16px;
+  height: 16px;
+}
+.av-panel {
+  padding: 12px;
+  border: 1px solid var(--color-light-blue);
+  border-radius: 18px;
+  background: #fff;
+  animation: fbIn 0.25s ease both;
+}
+.av-panel[hidden] {
+  display: none;
+}
+.av-hint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  text-align: center;
+}
+.av-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+.av-opt {
+  position: relative;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 2px solid var(--color-light-blue);
+  border-radius: 50%;
+  background: #fff;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.av-opt img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.av-opt:hover {
+  transform: translateY(-2px);
+  border-color: #0464de;
+}
+.av-opt.is-on {
+  border-color: #aee37b;
+  box-shadow: 0 0 0 3px rgba(174, 227, 123, 0.55);
+}
