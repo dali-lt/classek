@@ -89,7 +89,8 @@ html[dir="rtl"] .test-modal {
 @keyframes cardOut {
   to {
     opacity: 0;
-    transform: translateX(calc(var(--dir) * -78%)) rotate(calc(var(--dir) * -13deg));
+    transform: translateX(calc(var(--dir) * -78%))
+      rotate(calc(var(--dir) * -13deg));
   }
 }
 @keyframes cardShake {
@@ -417,7 +418,8 @@ html[dir="rtl"] .tc-flip svg {
 @keyframes nextPulse {
   0%,
   100% {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary) 40%, transparent);
+    box-shadow: 0 0 0 0
+      color-mix(in srgb, var(--color-primary) 40%, transparent);
   }
   60% {
     box-shadow: 0 0 0 9px transparent;
@@ -801,7 +803,6 @@ html[dir="rtl"] .tc-flip svg {
   background: linear-gradient(90deg, #4aa52f, #aee37b);
 }
 
-
 @media (prefers-reduced-motion: reduce) {
   .test-modal.is-entering,
   .test-modal.is-leaving,
@@ -1028,7 +1029,11 @@ html[dir="rtl"] .tc-flip svg {
 .placement-card.is-todo {
   border-color: color-mix(in srgb, #0464de 35%, var(--color-surface));
   background:
-    radial-gradient(circle at 100% 0%, rgba(174, 227, 123, 0.4), transparent 50%),
+    radial-gradient(
+      circle at 100% 0%,
+      rgba(174, 227, 123, 0.4),
+      transparent 50%
+    ),
     var(--color-surface);
   animation: alertGlow 2.4s ease-in-out infinite;
 }
@@ -1040,8 +1045,8 @@ html[dir="rtl"] .tc-flip svg {
   display: grid;
   place-items: center;
   border-radius: 18px;
-  background: var(--color-navy);
-  color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-navy);
 }
 .pc-alert::before,
 .pc-alert::after {
@@ -1081,7 +1086,9 @@ html[dir="rtl"] .tc-flip svg {
 }
 @keyframes alertGlow {
   50% {
-    box-shadow: 0 0 0 5px rgba(4, 100, 222, 0.1), 0 10px 28px rgba(4, 100, 222, 0.14);
+    box-shadow:
+      0 0 0 5px rgba(4, 100, 222, 0.1),
+      0 10px 28px rgba(4, 100, 222, 0.14);
   }
 }
 @keyframes alertRing {
@@ -1095,7 +1102,9 @@ html[dir="rtl"] .tc-flip svg {
   }
 }
 @keyframes bellRing {
-  0%, 55%, 100% {
+  0%,
+  55%,
+  100% {
     transform: rotate(0);
   }
   62% {
@@ -1112,7 +1121,9 @@ html[dir="rtl"] .tc-flip svg {
   }
 }
 @keyframes btnPulse {
-  0%, 60%, 100% {
+  0%,
+  60%,
+  100% {
     box-shadow: 0 0 0 0 rgba(4, 100, 222, 0);
   }
   30% {
