@@ -89,8 +89,7 @@ html[dir="rtl"] .test-modal {
 @keyframes cardOut {
   to {
     opacity: 0;
-    transform: translateX(calc(var(--dir) * -78%))
-      rotate(calc(var(--dir) * -13deg));
+    transform: translateX(calc(var(--dir) * -78%)) rotate(calc(var(--dir) * -13deg));
   }
 }
 @keyframes cardShake {
@@ -418,8 +417,7 @@ html[dir="rtl"] .tc-flip svg {
 @keyframes nextPulse {
   0%,
   100% {
-    box-shadow: 0 0 0 0
-      color-mix(in srgb, var(--color-primary) 40%, transparent);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary) 40%, transparent);
   }
   60% {
     box-shadow: 0 0 0 9px transparent;
@@ -803,6 +801,7 @@ html[dir="rtl"] .tc-flip svg {
   background: linear-gradient(90deg, #4aa52f, #aee37b);
 }
 
+
 @media (prefers-reduced-motion: reduce) {
   .test-modal.is-entering,
   .test-modal.is-leaving,
@@ -1029,11 +1028,7 @@ html[dir="rtl"] .tc-flip svg {
 .placement-card.is-todo {
   border-color: color-mix(in srgb, #0464de 35%, var(--color-surface));
   background:
-    radial-gradient(
-      circle at 100% 0%,
-      rgba(174, 227, 123, 0.4),
-      transparent 50%
-    ),
+    radial-gradient(circle at 100% 0%, rgba(174, 227, 123, 0.4), transparent 50%),
     var(--color-surface);
   animation: alertGlow 2.4s ease-in-out infinite;
 }
@@ -1045,8 +1040,8 @@ html[dir="rtl"] .tc-flip svg {
   display: grid;
   place-items: center;
   border-radius: 18px;
-  background: var(--color-accent);
-  color: var(--color-navy);
+  background: var(--color-navy);
+  color: var(--color-accent);
 }
 .pc-alert::before,
 .pc-alert::after {
@@ -1086,9 +1081,7 @@ html[dir="rtl"] .tc-flip svg {
 }
 @keyframes alertGlow {
   50% {
-    box-shadow:
-      0 0 0 5px rgba(4, 100, 222, 0.1),
-      0 10px 28px rgba(4, 100, 222, 0.14);
+    box-shadow: 0 0 0 5px rgba(4, 100, 222, 0.1), 0 10px 28px rgba(4, 100, 222, 0.14);
   }
 }
 @keyframes alertRing {
@@ -1102,9 +1095,7 @@ html[dir="rtl"] .tc-flip svg {
   }
 }
 @keyframes bellRing {
-  0%,
-  55%,
-  100% {
+  0%, 55%, 100% {
     transform: rotate(0);
   }
   62% {
@@ -1121,9 +1112,7 @@ html[dir="rtl"] .tc-flip svg {
   }
 }
 @keyframes btnPulse {
-  0%,
-  60%,
-  100% {
+  0%, 60%, 100% {
     box-shadow: 0 0 0 0 rgba(4, 100, 222, 0);
   }
   30% {
@@ -1197,13 +1186,7 @@ html[dir="rtl"] .tc-flip svg {
   font-weight: 700;
   color: var(--color-text-muted);
 }
-.lv-mid span {
-  flex-basis: 100%;
-  margin-top: 4px;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--color-text-muted);
-}
+
 .lv-legend {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1285,4 +1268,113 @@ html[dir="rtl"] .tc-flip svg {
   .placement-card.is-done .pc-actions .pc-btn {
     flex: 0 1 auto;
   }
+}
+
+/* ---------- one level scale everywhere: weak = red + sprout, average = blue + target, excellent = lime + trophy ---------- */
+.deck-ghost {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.deck.no-ghost .deck-ghost {
+  opacity: 0;
+  transform: scale(0.95);
+}
+.tc-level {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.tc-level-ico {
+  display: grid;
+  place-items: center;
+}
+.tc-level-ico svg {
+  width: 13px;
+  height: 13px;
+}
+.tc-level.is-high {
+  background: color-mix(in srgb, #aee37b 42%, var(--color-surface));
+  color: #2f6f1c;
+}
+.tc-level.is-mid {
+  background: color-mix(in srgb, #0464de 14%, var(--color-surface));
+  color: #0464de;
+}
+.tc-level.is-low {
+  background: color-mix(in srgb, #e0473e 14%, var(--color-surface));
+  color: #b3322b;
+}
+.profile-chip.is-level {
+  padding: 4px 12px;
+  font-weight: 800;
+}
+.lv-overall {
+  flex-basis: auto;
+  margin-top: 6px;
+  padding: 3px 10px;
+  font-size: 11px;
+}
+.lv-gauge {
+  padding-bottom: 38px;
+}
+.lv-mid {
+  bottom: 38px;
+}
+.lv-mid .lv-overall {
+  position: absolute;
+  top: calc(100% + 12px);
+  inset-inline-start: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  white-space: nowrap;
+}
+html[dir="rtl"] .lv-mid .lv-overall {
+  transform: translateX(50%);
+}
+
+/* result hero takes the colour of the level */
+.tc-result-top.is-mid {
+  background:
+    radial-gradient(circle at 85% 0%, rgba(4, 100, 222, 0.7), transparent 55%),
+    linear-gradient(160deg, #01092d, #032c7b);
+}
+.tc-result-top.is-low {
+  background:
+    radial-gradient(circle at 85% 0%, rgba(224, 71, 62, 0.45), transparent 55%),
+    linear-gradient(160deg, #01092d, #1d1240);
+}
+.tc-result-top.is-mid .tc-ring-num b {
+  color: #cfe3ff;
+}
+.tc-result-top.is-low .tc-ring-num b {
+  color: #ffb3ad;
+}
+.tc-medal.is-mid {
+  background: linear-gradient(135deg, #6aa9ff, #0464de);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(4, 100, 222, 0.5);
+}
+.tc-medal.is-low {
+  background: linear-gradient(135deg, #ff8a80, #e0473e);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(224, 71, 62, 0.5);
+}
+.tc-mood-box {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  margin: 6px 0 14px;
+}
+.tc-mood-box .tc-mood {
+  margin: 0;
+}
+.tc-mood-badge {
+  padding: 4px 12px;
+  font-size: 12.5px;
+}
+.tc-mood-badge .tc-level-ico svg {
+  width: 15px;
+  height: 15px;
+}
+.tc-reco-ico {
+  background: var(--color-navy);
 }

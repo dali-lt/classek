@@ -62,6 +62,7 @@ var STR = {
     pYours: "Your answer",
     pRetake: "Retake the test",
     pViewResults: "View my results",
+    pLevelTest: "Level test",
     pOverall: "Overall",
     pNewBadge: "Start here",
     pCardTodoBtn: "Take the test",
@@ -82,9 +83,9 @@ var STR = {
     pCardTodoTitle: "Take the placement test",
     pCardTodoText: "10 questions, about 5 minutes. We’ll suggest where to start.",
     pCardDoneTitle: "Your level",
-    pLevelHigh: "Solid",
-    pLevelMid: "Getting there",
-    pLevelLow: "Needs the basics",
+    pLevelHigh: "Excellent",
+    pLevelMid: "Average",
+    pLevelLow: "Weak",
   },
   ar: {
     hello: "مرحبا",
@@ -139,6 +140,7 @@ var STR = {
     pYours: "جوابك",
     pRetake: "عاود الاختبار",
     pViewResults: "شوف النتيجة",
+    pLevelTest: "اختبار المستوى",
     pOverall: "المستوى العام",
     pNewBadge: "ابدا من هنا",
     pCardTodoBtn: "اعمل الاختبار",
@@ -159,9 +161,9 @@ var STR = {
     pCardTodoTitle: "اعمل اختبار تحديد المستوى",
     pCardTodoText: "10 أسئلة، حوالي 5 دقايق. نقترحو عليك من وين تبدا.",
     pCardDoneTitle: "مستواك",
-    pLevelHigh: "قوي",
-    pLevelMid: "في الطريق",
-    pLevelLow: "يحتاج الأساسيات",
+    pLevelHigh: "رائع",
+    pLevelMid: "متوسط",
+    pLevelLow: "ضعيف",
   },
 };
 
@@ -339,10 +341,17 @@ function renderModal() {
 
   if (!editing) {
     var g = genderText(profile.gender);
-    if (g || profile.level) {
+    var plDone = placement && placement.status === "done" && placement.total;
+    if (g || profile.level || plDone) {
       var meta = el("div", "profile-meta");
       if (g) meta.append(el("span", "profile-chip", g));
       if (profile.level) meta.append(el("span", "profile-chip", profile.level));
+      if (plDone) {
+        var pp = placement.correct / placement.total;
+        var lb = levelBadge(pp, placement.correct + "/" + placement.total, "profile-chip is-level");
+        lb.title = t("pLevelTest");
+        meta.append(lb);
+      }
       body.append(meta);
     }
     var rows = el("div", "me-rows");
@@ -464,8 +473,22 @@ function domainLabel(key) {
 function pctOf(d) {
   return d && d.total ? d.correct / d.total : 0;
 }
+// One scale for the whole app: under 5/10 weak, 5-6/10 average, 7/10 and up excellent.
+function levelKey(p) {
+  return p >= 0.7 ? "high" : p >= 0.5 ? "mid" : "low";
+}
 function levelWord(p) {
-  return p >= 0.8 ? t("pLevelHigh") : p >= 0.4 ? t("pLevelMid") : t("pLevelLow");
+  var k = levelKey(p);
+  return k === "high" ? t("pLevelHigh") : k === "mid" ? t("pLevelMid") : t("pLevelLow");
+}
+function levelIcon(p) {
+  var k = levelKey(p);
+  return k === "high" ? I_TROPHY : k === "mid" ? I_TARGET : I_SPROUT;
+}
+function levelBadge(p, extra, cls) {
+  var b = el("span", "tc-level is-" + levelKey(p) + (cls ? " " + cls : ""));
+  b.append(ico(levelIcon(p), "tc-level-ico"), el("span", "", levelWord(p) + (extra ? " · " + extra : "")));
+  return b;
 }
 // Two nested half-rings, like the teacher dashboard gauge: the first domain is the outer ring and
 // fills from the left, the second is the inner ring and fills from the right. Overall score in the middle.
@@ -494,7 +517,9 @@ function levelGauge(res) {
   svg.innerHTML = html;
   gauge.append(svg);
   var mid = el("div", "lv-mid");
-  mid.append(el("b", "", String(res.correct)), el("small", "", "/ " + res.total), el("span", "", t("pOverall")));
+  mid.append(el("b", "", String(res.correct)), el("small", "", "/ " + res.total));
+  var overallBadge = levelBadge(res.total ? res.correct / res.total : 0, "", "lv-overall");
+  mid.append(overallBadge);
   gauge.append(mid);
   wrap.append(gauge);
 
@@ -508,7 +533,7 @@ function levelGauge(res) {
     var txt = el("div", "lv-item-text");
     txt.append(el("b", "", domainLabel(key)));
     var line = el("span", "lv-item-line");
-    line.append(el("em", "", d.correct + " / " + d.total), el("span", "tc-level " + levelClass(p), levelWord(p)));
+    line.append(el("em", "", d.correct + " / " + d.total), levelBadge(p));
     txt.append(line);
     item.append(txt);
     legend.append(item);
@@ -544,10 +569,7 @@ function renderPlacementCard() {
       viewResults();
     });
     view.prepend(ico(I_EYE, "tc-ico"));
-    var again = pBtn(t("pRetake"), "is-ghost", function () {
-      openTest();
-    });
-    actions.append(view, again);
+    actions.append(view);
   } else {
     var halo = el("div", "pc-alert");
     halo.append(ico(I_BELL, "pc-bell"));
@@ -678,6 +700,8 @@ var I_CARDS = S + '<rect x="7" y="3" width="13" height="17" rx="2.5" transform="
 var I_BELL = S + '<path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>';
 var I_CHART = S + '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>';
 var I_EYE = S + '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+var I_SPROUT = S + '<path d="M12 21v-9"/><path d="M12 12c0-4 2.5-6 7-6 0 4-2.5 6-7 6z"/><path d="M12 15c0-3-2-5-6-5 0 3 2 5 6 5z"/></svg>';
+var I_TARGET = S + '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/></svg>';
 var I_ARROW = S + '<path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>';
 var TOPICS = {
   algo: { color: "#032c7b", icon: I_FLOW },
@@ -693,7 +717,7 @@ function topicOf(key) {
 }
 var DOMAIN_ICON = { programmation: I_TERM, sti: I_GLOBE };
 function levelClass(p) {
-  return p >= 0.8 ? "is-high" : p >= 0.4 ? "is-mid" : "is-low";
+  return "is-" + levelKey(p);
 }
 
 function testCard() {
@@ -734,6 +758,8 @@ function renderTest(anim) {
   if (test.step === "intro") renderIntroCard(body);
   else if (test.step === "q") renderQuestionCard(body);
   else renderResultCard(body);
+  var deckEl = document.querySelector("#tOverlay .deck");
+  if (deckEl) deckEl.classList.toggle("no-ghost", test.step === "result");
   if (anim) animateCard("is-entering");
 }
 
@@ -917,11 +943,17 @@ function renderResultCard(body) {
   var r = test.result;
   var pct = r.total ? r.correct / r.total : 0;
   var card = testCard();
-  card.style.setProperty("--tc", "#0464de");
-  var moodKey = pct >= 0.9 ? "pPerfect" : pct >= 0.6 ? "pGreat" : pct >= 0.3 ? "pGood" : "pKeep";
+  var lk = levelKey(pct);
+  var LV = {
+    high: { tc: "#4aa52f", g1: "#4f9bff", g2: "#aee37b" },
+    mid: { tc: "#0464de", g1: "#6aa9ff", g2: "#cfe3ff" },
+    low: { tc: "#e0473e", g1: "#ff8a80", g2: "#ffd0cc" },
+  }[lk];
+  card.style.setProperty("--tc", LV.tc);
+  var moodKey = lk === "high" ? (pct >= 0.9 ? "pPerfect" : "pGreat") : lk === "mid" ? "pGood" : "pKeep";
 
-  var top = el("div", "tc-result-top");
-  confetti(top, pct >= 0.6 ? 34 : pct >= 0.3 ? 16 : 0);
+  var top = el("div", "tc-result-top is-" + lk);
+  confetti(top, lk === "high" ? 34 : lk === "mid" ? 14 : 0);
 
   // animated ring
   var C = 2 * Math.PI * 52;
@@ -931,16 +963,18 @@ function renderResultCard(body) {
   svg.setAttribute("viewBox", "0 0 120 120");
   svg.setAttribute("aria-hidden", "true");
   svg.innerHTML =
-    '<defs><linearGradient id="tcGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4f9bff"/><stop offset="1" stop-color="#aee37b"/></linearGradient></defs>' +
+    '<defs><linearGradient id="tcGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="' + LV.g1 + '"/><stop offset="1" stop-color="' + LV.g2 + '"/></linearGradient></defs>' +
     '<circle class="tc-ring-track" cx="60" cy="60" r="52"/>' +
     '<circle class="tc-ring-fill" cx="60" cy="60" r="52" stroke="url(#tcGrad)" stroke-dasharray="' + C.toFixed(1) + '" stroke-dashoffset="' + C.toFixed(1) + '"/>';
   var num = el("div", "tc-ring-num");
   var big = el("b", "", "0");
   num.append(big, el("small", "", "/ " + r.total));
   ring.append(svg, num);
-  var medal = ico(pct >= 0.6 ? I_TROPHY : I_ROCKET, "tc-medal");
+  var medal = ico(levelIcon(pct), "tc-medal is-" + lk);
   top.append(ring, medal);
-  body.append(top, el("h3", "tc-h tc-mood", t(moodKey)));
+  var moodBox = el("div", "tc-mood-box");
+  moodBox.append(el("h3", "tc-h tc-mood", t(moodKey)), levelBadge(pct, r.correct + "/" + r.total, "tc-mood-badge"));
+  body.append(top, moodBox);
 
   var fillCircle = svg.querySelector(".tc-ring-fill");
   requestAnimationFrame(function () {
@@ -972,7 +1006,7 @@ function renderResultCard(body) {
     var bar = el("div", "tc-tile-bar");
     var fill = el("i");
     bar.append(fill);
-    var lvl = el("span", "tc-level " + levelClass(p), levelWord(p));
+    var lvl = levelBadge(p);
     tile.append(th, score, bar, lvl);
     tiles.append(tile);
     setTimeout(function () {
@@ -986,8 +1020,8 @@ function renderResultCard(body) {
     return pctOf(r.domains[k]);
   });
   var reco;
-  if (pcts.every(function (p) { return p >= 0.8; })) reco = t("pRecoBoth");
-  else if (pcts.every(function (p) { return p < 0.4; })) reco = t("pRecoLow");
+  if (pcts.every(function (p) { return p >= 0.7; })) reco = t("pRecoBoth");
+  else if (pcts.every(function (p) { return p < 0.5; })) reco = t("pRecoLow");
   else {
     var weakest = keys[pcts.indexOf(Math.min.apply(null, pcts))];
     reco = tf("pRecoWeak", { domain: domainLabel(weakest) });
@@ -1098,15 +1132,6 @@ function renderSettings() {
   $("setTitle").textContent = t("settings");
   var body = $("setBody");
   body.textContent = "";
-
-  var retake = el("button", "set-row");
-  retake.type = "button";
-  retake.append(el("span", "", t("retakeTest")));
-  retake.addEventListener("click", function () {
-    closeSettings();
-    openTest();
-  });
-  body.append(retake);
 
   // delete account (more options will join this list later)
   var details = el("details", "acct-details");
