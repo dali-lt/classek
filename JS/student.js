@@ -62,6 +62,7 @@ var STR = {
     pYours: "Your answer",
     pRetake: "Retake the test",
     pViewResults: "View my results",
+    pOverall: "Overall",
     pNewBadge: "Start here",
     pCardTodoBtn: "Take the test",
     pCardDoneSub: "Based on your placement test",
@@ -138,6 +139,7 @@ var STR = {
     pYours: "جوابك",
     pRetake: "عاود الاختبار",
     pViewResults: "شوف النتيجة",
+    pOverall: "المستوى العام",
     pNewBadge: "ابدا من هنا",
     pCardTodoBtn: "اعمل الاختبار",
     pCardDoneSub: "على أساس اختبار تحديد المستوى",
@@ -465,29 +467,61 @@ function pctOf(d) {
 function levelWord(p) {
   return p >= 0.8 ? t("pLevelHigh") : p >= 0.4 ? t("pLevelMid") : t("pLevelLow");
 }
-function domainRows(domains) {
-  var wrap = el("div", "pc-bars");
-  Object.keys(domains).forEach(function (key) {
-    var d = domains[key];
-    var p = pctOf(d);
-    var row = el("div", "domain-row");
-    row.dataset.d = key;
-    var head = el("div", "domain-head");
-    var left = el("span", "domain-name");
-    left.append(ico(DOMAIN_ICON[key] || I_CODE, "domain-ico"), el("b", "", domainLabel(key)));
-    var right = el("span", "domain-meta");
-    right.append(el("small", "", d.correct + " / " + d.total), el("span", "tc-level " + levelClass(p), levelWord(p)));
-    head.append(left, right);
-    var bar = el("div", "domain-bar");
-    var fill = el("i");
-    fill.style.width = "0";
-    bar.append(fill);
-    setTimeout(function () {
-      fill.style.width = Math.round(p * 100) + "%";
-    }, 120);
-    row.append(head, bar);
-    wrap.append(row);
+// Two nested half-rings, like the teacher dashboard gauge: the first domain is the outer ring and
+// fills from the left, the second is the inner ring and fills from the right. Overall score in the middle.
+function levelGauge(res) {
+  var NS = "http://www.w3.org/2000/svg";
+  var keys = Object.keys(res.domains);
+  var wrap = el("div", "lv-board");
+  var gauge = el("div", "lv-gauge");
+  var svg = document.createElementNS(NS, "svg");
+  svg.setAttribute("viewBox", "0 0 240 126");
+  svg.setAttribute("aria-hidden", "true");
+  var rings = [
+    { r: 100, path: "M20 120A100 100 0 0 1 220 120" },
+    { r: 72, path: "M192 120A72 72 0 0 0 48 120" },
+  ];
+  var html = "";
+  var fills = [];
+  keys.slice(0, 2).forEach(function (key, i) {
+    var ring = rings[i];
+    var len = Math.PI * ring.r;
+    html += '<path class="lv-track" d="' + ring.path + '"/>';
+    html +=
+      '<path class="lv-arc" data-d="' + key + '" data-len="' + len.toFixed(1) + '" d="' + ring.path +
+      '" stroke-dasharray="' + len.toFixed(1) + '" stroke-dashoffset="' + len.toFixed(1) + '"/>';
   });
+  svg.innerHTML = html;
+  gauge.append(svg);
+  var mid = el("div", "lv-mid");
+  mid.append(el("b", "", String(res.correct)), el("small", "", "/ " + res.total), el("span", "", t("pOverall")));
+  gauge.append(mid);
+  wrap.append(gauge);
+
+  var legend = el("div", "lv-legend");
+  keys.forEach(function (key, i) {
+    var d = res.domains[key];
+    var p = pctOf(d);
+    var item = el("div", "lv-item");
+    item.dataset.d = key;
+    item.append(ico(DOMAIN_ICON[key] || I_CODE, "lv-ico"));
+    var txt = el("div", "lv-item-text");
+    txt.append(el("b", "", domainLabel(key)));
+    var line = el("span", "lv-item-line");
+    line.append(el("em", "", d.correct + " / " + d.total), el("span", "tc-level " + levelClass(p), levelWord(p)));
+    txt.append(line);
+    item.append(txt);
+    legend.append(item);
+    if (i < 2)
+      setTimeout(function () {
+        var arc = svg.querySelector('.lv-arc[data-d="' + key + '"]');
+        if (arc) {
+          var len = parseFloat(arc.getAttribute("data-len"));
+          arc.style.strokeDashoffset = (len * (1 - p)).toFixed(1);
+        }
+      }, 150 + i * 200);
+  });
+  wrap.append(legend);
   return wrap;
 }
 
@@ -504,10 +538,8 @@ function renderPlacementCard() {
     head.append(ico(I_CHART, "pc-ico"));
     var ht = el("div", "pc-head-text");
     ht.append(el("h3", "", t("pCardDoneTitle")), el("p", "", t("pCardDoneSub")));
-    var tot = el("span", "pc-score");
-    tot.append(el("b", "", String(placement.correct)), el("small", "", "/ " + placement.total));
-    head.append(ht, tot);
-    text.append(head, domainRows(placement.domains));
+    head.append(ht);
+    text.append(head, levelGauge(placement));
     var view = pBtn(t("pViewResults"), "", function () {
       viewResults();
     });
