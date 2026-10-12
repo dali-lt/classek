@@ -53,7 +53,11 @@ var STR = {
     pTitle: "Placement test",
     pIntroTitle: "Let’s see where you stand",
     pIntro:
-      "10 quick questions on the basics of Programmation and STI. About 5 minutes, no grade, no pressure. It helps us suggest where to start.",
+      "10 questions picked for your level and your point in the school year. About 5 minutes, no grade, no pressure. It helps us suggest where to start.",
+    pLevelPick: "Your level",
+    pChipStage: "Term {n}",
+    pRecoOneHigh: "Solid start. Pick any chapter.",
+    pRecoOneLow: "Start with the basics.",
     pStart: "Start the test",
     pSkip: "Skip for now",
     pNext: "Next",
@@ -141,7 +145,11 @@ var STR = {
     pTitle: "اختبار تحديد المستوى",
     pIntroTitle: "نشوفو وين وصلت",
     pIntro:
-      "10 أسئلة سريعة على أساسيات Programmation و STI. حوالي 5 دقايق، من غير نقطة ومن غير ضغط. يعاوننا نقترحو عليك من وين تبدا.",
+      "10 أسئلة مختارة على حسب مستواك ووقت السنة الدراسية. حوالي 5 دقايق، من غير نقطة ومن غير ضغط. يعاوننا نقترحو عليك من وين تبدا.",
+    pLevelPick: "مستواك الدراسي",
+    pChipStage: "الثلاثي {n}",
+    pRecoOneHigh: "بداية قوية. اختار أي فصل.",
+    pRecoOneLow: "ابدا بالأساسيات.",
     pStart: "ابدا الاختبار",
     pSkip: "نعملو بعد",
     pNext: "التالي",
@@ -696,6 +704,67 @@ function domainLabel(key) {
   if (d && lang === "ar" && d.label_ar) return d.label_ar;
   return d && d.label ? d.label : key;
 }
+function topicLabel(key) {
+  var tp = testData && testData.topics && testData.topics[key];
+  if (tp && lang === "ar" && tp.label_ar) return tp.label_ar;
+  return tp && tp.label ? tp.label : String(key || "");
+}
+function domainOf(q) {
+  var tp = testData && testData.topics && testData.topics[q.topic];
+  return (tp && tp.domain) || q.domain || "programmation";
+}
+// level code ("2" / "3" / "4") from the profile's level text
+function levelCodeOf(v) {
+  var opt = levelOption(v);
+  var i = LEVELS.indexOf(opt);
+  return i < 0 ? "" : String(i + 2);
+}
+// school year in Tunisia: term 1 = Sep-Dec, term 2 = Jan-Mar, term 3 = Apr-Aug
+function currentStage() {
+  var m = new Date().getMonth();
+  return m >= 8 ? "1" : m <= 2 ? "2" : "3";
+}
+function blueprintFor(code, stage) {
+  var cfg = testData && testData.levels && testData.levels[code];
+  return cfg && cfg.stages ? cfg.stages[stage] || cfg.stages["3"] : null;
+}
+function plannedCount(code, stage) {
+  var bp = blueprintFor(code, stage);
+  if (!bp) return testData ? testData.questions.length : 10;
+  return Object.keys(bp).reduce(function (n, k) {
+    return n + bp[k];
+  }, 0);
+}
+// pick the questions: what this level has studied by this term, drawn at random, easy to hard
+function buildQuestions(code, stage) {
+  var bp = blueprintFor(code, stage);
+  if (!bp) return testData.questions.slice();
+  var range = (testData.difficulty && testData.difficulty[code]) || [1, 3];
+  var chosen = [];
+  Object.keys(bp).forEach(function (tp) {
+    var all = testData.questions.filter(function (q) {
+      return q.topic === tp;
+    });
+    var inRange = all.filter(function (q) {
+      var d = q.d || 2;
+      return d >= range[0] && d <= range[1];
+    });
+    var pool = inRange.length >= bp[tp] ? inRange : all;
+    shuffled(pool.length)
+      .slice(0, bp[tp])
+      .forEach(function (i) {
+        chosen.push(pool[i]);
+      });
+  });
+  var tie = {};
+  chosen.forEach(function (q) {
+    tie[q.id] = Math.random();
+  });
+  chosen.sort(function (a, b) {
+    return (a.d || 2) - (b.d || 2) || tie[a.id] - tie[b.id];
+  });
+  return chosen;
+}
 function pctOf(d) {
   return d && d.total ? d.correct / d.total : 0;
 }
@@ -824,28 +893,33 @@ async function viewResults() {
   if (!placement || !placement.domains) return;
   if (!(await loadTestData())) return;
   var picks = {};
+  var byId = {};
   testData.questions.forEach(function (q) {
+    byId[q.id] = q;
+  });
+  var qs = (placement.qids || [])
+    .map(function (id) {
+      return byId[id];
+    })
+    .filter(Boolean);
+  qs.forEach(function (q) {
     var v = placement.answers ? placement.answers[q.id] : undefined;
     picks[q.id] = typeof v === "number" ? v : -1;
   });
-  test = { step: "result", i: 0, perm: {}, picks: picks, timeouts: {}, result: placement, saveFailed: false, loadFailed: false };
+  test = { step: "result", i: 0, perm: {}, picks: picks, timeouts: {}, qs: qs, result: placement, saveFailed: false, loadFailed: false };
   if (menuIsOpen()) closeMenu();
   $("tOverlay").classList.add("open");
   renderTest("in");
 }
 
 async function openTest() {
-  test = { step: "intro", i: 0, perm: {}, picks: {}, timeouts: {}, result: null, saveFailed: false, loadFailed: false };
+  test = { step: "intro", i: 0, perm: {}, picks: {}, timeouts: {}, qs: [], level: levelCodeOf(profile.level), stage: currentStage(), result: null, saveFailed: false, loadFailed: false };
   if (menuIsOpen()) closeMenu();
   if (modalIsOpen()) closeModal();
   $("tOverlay").classList.add("open");
   renderTest("in");
   var ok = await loadTestData();
   test.loadFailed = !ok;
-  if (ok)
-    testData.questions.forEach(function (q) {
-      test.perm[q.id] = shuffled(q.choices.length);
-    });
   renderTest();
 }
 async function closeTest() {
@@ -864,8 +938,9 @@ function scoreTest() {
   var domains = {};
   var total = 0;
   var right = 0;
-  testData.questions.forEach(function (q) {
-    var d = domains[q.domain] || (domains[q.domain] = { correct: 0, total: 0 });
+  test.qs.forEach(function (q) {
+    var dk = domainOf(q);
+    var d = domains[dk] || (domains[dk] = { correct: 0, total: 0 });
     d.total++;
     total++;
     if (test.picks[q.id] === q.answer) {
@@ -880,7 +955,7 @@ async function finishTest() {
   test.result = res;
   test.step = "result";
   var answers = {};
-  testData.questions.forEach(function (q) {
+  test.qs.forEach(function (q) {
     answers[q.id] = typeof test.picks[q.id] === "number" ? test.picks[q.id] : -1;
   });
   var doc = {
@@ -890,6 +965,11 @@ async function finishTest() {
     total: res.total,
     domains: res.domains,
     answers: answers,
+    qids: test.qs.map(function (q) {
+      return q.id;
+    }),
+    level: test.level || "",
+    stage: test.stage || "",
   };
   placement = doc;
   renderTest("in");
@@ -938,6 +1018,11 @@ var I_CLOCK = S + '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2"/><path
 var I_UPLOAD = S + '<path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>';
 var I_SMILE = S + '<circle cx="12" cy="12" r="9"/><path d="M8.5 14a4.2 4.2 0 0 0 7 0"/><path d="M9 9.5h.01M15 9.5h.01"/></svg>';
 var I_ARROW = S + '<path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>';
+var I_CUBE = S + '<path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg>';
+var I_LAYERS = S + '<path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/></svg>';
+var I_FILE = S + '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>';
+var I_LOOP = S + '<path d="M4 12a8 8 0 0 1 14-5.3L20 9"/><path d="M20 4v5h-5"/><path d="M20 12a8 8 0 0 1-14 5.3L4 15"/><path d="M4 20v-5h5"/></svg>';
+var I_GRID = S + '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>';
 var TOPICS = {
   algo: { color: "#032c7b", icon: I_FLOW },
   python: { color: "#0464de", icon: I_TERM },
@@ -946,6 +1031,13 @@ var TOPICS = {
   js: { color: "#4aa52f", icon: I_BRACES },
   php: { color: "#032c7b", icon: I_SERVER },
   mysql: { color: "#4aa52f", icon: I_DB },
+  modular: { color: "#0464de", icon: I_CUBE },
+  records: { color: "#032c7b", icon: I_LAYERS },
+  files: { color: "#4aa52f", icon: I_FILE },
+  recursion: { color: "#01092d", icon: I_LOOP },
+  numeric: { color: "#0464de", icon: I_TARGET },
+  binary: { color: "#032c7b", icon: I_GRID },
+  integration: { color: "#4aa52f", icon: I_CARDS },
 };
 function topicOf(key) {
   return TOPICS[key] || { color: "#0464de", icon: I_CODE };
@@ -1003,21 +1095,64 @@ function renderIntroCard(body) {
   var hero = el("div", "tc-hero");
   hero.append(ico(I_CARDS, "tc-hero-ico"));
   body.append(hero, el("h3", "tc-h", t("pIntroTitle")), el("p", "tc-p", t("pIntro")));
-  var n = testData ? testData.questions.length : 10;
+
+  // which year the student is in decides which questions they get
+  var pick = el("div", "tc-levelpick");
+  pick.append(el("span", "tc-levelpick-label", t("pLevelPick")));
+  var pills = el("div", "tc-levelpills");
+  var start;
   var chips = el("div", "tc-chips");
-  [
-    [I_CODE, tf("pChipQ", { n: n }), "c1"],
-    [I_CLOCK, t("pChipTimed"), "c2"],
-    [I_CHECK, t("pChipNoGrade"), "c3"],
-  ].forEach(function (c) {
-    var chip = el("span", "tc-chip " + c[2]);
-    chip.append(ico(c[0]), el("span", "", c[1]));
-    chips.append(chip);
+  function paintChips() {
+    chips.textContent = "";
+    var n = testData ? plannedCount(test.level, test.stage) : 10;
+    [
+      [I_CODE, tf("pChipQ", { n: n }), "c1"],
+      [I_TARGET, tf("pChipStage", { n: test.stage }), "c1"],
+      [I_CLOCK, t("pChipTimed"), "c2"],
+      [I_CHECK, t("pChipNoGrade"), "c3"],
+    ].forEach(function (c) {
+      var chip = el("span", "tc-chip " + c[2]);
+      chip.append(ico(c[0]), el("span", "", c[1]));
+      chips.append(chip);
+    });
+  }
+  ["2", "3", "4"].forEach(function (code, i) {
+    var b = el("button", "tc-pill" + (test.level === code ? " is-on" : ""));
+    b.type = "button";
+    b.append(el("b", "", ["2ème", "3ème", "4ème"][i]), el("small", "", i === 2 ? "Bac" : "Info"));
+    b.addEventListener("click", function () {
+      test.level = code;
+      pills.querySelectorAll(".tc-pill").forEach(function (x) {
+        x.classList.toggle("is-on", x === b);
+      });
+      paintChips();
+      if (start) start.disabled = !testData || test.loadFailed;
+    });
+    pills.append(b);
   });
+  pick.append(pills);
+  body.append(pick);
+  paintChips();
   body.append(chips);
   if (test.loadFailed) body.append(el("p", "set-msg", t("pLoadFail")));
+
   var actions = el("div", "test-actions");
-  var start = pBtn(t("pStart"), "", function () {
+  start = pBtn(t("pStart"), "", function () {
+    test.qs = buildQuestions(test.level, test.stage);
+    test.qs.forEach(function (q) {
+      test.perm[q.id] = shuffled(q.choices.length);
+    });
+    // remember the level on the profile (only once the cloud copy is loaded, so nothing gets overwritten)
+    var label = LEVELS[Number(test.level) - 2];
+    if (label && label !== profile.level && profileLoaded && saveProfile) {
+      var next = Object.assign({}, profile, { level: label });
+      saveProfile(next)
+        .then(function () {
+          profile = next;
+          renderPage();
+        })
+        .catch(function () {});
+    }
     leaveThen(function () {
       test.step = "q";
       test.i = 0;
@@ -1025,7 +1160,8 @@ function renderIntroCard(body) {
     });
   });
   start.append(ico(I_ARROW, "tc-ico tc-flip"));
-  start.disabled = !testData || test.loadFailed;
+  start.disabled = !testData || test.loadFailed || !test.level;
+  if (!test.level) start.title = t("pLevelPick");
   actions.append(pBtn(t("pSkip"), "is-ghost", closeTest), start);
   body.append(actions);
 }
@@ -1050,7 +1186,7 @@ function stopTimer() {
 }
 
 function renderQuestionCard(body) {
-  var qs = testData.questions;
+  var qs = test.qs;
   var q = qs[test.i];
   var topic = topicOf(q.topic);
   var card = testCard();
@@ -1073,7 +1209,7 @@ function renderQuestionCard(body) {
 
   var head = el("div", "tc-head");
   var badge = el("span", "tc-topic");
-  badge.append(ico(topic.icon, "tc-topic-ico"), el("span", "tc-topic-name", String(q.topic || "").toUpperCase()), el("span", "tc-topic-dom", " · " + domainLabel(q.domain)));
+  badge.append(ico(topic.icon, "tc-topic-ico"), el("span", "tc-topic-name", topicLabel(q.topic)), el("span", "tc-topic-dom", " · " + domainLabel(domainOf(q))));
   var right = el("span", "tc-right");
   var clock = el("span", "tc-clock");
   clock.append(ico(I_CLOCK, "tc-clock-ico"), el("b", "", ""));
@@ -1281,7 +1417,7 @@ function renderResultCard(body) {
   requestAnimationFrame(tick);
 
   // one tile per domain
-  var tiles = el("div", "tc-tiles");
+  var tiles = el("div", "tc-tiles" + (Object.keys(r.domains).length === 1 ? " is-one" : ""));
   orderedKeys(r.domains).forEach(function (key, idx) {
     var d = r.domains[key];
     var p = pctOf(d);
@@ -1309,7 +1445,8 @@ function renderResultCard(body) {
     return pctOf(r.domains[k]);
   });
   var reco;
-  if (pcts.every(function (p) { return p >= 0.7; })) reco = t("pRecoBoth");
+  if (keys.length === 1) reco = pcts[0] >= 0.7 ? t("pRecoOneHigh") : t("pRecoOneLow");
+  else if (pcts.every(function (p) { return p >= 0.7; })) reco = t("pRecoBoth");
   else if (pcts.every(function (p) { return p < 0.5; })) reco = t("pRecoLow");
   else {
     var weakest = keys[pcts.indexOf(Math.min.apply(null, pcts))];
@@ -1320,7 +1457,7 @@ function renderResultCard(body) {
   body.append(banner);
   if (test.saveFailed) body.append(el("p", "set-msg", t("pSaveFail")));
 
-  var missed = testData.questions.filter(function (q) {
+  var missed = test.qs.filter(function (q) {
     return test.picks[q.id] !== q.answer;
   });
   if (missed.length) {
@@ -1587,7 +1724,6 @@ async function main() {
     }
     placementLoaded = true;
     renderPlacementCard();
-    if (!placement) openTest(); // first visit: offer the test once (skippable)
     try {
       var ps = await sdk.getDoc(profileRef);
       if (ps.exists()) {
@@ -1607,7 +1743,7 @@ async function main() {
     }
     profileLoaded = true;
     renderPage();
-
+    if (!placement) openTest(); // first visit: offer the test once (skippable)
   });
 }
 

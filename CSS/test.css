@@ -1730,3 +1730,62 @@ html[dir="rtl"] .tc-timer i {
     radial-gradient(circle at 92% -10%, rgba(255, 255, 255, 0.4) 0, transparent 52%),
     linear-gradient(135deg, #b8325a, #e64d6b 55%, #ff9db0);
 }
+
+/* ---------- level picker on the intro card ---------- */
+.tc-levelpick {
+  display: grid;
+  gap: 8px;
+  margin: 4px 0 12px;
+}
+.tc-levelpick-label {
+  color: var(--color-text-muted);
+  font-size: 12.5px;
+  font-weight: 700;
+  text-align: center;
+}
+.tc-levelpills {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.tc-pill {
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+  padding: 9px 6px;
+  border: 1.5px solid var(--color-light-blue);
+  border-radius: 16px;
+  background: var(--color-surface);
+  color: var(--color-navy);
+  font: inherit;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.tc-pill b {
+  font-size: 15px;
+  font-weight: 900;
+}
+.tc-pill small {
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+.tc-pill:hover {
+  transform: translateY(-2px);
+  border-color: #0464de;
+}
+.tc-pill.is-on {
+  border-color: #0464de;
+  background: #0464de;
+  color: #fff;
+}
+.tc-pill.is-on small {
+  color: #cfe3ff;
+}
+.tc-tiles.is-one {
+  grid-template-columns: 1fr;
+}
+.tc-topic-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
