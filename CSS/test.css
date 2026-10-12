@@ -128,7 +128,7 @@ html[dir="rtl"] .test-modal {
   animation: segPulse 1.4s ease-in-out infinite;
 }
 .tc-seg.is-right {
-  background: #2f9e55;
+  background: #3f8f2a;
 }
 .tc-seg.is-wrong {
   background: var(--color-danger);
@@ -273,12 +273,12 @@ html[dir="rtl"] .tc-flip svg {
   height: 15px;
 }
 .qopt.is-right {
-  border-color: #2f9e55;
-  background: color-mix(in srgb, #2f9e55 15%, var(--color-surface));
+  border-color: #3f8f2a;
+  background: color-mix(in srgb, #3f8f2a 15%, var(--color-surface));
 }
 .qopt.is-right .qopt-letter,
 .qopt.is-right .qopt-mark {
-  background: #2f9e55;
+  background: #3f8f2a;
   color: #fff;
 }
 .qopt.is-right .qopt-mark {
@@ -309,8 +309,8 @@ html[dir="rtl"] .tc-flip svg {
 }
 .qopt-skip.is-chosen {
   border-style: solid;
-  border-color: #f4801a;
-  background: color-mix(in srgb, #f4801a 13%, var(--color-surface));
+  border-color: #e0473e;
+  background: color-mix(in srgb, #e0473e 13%, var(--color-surface));
   color: var(--color-text);
 }
 @keyframes popIn {
@@ -354,13 +354,13 @@ html[dir="rtl"] .tc-flip svg {
   }
 }
 .tc-fb.is-right {
-  background: color-mix(in srgb, #2f9e55 14%, var(--color-surface));
+  background: color-mix(in srgb, #3f8f2a 14%, var(--color-surface));
 }
 .tc-fb.is-wrong {
   background: color-mix(in srgb, var(--color-danger) 12%, var(--color-surface));
 }
 .tc-fb.is-idk {
-  background: color-mix(in srgb, #f4801a 13%, var(--color-surface));
+  background: color-mix(in srgb, #e0473e 13%, var(--color-surface));
 }
 .tc-fb-ico {
   width: 34px;
@@ -376,13 +376,13 @@ html[dir="rtl"] .tc-flip svg {
   height: 18px;
 }
 .tc-fb.is-right .tc-fb-ico {
-  background: #2f9e55;
+  background: #3f8f2a;
 }
 .tc-fb.is-wrong .tc-fb-ico {
   background: var(--color-danger);
 }
 .tc-fb.is-idk .tc-fb-ico {
-  background: #f4801a;
+  background: #e0473e;
 }
 .tc-fb-text {
   display: grid;
@@ -393,7 +393,7 @@ html[dir="rtl"] .tc-flip svg {
   font-size: 15px;
 }
 .tc-fb-ans {
-  color: #2f9e55;
+  color: #3f8f2a;
   font-weight: 800;
   overflow-wrap: anywhere;
 }
@@ -436,7 +436,7 @@ html[dir="rtl"] .tc-flip svg {
   display: grid;
   place-items: center;
   border-radius: 28px;
-  background: linear-gradient(135deg, #0464de, #7c5cff);
+  background: linear-gradient(135deg, #0464de, #032c7b);
   color: #fff;
   box-shadow: 0 14px 30px color-mix(in srgb, #0464de 40%, transparent);
   animation: floaty 3.2s ease-in-out infinite;
@@ -487,12 +487,12 @@ html[dir="rtl"] .tc-flip svg {
   color: var(--color-primary);
 }
 .tc-chip.c2 {
-  background: color-mix(in srgb, #f4801a 16%, var(--color-surface));
-  color: #c25e00;
+  background: color-mix(in srgb, #e0473e 16%, var(--color-surface));
+  color: #b3322b;
 }
 .tc-chip.c3 {
-  background: color-mix(in srgb, #2f9e55 16%, var(--color-surface));
-  color: #2f9e55;
+  background: color-mix(in srgb, #3f8f2a 16%, var(--color-surface));
+  color: #3f8f2a;
 }
 
 /* ---------- result card ---------- */
@@ -502,7 +502,25 @@ html[dir="rtl"] .tc-flip svg {
   place-items: center;
   min-height: 170px;
   overflow: hidden;
-  padding-top: 4px;
+  margin: -26px -22px 0;
+  padding: 34px 0 40px;
+  min-height: 230px;
+  background:
+    radial-gradient(circle at 85% 0%, rgba(4, 100, 222, 0.55), transparent 55%),
+    linear-gradient(160deg, #01092d, #032c7b);
+}
+.tc-result-top .tc-ring-num b,
+.tc-result-top .tc-ring-num small {
+  color: #fff;
+}
+.tc-result-top .tc-ring-num b {
+  color: #aee37b;
+}
+.tc-result-top .tc-ring-num small {
+  opacity: 0.75;
+}
+.tc-mood {
+  text-align: center;
 }
 .tc-ring {
   position: relative;
@@ -520,7 +538,7 @@ html[dir="rtl"] .tc-flip svg {
   stroke-width: 10;
 }
 .tc-ring-track {
-  stroke: var(--color-light-blue);
+  stroke: rgba(255, 255, 255, 0.14);
 }
 .tc-ring-fill {
   stroke-linecap: round;
@@ -546,16 +564,16 @@ html[dir="rtl"] .tc-flip svg {
 }
 .tc-medal {
   position: absolute;
-  top: 6px;
+  top: 22px;
   inset-inline-end: calc(50% - 100px);
   width: 48px;
   height: 48px;
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: linear-gradient(135deg, #ffd45c, #f4801a);
-  color: #fff;
-  box-shadow: 0 8px 18px rgba(244, 128, 26, 0.4);
+  background: linear-gradient(135deg, #aee37b, #7fc94d);
+  color: #01092d;
+  box-shadow: 0 8px 18px rgba(174, 227, 123, 0.5);
   animation: medalPop 0.7s 0.85s cubic-bezier(0.2, 1.5, 0.4, 1) both;
 }
 .tc-medal svg {
@@ -597,7 +615,7 @@ html[dir="rtl"] .tc-flip svg {
 }
 .tc-tile {
   --g1: #0464de;
-  --g2: #7c5cff;
+  --g2: #032c7b;
   padding: 13px;
   border-radius: 18px;
   background: linear-gradient(
@@ -609,7 +627,7 @@ html[dir="rtl"] .tc-flip svg {
   animation: tileIn 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.1) both;
 }
 .tc-tile[data-d="sti"] {
-  --g1: #14a085;
+  --g1: #4aa52f;
   --g2: #aee37b;
 }
 @keyframes tileIn {
@@ -681,16 +699,16 @@ html[dir="rtl"] .tc-flip svg {
   font-weight: 800;
 }
 .tc-level.is-high {
-  background: color-mix(in srgb, #2f9e55 18%, var(--color-surface));
-  color: #2f9e55;
+  background: color-mix(in srgb, #3f8f2a 18%, var(--color-surface));
+  color: #3f8f2a;
 }
 .tc-level.is-mid {
   background: color-mix(in srgb, #0464de 14%, var(--color-surface));
   color: var(--color-primary);
 }
 .tc-level.is-low {
-  background: color-mix(in srgb, #f4801a 17%, var(--color-surface));
-  color: #c25e00;
+  background: color-mix(in srgb, #e0473e 17%, var(--color-surface));
+  color: #b3322b;
 }
 
 .tc-reco {
@@ -765,7 +783,7 @@ html[dir="rtl"] .tc-flip svg {
   color: var(--color-danger);
 }
 .tc-rev-ok {
-  color: #2f9e55;
+  color: #3f8f2a;
   font-weight: 800;
 }
 .tc-rev-why {
@@ -777,10 +795,10 @@ html[dir="rtl"] .tc-flip svg {
 
 /* ---------- home card: per-domain colours ---------- */
 .domain-row[data-d="programmation"] .domain-bar i {
-  background: linear-gradient(90deg, #0464de, #7c5cff);
+  background: linear-gradient(90deg, #0464de, #032c7b);
 }
 .domain-row[data-d="sti"] .domain-bar i {
-  background: linear-gradient(90deg, #14a085, #aee37b);
+  background: linear-gradient(90deg, #4aa52f, #aee37b);
 }
 
 @media (max-width: 360px) {

@@ -601,13 +601,13 @@ var I_ROCKET = S + '<path d="M5 15c-1.5 1.3-2 5-2 5s3.7-.5 5-2"/><path d="M14 4c
 var I_CARDS = S + '<rect x="7" y="3" width="13" height="17" rx="2.5" transform="rotate(8 13.5 11.5)"/><rect x="4" y="4" width="13" height="17" rx="2.5"/><path d="M8 11.5h5M8 15h3"/></svg>';
 var I_ARROW = S + '<path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>';
 var TOPICS = {
-  algo: { color: "#7c5cff", icon: I_FLOW },
+  algo: { color: "#032c7b", icon: I_FLOW },
   python: { color: "#0464de", icon: I_TERM },
-  html: { color: "#f4801a", icon: I_CODE },
-  css: { color: "#12a4d9", icon: I_PALETTE },
-  js: { color: "#e0a800", icon: I_BRACES },
-  php: { color: "#5b6bd6", icon: I_SERVER },
-  mysql: { color: "#14a085", icon: I_DB },
+  html: { color: "#01092d", icon: I_CODE },
+  css: { color: "#0464de", icon: I_PALETTE },
+  js: { color: "#4aa52f", icon: I_BRACES },
+  php: { color: "#032c7b", icon: I_SERVER },
+  mysql: { color: "#4aa52f", icon: I_DB },
 };
 function topicOf(key) {
   return TOPICS[key] || { color: "#0464de", icon: I_CODE };
@@ -817,7 +817,7 @@ function renderQuestionCard(body) {
 }
 
 function confetti(host, n) {
-  var colors = ["#0464de", "#aee37b", "#f4801a", "#e0473e", "#7c5cff", "#12a4d9"];
+  var colors = ["#0464de", "#aee37b", "#032c7b", "#e9fff4", "#aee37b", "#0464de"];
   for (var i = 0; i < n; i++) {
     var piece = el("i", "tc-conf");
     piece.style.left = Math.round(Math.random() * 100) + "%";
@@ -848,7 +848,7 @@ function renderResultCard(body) {
   svg.setAttribute("viewBox", "0 0 120 120");
   svg.setAttribute("aria-hidden", "true");
   svg.innerHTML =
-    '<defs><linearGradient id="tcGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0464de"/><stop offset="1" stop-color="#aee37b"/></linearGradient></defs>' +
+    '<defs><linearGradient id="tcGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4f9bff"/><stop offset="1" stop-color="#aee37b"/></linearGradient></defs>' +
     '<circle class="tc-ring-track" cx="60" cy="60" r="52"/>' +
     '<circle class="tc-ring-fill" cx="60" cy="60" r="52" stroke="url(#tcGrad)" stroke-dasharray="' + C.toFixed(1) + '" stroke-dashoffset="' + C.toFixed(1) + '"/>';
   var num = el("div", "tc-ring-num");
