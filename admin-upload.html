@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en" dir="ltr" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>ClassLedger · Upload a chapter</title>
+    <link rel="icon" type="image/svg+xml" href="Images/logo-icon.svg" />
+    <link rel="stylesheet" href="CSS/style.css" />
+    <link rel="stylesheet" href="CSS/welcome.css" />
+    <link rel="stylesheet" href="CSS/chapters.css" />
+    <style>
+      [hidden] { display: none !important; }
+    </style>
+  </head>
+  <body class="student-body">
+    <div class="student-wrap" style="max-width: 640px">
+      <header class="student-top">
+        <img class="welcome-logo" src="Images/logo-wordmark.svg" alt="ClassLedger" />
+        <button type="button" class="student-out" id="out" style="display: none">Sign out</button>
+      </header>
+
+      <section class="ch-block">
+        <h1 style="margin: 0 0 6px; font-size: 20px">Upload a chapter</h1>
+        <p class="welcome-sub">
+          Admin only. Only the uid written in <code class="ch-inline-code">firestore.rules</code> can write.
+        </p>
+        <div id="signedOut" style="margin-top: 12px">
+          <button type="button" class="welcome-btn is-solid" id="signIn" style="width: 100%">Sign in with Google</button>
+        </div>
+        <div id="signedIn" hidden style="display: grid; gap: 12px; margin-top: 12px">
+          <p class="welcome-sub">Your uid: <code class="ch-inline-code" id="uid"></code></p>
+          <input type="file" id="file" accept="application/json,.json" />
+          <label style="display: flex; gap: 8px; align-items: center; font-size: 14px">
+            <input type="checkbox" id="pub" /> Publish now (visible to students)
+          </label>
+          <button type="button" class="pc-btn" id="go" disabled>Upload</button>
+          <p class="welcome-msg" id="msg" role="status"></p>
+        </div>
+      </section>
+    </div>
+
+    <script src="JS/firebase-config.js"></script>
+    <script type="module">
+      var BASE = "https://www.gstatic.com/firebasejs/10.14.1/";
+      var mods = await Promise.all([
+        import(BASE + "firebase-app.js"),
+        import(BASE + "firebase-auth.js"),
+        import(BASE + "firebase-firestore.js"),
+      ]);
+      var sdk = Object.assign({}, mods[0], mods[1], mods[2]);
+      var app = sdk.initializeApp(window.CLASSLEDGER_FIREBASE_CONFIG);
+      var auth = sdk.getAuth(app);
+      var db = sdk.getFirestore(app);
+      var $ = function (id) { return document.getElementById(id); };
+      var data = null;
+
+      function msg(text, bad) {
+        $("msg").textContent = text;
+        $("msg").classList.toggle("is-error", !!bad);
+      }
+      $("signIn").addEventListener("click", function () {
+        sdk.signInWithPopup(auth, new sdk.GoogleAuthProvider());
+      });
+      $("out").addEventListener("click", function () { sdk.signOut(auth); });
+      sdk.onAuthStateChanged(auth, function (u) {
+        $("signedOut").hidden = !!u;
+        $("signedIn").hidden = !u;
+        $("out").style.display = u ? "" : "none";
+        if (u) $("uid").textContent = u.uid;
+      });
+      $("file").addEventListener("change", async function () {
+        data = null;
+        $("go").disabled = true;
+        var f = $("file").files[0];
+        if (!f) return;
+        try {
+          var d = JSON.parse(await f.text());
+          if (!d.chapterId || !d.level || !d.subject || !d.title || !Array.isArray(d.exercises)) throw new Error("Missing fields");
+          data = d;
+          $("pub").checked = !!d.published;
+          $("go").disabled = false;
+          msg(d.title + ": " + d.exercises.length + " exercises (" + d.level + " / " + d.subject + ")");
+        } catch (e) {
+          msg("Invalid file: " + e.message, true);
+        }
+      });
+      $("go").addEventListener("click", async function () {
+        if (!data) return;
+        $("go").disabled = true;
+        try {
+          var chRef = sdk.doc(db, "chapters", data.chapterId);
+          var batch = sdk.writeBatch(db);
+          batch.set(chRef, {
+            level: data.level,
+            subject: data.subject,
+            topic: data.topic || "",
+            title: data.title,
+            title_ar: data.title_ar || "",
+            order: data.order || 0,
+            published: $("pub").checked,
+            rappel: data.rappel || "",
+            exerciseCount: data.exercises.length,
+            updatedAt: sdk.serverTimestamp(),
+          });
+          data.exercises.forEach(function (ex) {
+            var exRef = sdk.doc(db, "chapters", data.chapterId, "exercises", ex.id);
+            batch.set(exRef, {
+              order: ex.order || 0,
+              difficulty: ex.difficulty || "easy",
+              statement: ex.statement || "",
+              hint: ex.hint || "",
+            });
+            batch.set(sdk.doc(exRef, "private", "solution"), { text: ex.solution || "" });
+          });
+          await batch.commit();
+          msg("Uploaded. " + (data.exercises.length + 1) + " documents written" + ($("pub").checked ? " (published)." : " (not published)."));
+        } catch (e) {
+          msg("Failed: " + (e.code || e.message), true);
+        }
+        $("go").disabled = false;
+      });
+    </script>
+  </body>
+</html>

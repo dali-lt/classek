@@ -3,6 +3,8 @@
    The profile card ("My account") reuses the teacher app's modal look (style.css)
    and saves to users/{uid}/meta/profile. */
 
+import { Chapters } from "./chapters.js";
+
 var SDK_VERSION = "10.14.1";
 var SDK_BASE = "https://www.gstatic.com/firebasejs/" + SDK_VERSION + "/";
 var LANG_KEY = "classledger:lang";
@@ -389,11 +391,7 @@ function renderPage() {
     user.append(ini);
   }
 
-  var list = $("sChapters");
-  list.textContent = "";
-  var empty = el("div", "student-empty");
-  empty.append(el("b", "", t("emptyTitle")), el("span", "", t("emptyText")));
-  list.append(empty);
+  Chapters.render();
 
   renderPlacementCard();
   if (testIsOpen()) renderTest();
@@ -1683,6 +1681,21 @@ async function main() {
       return;
     }
     currentUser = u;
+    Chapters.init({
+      sdk: sdk,
+      db: db,
+      uid: u.uid,
+      getLang: function () {
+        return lang;
+      },
+      getLevel: function () {
+        return levelCodeOf(profile.level);
+      },
+      ready: function () {
+        return profileLoaded;
+      },
+      topicOf: topicOf,
+    });
     $("studentApp").hidden = false;
     renderPage();
 

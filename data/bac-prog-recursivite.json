@@ -1,0 +1,53 @@
+{
+  "level": "bac",
+  "subject": "prog",
+  "topic": "recursion",
+  "chapterId": "recursivite",
+  "title": "Récursivité",
+  "title_ar": "التراجعية",
+  "order": 1,
+  "published": false,
+  "rappel": "## À retenir\n\nUne fonction est **récursive** quand elle s'appelle elle-même.\n\nUne fonction récursive correcte a toujours :\n1. un **cas de base** : une situation où elle répond directement, sans s'appeler ;\n2. un **appel récursif** : elle s'appelle avec un problème **plus petit**, qui se rapproche du cas de base.\n\nSans cas de base (ou si l'on ne s'en rapproche jamais), la fonction ne s'arrête pas.\n\nModèle :\n\n```python\ndef f(n):\n    if n == 0:          # cas de base\n        return ...\n    return ... f(n-1)   # appel récursif\n```\n\nPour comprendre une fonction récursive, on peut **dérouler** les appels : f(3) attend f(2), qui attend f(1), etc. Puis les résultats remontent.",
+  "exercises": [
+    {
+      "id": "ex1",
+      "order": 1,
+      "difficulty": "easy",
+      "statement": "On considère la fonction suivante :\n\n```python\ndef f(n):\n    if n == 0:\n        return 0\n    return n + f(n - 1)\n```\n\n1) Quel est le cas de base ?\n2) Déroulez l'appel f(4) et donnez le résultat.\n3) Que calcule f(n) en général ?",
+      "hint": "Écrivez f(4) = 4 + f(3), puis continuez jusqu'à f(0).",
+      "solution": "1) Le cas de base est n == 0 : la fonction renvoie 0 sans s'appeler.\n\n2) f(4) = 4 + f(3)\n        = 4 + (3 + f(2))\n        = 4 + 3 + (2 + f(1))\n        = 4 + 3 + 2 + (1 + f(0))\n        = 4 + 3 + 2 + 1 + 0 = 10\n\n3) f(n) calcule la somme des entiers de 1 à n : 1 + 2 + ... + n."
+    },
+    {
+      "id": "ex2",
+      "order": 2,
+      "difficulty": "easy",
+      "statement": "Écrivez une fonction récursive puissance(a, n) qui renvoie a^n, avec n un entier positif ou nul.\n\nExemples : puissance(2, 5) renvoie 32 ; puissance(3, 0) renvoie 1.",
+      "hint": "a^n = a * a^(n-1). Que vaut a^0 ?",
+      "solution": "```python\ndef puissance(a, n):\n    if n == 0:\n        return 1\n    return a * puissance(a, n - 1)\n```\n\nCas de base : a^0 = 1. Appel récursif : a^n = a * a^(n-1), et n diminue de 1 à chaque appel, donc on atteint bien 0."
+    },
+    {
+      "id": "ex3",
+      "order": 3,
+      "difficulty": "medium",
+      "statement": "Écrivez une fonction récursive somme_chiffres(n) qui renvoie la somme des chiffres d'un entier n positif.\n\nExemple : somme_chiffres(4827) renvoie 21.",
+      "hint": "Le dernier chiffre est n % 10. Le reste du nombre est n // 10.",
+      "solution": "```python\ndef somme_chiffres(n):\n    if n < 10:\n        return n\n    return n % 10 + somme_chiffres(n // 10)\n```\n\nCas de base : si n < 10, il a un seul chiffre, donc la somme est n.\nSinon : (dernier chiffre) + (somme des chiffres du reste).\n\nExemple : somme_chiffres(4827) = 7 + somme_chiffres(482) = 7 + 2 + somme_chiffres(48) = 7 + 2 + 8 + 4 = 21."
+    },
+    {
+      "id": "ex4",
+      "order": 4,
+      "difficulty": "medium",
+      "statement": "L'algorithme d'Euclide repose sur : PGCD(a, b) = PGCD(b, a mod b), et PGCD(a, 0) = a.\n\nÉcrivez une fonction récursive pgcd(a, b) qui renvoie le PGCD de deux entiers positifs.\n\nExemple : pgcd(48, 18) renvoie 6.",
+      "hint": "Quel est le cas de base ? Que devient le deuxième paramètre à chaque appel ?",
+      "solution": "```python\ndef pgcd(a, b):\n    if b == 0:\n        return a\n    return pgcd(b, a % b)\n```\n\nDéroulement : pgcd(48, 18) -> pgcd(18, 12) -> pgcd(12, 6) -> pgcd(6, 0) -> 6.\n\nLa fonction s'arrête car le deuxième paramètre (a % b) est strictement plus petit que b, donc il finit par atteindre 0."
+    },
+    {
+      "id": "ex5",
+      "order": 5,
+      "difficulty": "bac",
+      "statement": "Un mot est un palindrome s'il se lit de la même façon dans les deux sens (par exemple « radar »).\n\nÉcrivez une fonction récursive est_palindrome(ch) qui renvoie True si la chaîne ch est un palindrome, False sinon.\n\n1) Donnez les cas de base.\n2) Donnez l'appel récursif.\n3) Écrivez la fonction.",
+      "hint": "Comparez le premier et le dernier caractère. S'ils sont égaux, que faut-il vérifier ensuite ?",
+      "solution": "1) Cas de base : une chaîne vide ou d'un seul caractère est un palindrome (True). Si le premier et le dernier caractère sont différents, ce n'est pas un palindrome (False).\n\n2) Si ch[0] == ch[-1], on vérifie la chaîne sans ses deux extrémités : ch[1:-1].\n\n3)\n```python\ndef est_palindrome(ch):\n    if len(ch) <= 1:\n        return True\n    if ch[0] != ch[-1]:\n        return False\n    return est_palindrome(ch[1:-1])\n```\n\nExemple : est_palindrome(\"radar\") -> compare r et r -> est_palindrome(\"ada\") -> compare a et a -> est_palindrome(\"d\") -> True."
+    }
+  ]
+}

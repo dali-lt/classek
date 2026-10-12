@@ -1,0 +1,61 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    // Your own Firebase uid: Firebase console -> Authentication -> Users -> "User UID".
+    function isAdmin() {
+      return request.auth != null && request.auth.uid == 'PUT_YOUR_UID_HERE';
+    }
+
+    function chapterPublished(chapterId) {
+      return get(/databases/$(database)/documents/chapters/$(chapterId)).data.published == true;
+    }
+
+    // espace prof (même comportement qu'avant)
+    match /users/{uid}/students/{id} {
+      allow read, write: if isOwner(uid);
+    }
+    match /users/{uid}/meta/groups {
+      allow read, write: if isOwner(uid);
+    }
+    match /users/{uid}/meta/profile {
+      allow read, write: if isOwner(uid);
+    }
+
+    // rôle: création une seule fois, pas de modification
+    match /users/{uid}/meta/account {
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['role', 'createdAt'])
+        && request.resource.data.role in ['teacher', 'student'];
+      allow update: if false;
+      allow delete: if isOwner(uid);
+    }
+
+    // espace élève: progression personnelle (placement + chapitres)
+    match /users/{uid}/progress/{doc} {
+      allow read, write: if isOwner(uid);
+    }
+
+    // Contenu du livre: lecture pour les comptes connectés (chapitres publiés), écriture admin seulement.
+    // Les requêtes de liste doivent filtrer sur published == true (le code le fait).
+    match /chapters/{chapterId} {
+      allow read: if request.auth != null && (resource.data.published == true || isAdmin());
+      allow write: if isAdmin();
+
+      match /exercises/{exId} {
+        allow read: if request.auth != null && (chapterPublished(chapterId) || isAdmin());
+        allow write: if isAdmin();
+
+        match /private/{docId} {
+          allow read: if request.auth != null && (chapterPublished(chapterId) || isAdmin());
+          allow write: if isAdmin();
+        }
+      }
+    }
+  }
+}
