@@ -235,8 +235,8 @@ function cleanAvatar(v) {
   if (/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/.test(v) && v.length < 200000) return v;
   return "";
 }
-// background colours for the site avatars: the brand colours except the darkest one
-var AVATAR_BGS = { azure: "#032c7b", royal: "#0464de", lime: "#aee37b", frost: "#e9fff4" };
+// background colours for the site avatars: the brand colours except the darkest one, plus a rose red
+var AVATAR_BGS = { azure: "#032c7b", royal: "#0464de", lime: "#aee37b", frost: "#e9fff4", rose: "#e64d6b" };
 function cleanBg(v) {
   return typeof v === "string" && AVATAR_BGS[v] ? v : "";
 }

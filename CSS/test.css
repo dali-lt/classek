@@ -1723,3 +1723,10 @@ html[dir="rtl"] .tc-timer i {
 .profile-meta .profile-chip.is-level {
   flex: none;
 }
+
+.profile-banner[data-bg="rose"] {
+  background:
+    radial-gradient(circle at 12% 115%, rgba(174, 227, 123, 0.6) 0, transparent 52%),
+    radial-gradient(circle at 92% -10%, rgba(255, 255, 255, 0.4) 0, transparent 52%),
+    linear-gradient(135deg, #b8325a, #e64d6b 55%, #ff9db0);
+}
