@@ -37,6 +37,9 @@ var STR = {
     s_prog: "Programming",
     s_sti: "STI (Web)",
     s_info: "Computer science",
+    chaptersCount: "{n} chapters",
+    chaptersOne: "1 chapter",
+    soon: "Coming soon",
     saveFail: "Couldn’t save your progress. Try again.",
     solFail: "Couldn’t load the solution. Try again.",
   },
@@ -67,6 +70,9 @@ var STR = {
     s_prog: "البرمجة",
     s_sti: "STI (الويب)",
     s_info: "الإعلامية",
+    chaptersCount: "{n} فصول",
+    chaptersOne: "فصل واحد",
+    soon: "قريبا",
     saveFail: "ما نجمناش نحفظو تقدمك. عاود جرّب.",
     solFail: "ما نجمناش نحمّلو الحل. عاود جرّب.",
   },
@@ -74,6 +80,8 @@ var STR = {
 
 var LEVEL_ID = { "2": "2eme", "3": "3eme", "4": "bac" }; // from levelCodeOf() in student.js
 var SUBJECTS = ["prog", "sti", "info"];
+var SUBJECTS_BY_LEVEL = { "2eme": ["info"], "3eme": ["prog", "sti"], bac: ["prog", "sti"] };
+var SUBJECT_COLOR = { prog: "#0464de", sti: "#aee37b", info: "#0464de" };
 var MIN_ANSWER = 10; // characters typed before the solution unlocks
 
 var ctx = null;
@@ -279,27 +287,60 @@ function subjectsPresent() {
   });
 }
 
-function renderTabs(host, present) {
-  var tabs = $("sChapterTabs");
-  if (!tabs) {
-    tabs = el("div", "ch-tabs");
-    tabs.id = "sChapterTabs";
-    host.parentNode.insertBefore(tabs, host);
+// the subjects of the student's level are always shown, even when one has no chapter yet
+function subjectList() {
+  var id = LEVEL_ID[ctx.getLevel()];
+  if (SUBJECTS_BY_LEVEL[id]) return SUBJECTS_BY_LEVEL[id];
+  var present = subjectsPresent();
+  return present.length ? present : ["prog", "sti"];
+}
+
+function renderSubjects(host, list) {
+  var box = $("sChapterTabs");
+  if (!box) {
+    box = el("div", "ch-subjects");
+    box.id = "sChapterTabs";
+    host.parentNode.insertBefore(box, host);
   }
-  tabs.textContent = "";
-  tabs.hidden = present.length < 2;
-  if (present.length < 2) return;
-  var sw = el("div", "lang-switch");
-  present.forEach(function (s) {
-    var b = el("button", "lang-btn" + (S.subject === s ? " active" : ""), t("s_" + s));
-    b.type = "button";
-    b.addEventListener("click", function () {
-      S.subject = s;
+  box.textContent = "";
+  box.hidden = list.length < 2;
+  if (list.length < 2) return;
+  list.forEach(function (sub) {
+    var chs = S.chapters.filter(function (c) {
+      return c.subject === sub;
+    });
+    var done = 0;
+    var total = 0;
+    chs.forEach(function (c) {
+      done += doneCount(c);
+      total += Number(c.exerciseCount) || 0;
+    });
+    var card = el("button", "ch-subject" + (S.subject === sub ? " is-active" : ""));
+    card.type = "button";
+    card.setAttribute("aria-pressed", String(S.subject === sub));
+    var ic = el("span", "ch-ico");
+    ic.style.background = SUBJECT_COLOR[sub];
+    if (sub === "sti") ic.style.color = "#01092d";
+    ic.innerHTML = ctx.subjectIcon ? ctx.subjectIcon(sub) : ""; // static, trusted SVG
+    var text = el("span", "ch-text");
+    text.append(el("b", "ch-title", t("s_" + sub)));
+    text.append(
+      el("small", "ch-meta", chs.length === 1 ? t("chaptersOne") : chs.length ? tf("chaptersCount", { n: chs.length }) : t("soon")),
+    );
+    if (total) {
+      var bar = el("span", "domain-bar ch-bar");
+      var fill = el("i");
+      fill.style.width = Math.min(100, Math.round((done / total) * 100)) + "%";
+      bar.append(fill);
+      text.append(bar);
+    }
+    card.append(ic, text);
+    card.addEventListener("click", function () {
+      S.subject = sub;
       render();
     });
-    sw.append(b);
+    box.append(card);
   });
-  tabs.append(sw);
 }
 
 function chapterCard(ch) {
@@ -333,7 +374,7 @@ function renderList(host) {
   host.textContent = "";
   if (S.loading || !ctx.ready()) {
     host.append(el("div", "student-empty", t("loading")));
-    renderTabs(host, []);
+    renderSubjects(host, []);
     return;
   }
   if (S.failed) {
@@ -344,26 +385,24 @@ function renderList(host) {
     retry.addEventListener("click", load);
     box.append(retry);
     host.append(box);
-    renderTabs(host, []);
+    renderSubjects(host, []);
     return;
   }
-  var present = subjectsPresent();
-  if (!present.length) {
+  var list = subjectList();
+  if (!S.subject || list.indexOf(S.subject) < 0) S.subject = list[0];
+  renderSubjects(host, list);
+  var shown = S.chapters.filter(function (c) {
+    return c.subject === S.subject;
+  });
+  if (!shown.length) {
     var empty = el("div", "student-empty");
     empty.append(el("b", "", t("emptyTitle")), el("span", "", t("emptyText")));
     host.append(empty);
-    renderTabs(host, []);
     return;
   }
-  if (!S.subject || present.indexOf(S.subject) < 0) S.subject = present[0];
-  renderTabs(host, present);
-  S.chapters
-    .filter(function (c) {
-      return c.subject === S.subject;
-    })
-    .forEach(function (c) {
-      host.append(chapterCard(c));
-    });
+  shown.forEach(function (c) {
+    host.append(chapterCard(c));
+  });
 }
 
 /* ---------------- chapter page ---------------- */
@@ -562,7 +601,7 @@ function render() {
 }
 
 export var Chapters = {
-  /* c: { sdk, db, uid, getLang(), getLevel(), ready(), topicOf(key) } */
+  /* c: { sdk, db, uid, getLang(), getLevel(), ready(), topicOf(key), subjectIcon(subject) } */
   init: function (c) {
     ctx = c;
     window.addEventListener("hashchange", render);

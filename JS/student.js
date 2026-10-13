@@ -1695,6 +1695,9 @@ async function main() {
         return profileLoaded;
       },
       topicOf: topicOf,
+      subjectIcon: function (sub) {
+        return sub === "sti" ? I_GLOBE : I_TERM;
+      },
     });
     $("studentApp").hidden = false;
     renderPage();
