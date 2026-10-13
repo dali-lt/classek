@@ -585,17 +585,37 @@ function icon(svg, cls) {
   return span;
 }
 
+var ICON_CHECK_PIN =
+  '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
+var ICON_REVIEW_PIN =
+  '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 14-5.3L20 9"/><path d="M20 4v5h-5"/></svg>';
+
+// the dashed link between two cards of the path; solid green once the card above is done
+function exPath(index, prevDone) {
+  var p = el("div", "ex-path " + (index % 2 ? "is-a" : "is-b") + (prevDone ? " is-done" : ""));
+  p.setAttribute("aria-hidden", "true");
+  p.innerHTML =
+    '<svg viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M0 0 C0 75, 100 25, 100 100"/></svg>';
+  return p;
+}
+
 function exerciseCard(ch, ex, index) {
   var key = ch.id + "/" + ex.id;
   var st = statusOf(ch.id)[ex.id];
-  var card = el("article", "ex-card" + (st ? " is-" + st : ""));
+  var diff = ex.difficulty === "bac" || ex.difficulty === "medium" ? ex.difficulty : "easy";
+  var card = el("article", "ex-card d-" + diff + (index % 2 ? " is-b" : " is-a") + (st ? " is-" + st : ""));
+  card.id = "ex-" + ex.id;
+  var pin = el("span", "ex-pin");
+  pin.innerHTML = st === "done" ? ICON_CHECK_PIN : st === "review" ? ICON_REVIEW_PIN : ""; // static, trusted SVG
+  var panel = el("div", "ex-panel");
+  var work = el("div", "ex-work");
 
   var head = el("div", "ex-head");
-  head.append(el("span", "ex-num", String(index + 1)));
-  var diff = ex.difficulty === "bac" || ex.difficulty === "medium" ? ex.difficulty : "easy";
+  head.append(el("span", "ex-num", (index < 9 ? "0" : "") + (index + 1)));
   head.append(el("span", "ex-diff is-" + diff, t("d_" + diff)));
   if (st) head.append(el("span", "ex-state is-" + st, t(st)));
-  card.append(head, md(ex.statement));
+  panel.append(head, md(ex.statement));
+  card.append(pin, panel, work);
 
   if (ex.hint) {
     var hintBtn = el("button", "ex-link", hintOpen[key] ? t("hideHint") : t("hint"));
@@ -604,11 +624,11 @@ function exerciseCard(ch, ex, index) {
       hintOpen[key] = !hintOpen[key];
       card.replaceWith(exerciseCard(ch, ex, index));
     });
-    card.append(hintBtn);
+    panel.append(hintBtn);
     if (hintOpen[key]) {
       var hint = el("div", "ex-hint");
       hint.append(md(ex.hint));
-      card.append(hint);
+      panel.append(hint);
     }
   }
 
@@ -622,7 +642,7 @@ function exerciseCard(ch, ex, index) {
   ta.placeholder = t("answerPlaceholder");
   ta.value = drafts[key] || "";
   label.append(ta);
-  card.append(label);
+  work.append(label);
 
   if (!isOpen) {
     var actions = el("div", "ex-actions");
@@ -649,7 +669,7 @@ function exerciseCard(ch, ex, index) {
       card.replaceWith(exerciseCard(ch, ex, index));
     });
     actions.append(show);
-    card.append(actions);
+    work.append(actions);
   } else {
     ta.addEventListener("input", function () {
       drafts[key] = ta.value;
@@ -671,9 +691,9 @@ function exerciseCard(ch, ex, index) {
     later.addEventListener("click", choose("review"));
     mark.append(ok, later);
     sol.append(mark);
-    card.append(sol);
+    work.append(sol);
   }
-  if (rowError[key]) card.append(el("p", "set-msg", rowError[key]));
+  if (rowError[key]) work.append(el("p", "set-msg", rowError[key]));
   return card;
 }
 
@@ -817,7 +837,9 @@ function renderView(view, ch) {
 
   if (ch.rappel) {
     var block = el("section", "ch-block ch-rappel");
-    block.append(el("span", "test-chip", t("rappel")), md(ch.rappel));
+    var panelR = el("div", "ch-panel");
+    panelR.append(el("span", "test-chip", t("rappel")), md(ch.rappel));
+    block.append(el("span", "ch-tape"), panelR);
     view.append(block);
   }
 
@@ -840,8 +862,21 @@ function renderView(view, ch) {
     box.append(retry);
     view.append(box);
   } else {
+    var dots = el("div", "ex-dots");
+    cur.exercises.forEach(function (ex, i) {
+      var sd = statusOf(ch.id)[ex.id];
+      var dot = el("button", "ex-dot" + (sd ? " is-" + sd : ""), String(i + 1));
+      dot.type = "button";
+      dot.addEventListener("click", function () {
+        var target = document.getElementById("ex-" + ex.id);
+        if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+      dots.append(dot);
+    });
+    view.append(dots);
     var list = el("div", "ex-list");
     cur.exercises.forEach(function (ex, i) {
+      if (i) list.append(exPath(i, statusOf(ch.id)[cur.exercises[i - 1].id] === "done"));
       list.append(exerciseCard(ch, ex, i));
     });
     view.append(list);

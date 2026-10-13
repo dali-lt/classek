@@ -375,70 +375,195 @@ html[dir="rtl"] .ch-back-ico svg {
   margin: 10px 0;
 }
 
-/* ---------- reminder block ---------- */
+/* ---------- reminder: a sheet taped to the page ---------- */
 .ch-block {
-  padding: 18px 20px;
-  border: 1px solid var(--color-border);
-  border-radius: 18px;
+  position: relative;
+  margin-top: 8px;
+  padding: 10px;
+  border-radius: 28px;
   background: var(--color-surface);
+  box-shadow:
+    0 1px 2px rgba(1, 9, 45, 0.06),
+    0 18px 40px rgba(1, 9, 45, 0.1);
+  transform: rotate(-0.5deg);
+}
+.ch-rappel > .ch-panel {
+  padding: 26px 24px 24px;
+  border-radius: 20px;
+  background:
+    radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, var(--color-accent) 55%, transparent), transparent 60%),
+    color-mix(in srgb, var(--color-accent) 22%, var(--color-surface));
 }
 .ch-block .test-chip {
   display: inline-block;
-  margin-bottom: 10px;
-}
-.ch-rappel {
-  border-inline-start: 5px solid var(--color-accent);
-}
-
-/* ---------- exercises ---------- */
-.ex-list {
-  display: grid;
-  gap: 14px;
-}
-.ex-card {
-  display: grid;
-  gap: 12px;
-  padding: 18px 20px;
-  border: 1px solid var(--color-border);
-  border-radius: 18px;
+  margin-bottom: 12px;
   background: var(--color-surface);
 }
-.ex-card.is-done {
+.ch-tape {
+  position: absolute;
+  top: -14px;
+  inset-inline-start: 50%;
+  width: 92px;
+  height: 28px;
+  margin-inline-start: -46px;
+  background: color-mix(in srgb, var(--tape, var(--color-accent)) 82%, transparent);
+  transform: rotate(-3deg);
+  clip-path: polygon(0 8%, 4% 0, 8% 10%, 12% 0, 100% 0, 96% 50%, 100% 100%, 12% 100%, 8% 90%, 4% 100%, 0 92%, 3% 50%);
+  box-shadow: 0 2px 6px rgba(1, 9, 45, 0.12);
+}
+
+/* ---------- exercises: a path of pinned cards ---------- */
+.ex-dots {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: -2px 0 6px;
+}
+.ex-dot {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 2px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease;
+}
+.ex-dot:hover {
+  transform: translateY(-2px) scale(1.08);
+  border-color: var(--color-primary);
+}
+.ex-dot.is-done {
   border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: #1f4a0c;
+}
+.ex-dot.is-review {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: #fff;
+}
+.ex-list {
+  display: flex;
+  flex-direction: column;
+  padding-top: 10px;
+}
+.ex-card {
+  --pin: var(--color-primary);
+  --tint: var(--color-light-blue);
+  position: relative;
+  width: min(100%, 760px);
+  padding: 10px;
+  border-radius: 28px;
+  background: var(--color-surface);
+  box-shadow:
+    0 1px 2px rgba(1, 9, 45, 0.06),
+    0 18px 40px rgba(1, 9, 45, 0.1);
+  scroll-margin-top: 24px;
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
+.ex-card.is-a {
+  align-self: flex-start;
+  transform: rotate(-0.6deg);
+}
+.ex-card.is-b {
+  align-self: flex-end;
+  transform: rotate(0.6deg);
+}
+.ex-card:hover,
+.ex-card:focus-within {
+  transform: rotate(0deg);
+}
+.ex-card.d-easy {
+  --tint: color-mix(in srgb, var(--color-accent) 38%, var(--color-surface));
+}
+.ex-card.d-medium {
+  --tint: color-mix(in srgb, var(--color-primary) 13%, var(--color-surface));
+}
+.ex-card.d-bac {
+  --tint: color-mix(in srgb, #e64d6b 14%, var(--color-surface));
+}
+.ex-card.is-done {
+  --pin: #6fbf3f;
 }
 .ex-card.is-review {
-  border-color: var(--color-primary);
+  --pin: #e64d6b;
+}
+.ex-pin {
+  position: absolute;
+  top: -15px;
+  inset-inline-start: 50%;
+  width: 30px;
+  height: 30px;
+  margin-inline-start: -15px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.75) 0 12%, transparent 13%), radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--pin) 70%, #fff), var(--pin) 70%);
+  box-shadow:
+    0 6px 12px color-mix(in srgb, var(--pin) 45%, transparent),
+    0 2px 3px rgba(1, 9, 45, 0.2);
+  color: #fff;
+  z-index: 1;
+}
+.ex-pin svg {
+  width: 15px;
+  height: 15px;
+  display: block;
+}
+.ex-panel {
+  display: grid;
+  gap: 12px;
+  padding: 22px 22px 18px;
+  border-radius: 20px;
+  background: var(--tint);
+}
+.ex-work {
+  display: grid;
+  gap: 12px;
+  padding: 14px 12px 8px;
+}
+.ex-work:empty {
+  display: none;
 }
 .ex-head {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 8px 10px;
 }
 .ex-num {
-  width: 30px;
-  height: 30px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--color-navy);
-  color: #fff;
-  font-size: 13px;
-  font-weight: 800;
+  margin-inline-end: 2px;
+  color: var(--color-navy);
+  font-size: 30px;
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  opacity: 0.85;
 }
 .ex-diff,
 .ex-state {
   padding: 3px 11px;
   border-radius: 999px;
+  background: var(--color-surface);
   font-size: 12px;
   font-weight: 800;
 }
 .ex-diff.is-easy {
-  background: color-mix(in srgb, var(--color-accent) 35%, transparent);
   color: var(--color-accent-ink);
 }
 .ex-diff.is-medium {
-  background: var(--color-light-blue);
   color: var(--color-primary);
 }
 .ex-diff.is-bac {
@@ -453,9 +578,68 @@ html[dir="rtl"] .ch-back-ico svg {
   color: #1f4a0c;
 }
 .ex-state.is-review {
-  background: var(--color-light-blue);
-  color: var(--color-primary);
+  background: #e64d6b;
+  color: #fff;
 }
+.ex-panel .ex-hint {
+  background: var(--color-surface);
+}
+/* dashed link from one card to the next */
+.ex-path {
+  position: relative;
+  width: 100%;
+  height: 84px;
+  pointer-events: none;
+}
+/* the curve runs from the middle of one card to the pin of the next one */
+.ex-path svg {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  inset-inline-start: calc(min(100%, 760px) / 2);
+  width: calc(100% - min(100%, 760px));
+  overflow: visible;
+}
+.ex-path path {
+  fill: none;
+  stroke: color-mix(in srgb, var(--color-navy) 38%, transparent);
+  stroke-width: 2px;
+  stroke-dasharray: 7 7;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+.ex-path.is-done path {
+  stroke: #6fbf3f;
+  stroke-dasharray: none;
+  stroke-width: 3px;
+}
+html[dir="rtl"] .ex-path svg {
+  transform: scaleX(-1);
+}
+.ex-path.is-b svg {
+  transform: scaleX(-1);
+}
+html[dir="rtl"] .ex-path.is-b svg {
+  transform: none;
+}
+@keyframes exRise {
+  from {
+    opacity: 0;
+    translate: 0 18px;
+  }
+}
+.ex-card,
+.ch-block {
+  animation: exRise 0.5s ease both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ex-card,
+  .ch-block {
+    animation: none;
+    transition: none;
+  }
+}
+
 .ex-link {
   justify-self: start;
   padding: 0;
@@ -521,10 +705,43 @@ html[dir="rtl"] .ch-back-ico svg {
   font-weight: 800;
 }
 
-@media (max-width: 720px) {
-  .ex-card,
+@media (max-width: 800px) {
+  .ex-card {
+    width: 100%;
+  }
+  .ex-card.is-a,
+  .ex-card.is-b {
+    align-self: stretch;
+    transform: none;
+  }
   .ch-block {
-    padding: 16px;
+    transform: none;
+  }
+  .ex-panel {
+    padding: 18px 16px 14px;
+  }
+  .ex-work {
+    padding: 12px 6px 6px;
+  }
+  .ex-num {
+    font-size: 26px;
+  }
+  .ex-path {
+    height: 46px;
+  }
+  .ex-path svg {
+    display: none;
+  }
+  .ex-path::before {
+    content: "";
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    inset-inline-start: 50%;
+    border-inline-start: 2px dashed color-mix(in srgb, var(--color-navy) 38%, transparent);
+  }
+  .ex-path.is-done::before {
+    border-inline-start: 3px solid #6fbf3f;
   }
   .ex-actions .pc-btn {
     flex: 1;
@@ -560,6 +777,24 @@ html[dir="rtl"] .ch-back-ico svg {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr));
   gap: 16px;
+}
+.note-card::before {
+  content: "";
+  position: absolute;
+  top: -9px;
+  inset-inline-start: 50%;
+  width: 56px;
+  height: 18px;
+  margin-inline-start: -28px;
+  background: color-mix(in srgb, var(--tape, var(--color-accent)) 80%, transparent);
+  transform: rotate(-4deg);
+  clip-path: polygon(0 10%, 5% 0, 10% 12%, 15% 0, 100% 0, 95% 50%, 100% 100%, 15% 100%, 10% 88%, 5% 100%, 0 90%, 4% 50%);
+}
+.note-card:nth-child(3n + 2)::before {
+  --tape: #e64d6b;
+}
+.note-card:nth-child(3n + 3)::before {
+  --tape: var(--color-primary);
 }
 .note-new,
 .note-card {
@@ -665,6 +900,21 @@ html[dir="rtl"] .ch-back-ico svg {
   font-size: 26px;
   font-weight: 700;
   line-height: 1;
+}
+@media (max-width: 720px) {
+  .note-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .note-new,
+  .note-card {
+    min-height: 150px;
+    padding: 16px 14px 12px;
+  }
+  .note-title,
+  .note-new-title {
+    font-size: 16px;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .note-new,
