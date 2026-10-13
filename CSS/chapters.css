@@ -312,6 +312,49 @@ html[dir="rtl"] .fd-back {
   transform: translateY(-9px) rotate(5deg);
 }
 
+.part-title {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0 -6px;
+  font-size: 15px;
+  font-weight: 800;
+}
+.part-title:first-child {
+  margin-top: 0;
+}
+.part-title::after {
+  content: "";
+  flex: 1;
+  height: 0;
+  border-top: 2px dashed color-mix(in srgb, var(--color-navy) 22%, transparent);
+}
+.part-num {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-navy);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+}
+/* a chapter of the programme whose exercises are not written yet */
+.folder.is-soon {
+  cursor: default;
+  filter: saturate(0.3);
+  opacity: 0.72;
+}
+.folder.is-soon:hover,
+.folder.is-soon:focus-visible {
+  transform: none;
+}
+.folder.is-soon:hover .fd-sheet {
+  transform: none;
+}
+
 /* ---------- chapter page ---------- */
 .ch-back {
   align-self: flex-start;
@@ -959,4 +1002,14 @@ input.note-input {
   margin-inline-start: auto;
   align-self: center;
   color: var(--color-danger);
+}
+
+@media (max-width: 720px) {
+  /* coming-soon chapters stay compact so 14 folders don't make a very long page */
+  .folder.is-soon {
+    height: 112px;
+  }
+  .folder.is-soon .fd-sheet {
+    display: none;
+  }
 }

@@ -1,0 +1,15 @@
+{
+  "level": "bac",
+  "subject": "prog",
+  "topic": "recursion",
+  "chapterId": "bac-prog-iteratif-recursif",
+  "title": "Itératif et récursif",
+  "title_ar": "من التكراري إلى التراجعي",
+  "order": 12,
+  "part": 3,
+  "part_title": "Récursivité",
+  "part_title_ar": "التراجعية",
+  "published": true,
+  "rappel": "",
+  "exercises": []
+}

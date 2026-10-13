@@ -1,0 +1,15 @@
+{
+  "level": "bac",
+  "subject": "prog",
+  "topic": "records",
+  "chapterId": "bac-prog-enregistrements",
+  "title": "Enregistrements",
+  "title_ar": "التسجيلات",
+  "order": 1,
+  "part": 1,
+  "part_title": "Types de données et structures complexes",
+  "part_title_ar": "أنواع المعطيات والهياكل المعقدة",
+  "published": true,
+  "rappel": "",
+  "exercises": []
+}

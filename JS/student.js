@@ -1035,6 +1035,9 @@ var TOPICS = {
   recursion: { color: "#01092d", icon: I_LOOP },
   numeric: { color: "#0464de", icon: I_TARGET },
   binary: { color: "#032c7b", icon: I_GRID },
+  arrays: { color: "#0464de", icon: I_GRID },
+  sorting: { color: "#4aa52f", icon: I_CHART },
+  qt: { color: "#032c7b", icon: I_CARDS },
   integration: { color: "#4aa52f", icon: I_CARDS },
 };
 function topicOf(key) {

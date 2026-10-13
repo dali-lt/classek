@@ -467,8 +467,10 @@ function chapterCard(ch) {
   var done = doneCount(ch);
   var nNotes = notesOf(ch.id).length;
   var title = ctx.getLang() === "ar" && ch.title_ar ? ch.title_ar : ch.title;
-  var card = el("button", "folder is-" + (ch.subject === "sti" ? "sti" : "prog"));
+  var soon = total === 0; // listed in the programme, exercises not written yet
+  var card = el("button", "folder is-" + (ch.subject === "sti" ? "sti" : "prog") + (soon ? " is-soon" : ""));
   card.type = "button";
+  card.disabled = soon;
   card.append(el("span", "fd-tab"));
   var back = el("span", "fd-back");
   var sheets = Math.max(1, Math.min(3, nNotes));
@@ -486,7 +488,7 @@ function chapterCard(ch) {
   card.append(back);
   var front = el("span", "fd-front");
   front.append(el("b", "fd-title", title || ""));
-  var meta = tf("exercisesCount", { n: total });
+  var meta = soon ? t("soon") : tf("exercisesCount", { n: total });
   if (nNotes) meta += " · " + notesLabel(nNotes);
   front.append(el("small", "fd-meta", meta));
   if (total) {
@@ -573,7 +575,18 @@ function renderList(host, route) {
     message(host, "emptyTitle", "emptyText", false);
     return;
   }
+  var lastPart = null;
   shown.forEach(function (c) {
+    // chapters grouped by part of the programme (when the chapter file says which part it belongs to)
+    if (c.part && c.part !== lastPart) {
+      var pt = ctx.getLang() === "ar" && c.part_title_ar ? c.part_title_ar : c.part_title;
+      if (pt) {
+        var head = el("h3", "part-title");
+        head.append(el("span", "part-num", String(c.part)), el("span", "", pt));
+        host.append(head);
+      }
+    }
+    lastPart = c.part || null;
     host.append(chapterCard(c));
   });
 }
