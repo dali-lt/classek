@@ -16,7 +16,9 @@ var STR = {
     retry: "Try again",
     emptyTitle: "Your first chapters are on their way",
     emptyText: "Come back soon: new exercises are being added.",
-    back: "All chapters",
+    back: "Back to {name}",
+    allSubjects: "All subjects",
+    subjects: "Subjects",
     exercises: "Exercises",
     exercisesCount: "{n} exercises",
     progress: "{done} / {total} done",
@@ -49,7 +51,9 @@ var STR = {
     retry: "عاود جرّب",
     emptyTitle: "أول الفصول جايين في الطريق",
     emptyText: "ارجع قريب: تمارين جديدة تتزاد.",
-    back: "كل الفصول",
+    back: "رجوع إلى {name}",
+    allSubjects: "كل المواد",
+    subjects: "المواد",
     exercises: "التمارين",
     exercisesCount: "{n} تمارين",
     progress: "{done} / {total} مكتملة",
@@ -83,6 +87,9 @@ var SUBJECTS = ["prog", "sti", "info"];
 var SUBJECTS_BY_LEVEL = { "2eme": ["info"], "3eme": ["prog", "sti"], bac: ["prog", "sti"] };
 var SUBJECT_COLOR = { prog: "#0464de", sti: "#aee37b", info: "#0464de" };
 var MIN_ANSWER = 10; // characters typed before the solution unlocks
+
+var ICON_BACK =
+  '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>';
 
 var ctx = null;
 var S = {
@@ -263,18 +270,26 @@ async function setStatus(chId, exId, value) {
 
 /* ---------------- route: #c=<chapterId> ---------------- */
 function readRoute() {
-  var m = /(?:^|[#&])c=([^&]+)/.exec(window.location.hash || "");
-  return m ? decodeURIComponent(m[1]) : "";
+  var h = window.location.hash || "";
+  var c = /(?:^|[#&])c=([^&]+)/.exec(h);
+  var sub = /(?:^|[#&])s=([^&]+)/.exec(h);
+  return { c: c ? decodeURIComponent(c[1]) : "", s: sub ? decodeURIComponent(sub[1]) : "" };
+}
+function go(hash) {
+  window.location.hash = hash; // fires hashchange, which re-renders
 }
 function openChapter(id) {
-  window.location.hash = "c=" + encodeURIComponent(id);
+  go("c=" + encodeURIComponent(id));
 }
-function closeChapter() {
+function openSubject(sub) {
+  go("s=" + encodeURIComponent(sub));
+}
+function closeToHome() {
   if (window.history && window.history.replaceState) {
     window.history.replaceState(null, "", window.location.pathname + window.location.search);
     render();
   } else {
-    window.location.hash = "";
+    go("");
   }
 }
 
@@ -291,56 +306,53 @@ function subjectsPresent() {
 function subjectList() {
   var id = LEVEL_ID[ctx.getLevel()];
   if (SUBJECTS_BY_LEVEL[id]) return SUBJECTS_BY_LEVEL[id];
-  var present = subjectsPresent();
-  return present.length ? present : ["prog", "sti"];
+  // level not set yet: Prog and STI always, plus any other subject that has chapters
+  var list = ["prog", "sti"];
+  if (subjectsPresent().indexOf("info") >= 0) list.push("info");
+  return list;
 }
 
-function renderSubjects(host, list) {
-  var box = $("sChapterTabs");
-  if (!box) {
-    box = el("div", "ch-subjects");
-    box.id = "sChapterTabs";
-    host.parentNode.insertBefore(box, host);
-  }
-  box.textContent = "";
-  box.hidden = list.length < 2;
-  if (list.length < 2) return;
-  list.forEach(function (sub) {
-    var chs = S.chapters.filter(function (c) {
-      return c.subject === sub;
-    });
-    var done = 0;
-    var total = 0;
-    chs.forEach(function (c) {
-      done += doneCount(c);
-      total += Number(c.exerciseCount) || 0;
-    });
-    var card = el("button", "ch-subject" + (S.subject === sub ? " is-active" : ""));
-    card.type = "button";
-    card.setAttribute("aria-pressed", String(S.subject === sub));
-    var ic = el("span", "ch-ico");
-    ic.style.background = SUBJECT_COLOR[sub];
-    if (sub === "sti") ic.style.color = "#01092d";
-    ic.innerHTML = ctx.subjectIcon ? ctx.subjectIcon(sub) : ""; // static, trusted SVG
-    var text = el("span", "ch-text");
-    text.append(el("b", "ch-title", t("s_" + sub)));
-    text.append(
-      el("small", "ch-meta", chs.length === 1 ? t("chaptersOne") : chs.length ? tf("chaptersCount", { n: chs.length }) : t("soon")),
-    );
-    if (total) {
-      var bar = el("span", "domain-bar ch-bar");
-      var fill = el("i");
-      fill.style.width = Math.min(100, Math.round((done / total) * 100)) + "%";
-      bar.append(fill);
-      text.append(bar);
-    }
-    card.append(ic, text);
-    card.addEventListener("click", function () {
-      S.subject = sub;
-      render();
-    });
-    box.append(card);
+function subjectCard(sub) {
+  var chs = S.chapters.filter(function (c) {
+    return c.subject === sub;
   });
+  var done = 0;
+  var total = 0;
+  chs.forEach(function (c) {
+    done += doneCount(c);
+    total += Number(c.exerciseCount) || 0;
+  });
+  var card = el("button", "ch-card");
+  card.type = "button";
+  var ic = el("span", "ch-ico");
+  ic.style.background = SUBJECT_COLOR[sub];
+  if (sub === "sti") ic.style.color = "#01092d";
+  ic.innerHTML = ctx.subjectIcon ? ctx.subjectIcon(sub) : ""; // static, trusted SVG
+  var text = el("span", "ch-text");
+  text.append(el("b", "ch-title", t("s_" + sub)));
+  text.append(
+    el(
+      "small",
+      "ch-meta",
+      chs.length === 1
+        ? t("chaptersOne")
+        : chs.length
+          ? tf("chaptersCount", { n: chs.length })
+          : t("soon"),
+    ),
+  );
+  if (total) {
+    var bar = el("span", "domain-bar ch-bar");
+    var fill = el("i");
+    fill.style.width = Math.min(100, Math.round((done / total) * 100)) + "%";
+    bar.append(fill);
+    text.append(bar, el("small", "ch-meta", tf("progress", { done: done, total: total })));
+  }
+  card.append(ic, text);
+  card.addEventListener("click", function () {
+    openSubject(sub);
+  });
+  return card;
 }
 
 function chapterCard(ch) {
@@ -370,34 +382,72 @@ function chapterCard(ch) {
   return card;
 }
 
-function renderList(host) {
+/* The back row above the list (only shown inside a subject) */
+function setBackRow(host, show) {
+  var row = $("sChapterTabs");
+  if (!row) {
+    row = el("div", "ch-tabs");
+    row.id = "sChapterTabs";
+    host.parentNode.insertBefore(row, host);
+  }
+  row.textContent = "";
+  row.hidden = !show;
+  if (!show) return;
+  var back = el("button", "ch-back");
+  back.type = "button";
+  back.append(icon(ICON_BACK, "ch-back-ico"), el("span", "", t("allSubjects")));
+  back.addEventListener("click", closeToHome);
+  row.append(back);
+}
+
+function message(host, titleKey, textKey, retry) {
+  var box = el("div", "student-empty");
+  box.append(el("b", "", t(titleKey)));
+  if (textKey) box.append(el("span", "", t(textKey)));
+  if (retry) {
+    var btn = el("button", "pc-btn", t("retry"));
+    btn.type = "button";
+    btn.addEventListener("click", load);
+    box.append(btn);
+  }
+  host.append(box);
+}
+
+function renderList(host, route) {
   host.textContent = "";
+  var title = $("sChaptersTitle");
   if (S.loading || !ctx.ready()) {
+    setBackRow(host, false);
     host.append(el("div", "student-empty", t("loading")));
-    renderSubjects(host, []);
     return;
   }
   if (S.failed) {
-    var box = el("div", "student-empty");
-    box.append(el("b", "", t("loadFail")));
-    var retry = el("button", "pc-btn", t("retry"));
-    retry.type = "button";
-    retry.addEventListener("click", load);
-    box.append(retry);
-    host.append(box);
-    renderSubjects(host, []);
+    setBackRow(host, false);
+    message(host, "loadFail", "", true);
     return;
   }
   var list = subjectList();
-  if (!S.subject || list.indexOf(S.subject) < 0) S.subject = list[0];
-  renderSubjects(host, list);
+  var single = list.length === 1;
+  var sub = single ? list[0] : list.indexOf(route.s) >= 0 ? route.s : "";
+
+  if (!sub) {
+    // home: the subjects of the level
+    setBackRow(host, false);
+    if (title) title.textContent = t("subjects");
+    list.forEach(function (x) {
+      host.append(subjectCard(x));
+    });
+    return;
+  }
+
+  // inside a subject: its chapters
+  setBackRow(host, !single);
+  if (title) title.textContent = t("s_" + sub);
   var shown = S.chapters.filter(function (c) {
-    return c.subject === S.subject;
+    return c.subject === sub;
   });
   if (!shown.length) {
-    var empty = el("div", "student-empty");
-    empty.append(el("b", "", t("emptyTitle")), el("span", "", t("emptyText")));
-    host.append(empty);
+    message(host, "emptyTitle", "emptyText", false);
     return;
   }
   shown.forEach(function (c) {
@@ -508,9 +558,11 @@ function renderView(view, ch) {
   view.textContent = "";
   var back = el("button", "ch-back");
   back.type = "button";
-  back.append(icon('<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>', "ch-back-ico"));
-  back.append(el("span", "", t("back")));
-  back.addEventListener("click", closeChapter);
+  back.append(icon(ICON_BACK, "ch-back-ico"));
+  back.append(el("span", "", tf("back", { name: t("s_" + ch.subject) })));
+  back.addEventListener("click", function () {
+    openSubject(ch.subject);
+  });
 
   var hero = el("section", "student-hero");
   var mark = el("img", "hero-watermark");
@@ -569,7 +621,8 @@ function render() {
   var list = $("sChapters");
   if (!list || !view) return;
 
-  var id = readRoute();
+  var route = readRoute();
+  var id = route.c;
   var ch = id
     ? S.chapters.filter(function (c) {
         return c.id === id;
@@ -583,9 +636,12 @@ function render() {
   view.hidden = !opening;
 
   if (!opening) {
-    if (id) closeChapter(); // unknown chapter id in the address
+    if (id) {
+      closeToHome(); // unknown chapter id in the address
+      return;
+    }
     S.cur = null;
-    renderList(list);
+    renderList(list, route);
     return;
   }
   if (!ch) {

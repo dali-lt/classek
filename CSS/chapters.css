@@ -17,37 +17,10 @@
   gap: 16px;
 }
 
-/* ---------- subject cards (always shown for the level's subjects) ---------- */
-.ch-subjects {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
-  gap: 12px;
-  margin-bottom: 14px;
-}
-.ch-subject {
+/* ---------- back row above a subject's chapters ---------- */
+.ch-tabs {
   display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 16px;
-  border: 1.5px solid var(--color-border);
-  border-radius: 18px;
-  background: var(--color-surface);
-  color: var(--color-text);
-  font: inherit;
-  text-align: start;
-  cursor: pointer;
-  transition:
-    border-color 0.15s ease,
-    background 0.15s ease,
-    box-shadow 0.15s ease;
-}
-.ch-subject:hover {
-  border-color: var(--color-primary);
-}
-.ch-subject.is-active {
-  border-color: var(--color-primary);
-  background: var(--color-light-blue);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 18%, transparent);
+  margin-bottom: 12px;
 }
 
 /* ---------- chapter cards ---------- */
