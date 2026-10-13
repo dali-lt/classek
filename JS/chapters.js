@@ -42,6 +42,19 @@ var STR = {
     chaptersCount: "{n} chapters",
     chaptersOne: "1 chapter",
     soon: "Coming soon",
+    notes: "My notes",
+    notesHint: "Write what matters to you from this lesson.",
+    newNote: "New note",
+    noteTitle: "Title",
+    noteBody: "Write your note here…",
+    save: "Save",
+    cancel: "Cancel",
+    del: "Delete",
+    confirmDelete: "Delete this note?",
+    untitled: "Untitled",
+    notesCount: "{n} notes",
+    noteOne: "1 note",
+    notesFail: "Notes are unavailable right now.",
     desc_prog: "Algorithms, Python and Bac-style exercises",
     desc_sti: "Web, HTML, CSS and more",
     desc_info: "Lessons and exercises, step by step",
@@ -80,6 +93,19 @@ var STR = {
     chaptersCount: "{n} فصول",
     chaptersOne: "فصل واحد",
     soon: "قريبا",
+    notes: "ملاحظاتي",
+    notesHint: "اكتب اللي يهمك من الدرس.",
+    newNote: "ملاحظة جديدة",
+    noteTitle: "العنوان",
+    noteBody: "اكتب ملاحظتك هنا…",
+    save: "حفظ",
+    cancel: "إلغاء",
+    del: "حذف",
+    confirmDelete: "تحب تحذف الملاحظة هذي؟",
+    untitled: "بلا عنوان",
+    notesCount: "{n} ملاحظات",
+    noteOne: "ملاحظة وحدة",
+    notesFail: "الملاحظات موش متوفرة توّا.",
     desc_prog: "خوارزميات وPython وتمارين على نمط الباك",
     desc_sti: "الويب وHTML وCSS وأكثر",
     desc_info: "دروس وتمارين خطوة بخطوة",
@@ -104,6 +130,8 @@ var S = {
   failed: false,
   chapters: [],
   status: {}, // chapterId -> { exId: "done" | "review" }
+  notes: [], // all of the student's notes, newest first
+  notesOk: true,
   subject: null,
   cur: null, // { id, exercises, loading, failed } for the open chapter
 };
@@ -112,6 +140,11 @@ var hintOpen = {};
 var revealed = {};
 var solutions = {}; // "chapterId/exId" -> text
 var rowError = {};
+var editing = null; // note id, "new", or null
+var noteDraft = { title: "", body: "" };
+var noteError = "";
+var NOTE_TITLE_MAX = 100;
+var NOTE_BODY_MAX = 4000;
 
 function t(key) {
   return STR[ctx && ctx.getLang() === "ar" ? "ar" : "en"][key];
@@ -221,8 +254,83 @@ async function load() {
     console.warn("Couldn’t load the chapters:", e);
     S.failed = true;
   }
+  try {
+    var nsnap = await sdk.getDocs(sdk.collection(ctx.db, "users", ctx.uid, "notes"));
+    S.notes = nsnap.docs
+      .map(function (d) {
+        return Object.assign({ id: d.id }, d.data());
+      })
+      .sort(function (a, b) {
+        return (b.updatedAt || 0) - (a.updatedAt || 0);
+      });
+    S.notesOk = true;
+  } catch (e) {
+    console.warn("Couldn’t load the notes:", e);
+    S.notes = [];
+    S.notesOk = false;
+  }
   S.loading = false;
   render();
+}
+
+/* ---------------- notes ---------------- */
+function notesOf(chId) {
+  return S.notes.filter(function (n) {
+    return n.chapterId === chId;
+  });
+}
+function notesLabel(n) {
+  return n === 1 ? t("noteOne") : tf("notesCount", { n: n });
+}
+async function saveNote(chId, id) {
+  var sdk = ctx.sdk;
+  var data = {
+    chapterId: chId,
+    title: noteDraft.title.trim().slice(0, NOTE_TITLE_MAX),
+    body: noteDraft.body.slice(0, NOTE_BODY_MAX),
+    updatedAt: Date.now(),
+  };
+  var ref = id
+    ? sdk.doc(ctx.db, "users", ctx.uid, "notes", id)
+    : sdk.doc(sdk.collection(ctx.db, "users", ctx.uid, "notes"));
+  try {
+    await sdk.setDoc(ref, data);
+    var saved = Object.assign({ id: ref.id }, data);
+    S.notes = [saved].concat(
+      S.notes.filter(function (n) {
+        return n.id !== ref.id;
+      }),
+    );
+    noteError = "";
+    editing = null;
+  } catch (e) {
+    console.warn("Couldn’t save the note:", e);
+    noteError = t("saveFail");
+  }
+}
+async function removeNote(id) {
+  try {
+    await ctx.sdk.deleteDoc(ctx.sdk.doc(ctx.db, "users", ctx.uid, "notes", id));
+    S.notes = S.notes.filter(function (n) {
+      return n.id !== id;
+    });
+    noteError = "";
+    editing = null;
+  } catch (e) {
+    console.warn("Couldn’t delete the note:", e);
+    noteError = t("saveFail");
+  }
+}
+function dateLabel(ms) {
+  try {
+    return new Date(ms).toLocaleDateString(ctx.getLang() === "ar" ? "ar-TN" : "en-GB", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+    });
+  } catch (e) {
+    return "";
+  }
 }
 
 async function loadExercises(chId) {
@@ -353,27 +461,34 @@ function subjectCard(sub) {
   return card;
 }
 
+/* A chapter is a folder; its notes are the sheets peeking out of it. */
 function chapterCard(ch) {
-  var topic = ctx.topicOf(ch.topic);
-  var card = el("button", "ch-card");
-  card.type = "button";
-  var ic = el("span", "ch-ico");
-  ic.style.background = topic.color;
-  ic.innerHTML = topic.icon; // static, trusted SVG from student.js
-  var text = el("span", "ch-text");
   var total = Number(ch.exerciseCount) || 0;
   var done = doneCount(ch);
+  var nNotes = notesOf(ch.id).length;
   var title = ctx.getLang() === "ar" && ch.title_ar ? ch.title_ar : ch.title;
-  text.append(el("b", "ch-title", title || ""));
-  text.append(el("small", "ch-meta", tf("exercisesCount", { n: total })));
+  var card = el("button", "folder is-" + (ch.subject === "sti" ? "sti" : "prog"));
+  card.type = "button";
+  card.append(el("span", "fd-tab"));
+  var back = el("span", "fd-back");
+  var sheets = Math.max(1, Math.min(3, nNotes));
+  for (var i = 1; i <= sheets; i++) {
+    back.append(el("span", "fd-sheet s" + i + (nNotes ? "" : " is-blank")));
+  }
+  card.append(back);
+  var front = el("span", "fd-front");
+  front.append(el("b", "fd-title", title || ""));
+  var meta = tf("exercisesCount", { n: total });
+  if (nNotes) meta += " · " + notesLabel(nNotes);
+  front.append(el("small", "fd-meta", meta));
   if (total) {
-    var bar = el("span", "domain-bar ch-bar");
+    var bar = el("span", "fd-bar");
     var fill = el("i");
     fill.style.width = Math.min(100, Math.round((done / total) * 100)) + "%";
     bar.append(fill);
-    text.append(bar, el("small", "ch-meta", tf("progress", { done: done, total: total })));
+    front.append(bar);
   }
-  card.append(ic, text);
+  card.append(front);
   card.addEventListener("click", function () {
     openChapter(ch.id);
   });
@@ -554,6 +669,117 @@ function exerciseCard(ch, ex, index) {
   return card;
 }
 
+function noteCard(ch, n) {
+  var card = el("button", "note-card");
+  card.type = "button";
+  var title = el("b", "note-title", n.title || t("untitled"));
+  title.setAttribute("dir", "auto");
+  var body = el("span", "note-body", n.body || "");
+  body.setAttribute("dir", "auto");
+  card.append(title, body, el("small", "note-date", dateLabel(n.updatedAt)));
+  card.addEventListener("click", function () {
+    editing = n.id;
+    noteDraft = { title: n.title || "", body: n.body || "" };
+    noteError = "";
+    render();
+    focusNote();
+  });
+  return card;
+}
+
+function focusNote() {
+  setTimeout(function () {
+    var ta = document.querySelector(".note-editor textarea");
+    if (ta) ta.focus();
+  }, 0);
+}
+
+function noteEditor(ch) {
+  var isNew = editing === "new";
+  var box = el("div", "note-editor");
+  var title = el("input", "note-input");
+  title.type = "text";
+  title.maxLength = NOTE_TITLE_MAX;
+  title.placeholder = t("noteTitle");
+  title.value = noteDraft.title;
+  title.setAttribute("dir", "auto");
+  title.addEventListener("input", function () {
+    noteDraft.title = title.value;
+  });
+  var body = el("textarea", "note-input note-textarea");
+  body.maxLength = NOTE_BODY_MAX;
+  body.rows = 7;
+  body.placeholder = t("noteBody");
+  body.value = noteDraft.body;
+  body.setAttribute("dir", "auto");
+  body.addEventListener("input", function () {
+    noteDraft.body = body.value;
+  });
+  var actions = el("div", "ex-actions");
+  var save = el("button", "pc-btn", t("save"));
+  save.type = "button";
+  save.addEventListener("click", async function () {
+    if (!noteDraft.title.trim() && !noteDraft.body.trim()) {
+      editing = null;
+      render();
+      return;
+    }
+    save.disabled = true;
+    await saveNote(ch.id, isNew ? null : editing);
+    render();
+  });
+  var cancel = el("button", "pc-btn is-ghost", t("cancel"));
+  cancel.type = "button";
+  cancel.addEventListener("click", function () {
+    editing = null;
+    noteError = "";
+    render();
+  });
+  actions.append(save, cancel);
+  if (!isNew) {
+    var del = el("button", "ex-link is-danger", t("del"));
+    del.type = "button";
+    del.addEventListener("click", async function () {
+      if (!window.confirm(t("confirmDelete"))) return;
+      await removeNote(editing);
+      render();
+    });
+    actions.append(del);
+  }
+  box.append(title, body, actions);
+  if (noteError) box.append(el("p", "set-msg", noteError));
+  return box;
+}
+
+function notesSection(ch) {
+  var sec = el("section", "notes-section");
+  var head = el("div", "notes-head");
+  head.append(el("h2", "ch-section-title", t("notes")), el("small", "ch-meta", t("notesHint")));
+  sec.append(head);
+  if (!S.notesOk) {
+    sec.append(el("p", "set-msg", t("notesFail")));
+    return sec;
+  }
+  var grid = el("div", "note-grid");
+  var add = el("button", "note-new");
+  add.type = "button";
+  add.append(el("span", "note-plus", "+"), el("b", "", t("newNote")));
+  add.addEventListener("click", function () {
+    editing = "new";
+    noteDraft = { title: "", body: "" };
+    noteError = "";
+    render();
+    focusNote();
+  });
+  if (editing === "new") grid.append(noteEditor(ch));
+  else grid.append(add);
+  notesOf(ch.id).forEach(function (n) {
+    grid.append(editing === n.id ? noteEditor(ch) : noteCard(ch, n));
+  });
+  sec.append(grid);
+  return sec;
+}
+
 function renderView(view, ch) {
   view.textContent = "";
   var back = el("button", "ch-back");
@@ -581,6 +807,8 @@ function renderView(view, ch) {
     block.append(el("span", "test-chip", t("rappel")), md(ch.rappel));
     view.append(block);
   }
+
+  view.append(notesSection(ch));
 
   var h2 = el("h2", "ch-section-title", t("exercises"));
   view.append(h2);

@@ -1713,7 +1713,9 @@ async function main() {
       await sdk.reauthenticateWithPopup(u, new sdk.GoogleAuthProvider());
       var uid = u.uid;
       var prog = await sdk.getDocs(sdk.collection(db, "users", uid, "progress"));
+      var notesSnap = await sdk.getDocs(sdk.collection(db, "users", uid, "notes"));
       var refs = prog.docs
+        .concat(notesSnap.docs)
         .map(function (d) {
           return d.ref;
         })

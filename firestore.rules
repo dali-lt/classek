@@ -41,6 +41,20 @@ service cloud.firestore {
       allow read, write: if isOwner(uid);
     }
 
+    // notes personnelles de l'élève (une note = un feuillet dans le dossier du chapitre)
+    match /users/{uid}/notes/{noteId} {
+      allow read, delete: if isOwner(uid);
+      allow create, update: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['chapterId', 'title', 'body', 'updatedAt'])
+        && request.resource.data.chapterId is string
+        && request.resource.data.chapterId.size() <= 100
+        && request.resource.data.title is string
+        && request.resource.data.title.size() <= 100
+        && request.resource.data.body is string
+        && request.resource.data.body.size() <= 4000
+        && request.resource.data.updatedAt is number;
+    }
+
     // Contenu du livre: lecture pour les comptes connectés (chapitres publiés), écriture admin seulement.
     // Les requêtes de liste doivent filtrer sur published == true (le code le fait).
     match /chapters/{chapterId} {
