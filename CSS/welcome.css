@@ -282,8 +282,10 @@ html[dir="rtl"] .welcome-link .welcome-ico:first-child svg {
 
 /* ================= Student shell ================= */
 .student-body {
+  /* style.css gives body height:100%, which cut the bottom padding off the scrollable page */
+  height: auto;
   min-height: 100%;
-  padding: calc(14px + env(safe-area-inset-top, 0px)) 14px 40px;
+  padding: calc(14px + env(safe-area-inset-top, 0px)) 14px calc(56px + env(safe-area-inset-bottom, 0px));
   background: var(--color-page);
 }
 .student-wrap {

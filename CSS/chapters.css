@@ -236,6 +236,26 @@ html[dir="rtl"] .fd-back {
 .fd-sheet.is-blank {
   opacity: 0.55;
 }
+/* a sheet that holds a real note: its title on top, faint lines below */
+.fd-sheet.s1 .fd-sheet-t,
+.fd-sheet.s2 .fd-sheet-t {
+  -webkit-line-clamp: 1;
+}
+.fd-sheet.has-note {
+  padding: 10px 10px 0;
+  background-position: 0 32px;
+}
+.fd-sheet-t {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: #01092d;
+  font-size: 10.5px;
+  font-weight: 800;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
 .fd-front {
   position: absolute;
   inset-inline: 0;
@@ -522,93 +542,135 @@ html[dir="rtl"] .ch-back-ico svg {
   flex-wrap: wrap;
   gap: 4px 12px;
 }
+.notes-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  margin-inline-start: 8px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--color-light-blue);
+  color: var(--color-primary);
+  font-size: 12.5px;
+  font-weight: 800;
+  vertical-align: 2px;
+}
 .note-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr));
+  gap: 16px;
 }
-.note-new {
-  min-height: 150px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border: 1.5px dashed var(--color-border);
-  border-radius: 20px;
-  background: var(--color-surface);
-  color: var(--color-text-muted);
-  font: inherit;
-  font-size: 14px;
-  cursor: pointer;
-  transition:
-    border-color 0.15s ease,
-    color 0.15s ease,
-    background 0.15s ease;
-}
-.note-new:hover {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-  background: var(--color-light-blue);
-}
-.note-plus {
-  width: 38px;
-  height: 38px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--color-light-blue);
-  color: var(--color-primary);
-  font-size: 24px;
-  font-weight: 700;
-  line-height: 1;
-}
+.note-new,
 .note-card {
   position: relative;
-  min-height: 150px;
+  min-height: 190px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 16px 16px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: 20px;
+  padding: 18px 18px 14px;
+  border: 0;
+  border-radius: 24px;
   background: var(--color-surface);
   color: var(--color-text);
   font: inherit;
   text-align: start;
   cursor: pointer;
-  box-shadow: 0 6px 16px rgba(1, 9, 45, 0.07);
+  box-shadow:
+    0 1px 2px rgba(1, 9, 45, 0.06),
+    0 10px 26px rgba(1, 9, 45, 0.09);
   transition:
-    transform 0.15s ease,
-    box-shadow 0.15s ease;
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
 }
-.note-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 24px rgba(1, 9, 45, 0.12);
+.note-new:hover,
+.note-card:hover,
+.note-new:focus-visible,
+.note-card:focus-visible {
+  transform: translateY(-4px);
+  box-shadow:
+    0 2px 4px rgba(1, 9, 45, 0.06),
+    0 18px 34px rgba(1, 9, 45, 0.14);
 }
-.note-title {
-  font-size: 16px;
+.note-title,
+.note-new-title {
+  font-size: 19px;
   font-weight: 800;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 .note-body {
   flex: 1;
   display: -webkit-box;
-  -webkit-line-clamp: 5;
+  -webkit-line-clamp: 6;
   -webkit-box-orient: vertical;
   overflow: hidden;
   color: var(--color-text-muted);
   font-size: 13px;
-  line-height: 1.5;
+  line-height: 1.55;
   white-space: pre-wrap;
-  -webkit-mask-image: linear-gradient(to bottom, #000 65%, transparent);
-  mask-image: linear-gradient(to bottom, #000 65%, transparent);
+  -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent);
+  mask-image: linear-gradient(to bottom, #000 55%, transparent);
+}
+.note-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
 }
 .note-date {
   color: var(--color-text-muted);
   font-size: 11.5px;
   font-weight: 800;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+/* three dots, as on the reference cards (decorative) */
+.note-dots {
+  width: 18px;
+  height: 4px;
+  background:
+    radial-gradient(circle, var(--color-text-muted) 2px, transparent 2.4px) 0 50% / 6px 4px repeat-x;
+  opacity: 0.7;
+}
+/* the "new note" card: an empty sheet waiting for a title */
+.note-new {
+  justify-content: space-between;
+  box-shadow: none;
+  border: 1.5px dashed var(--color-border);
+  background: color-mix(in srgb, var(--color-surface) 70%, transparent);
+  color: var(--color-text-muted);
+}
+.note-new-title {
+  color: var(--color-text-muted);
+}
+.note-new:hover,
+.note-new:focus-visible {
+  border-color: var(--color-primary);
+  background: var(--color-light-blue);
+  box-shadow: none;
+}
+.note-new:hover .note-new-title {
+  color: var(--color-primary);
+}
+.note-plus {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-light-blue);
+  color: var(--color-primary);
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .note-new,
+  .note-card {
+    transition: none;
+  }
 }
 .note-editor {
   grid-column: 1 / -1;

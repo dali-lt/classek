@@ -472,8 +472,16 @@ function chapterCard(ch) {
   card.append(el("span", "fd-tab"));
   var back = el("span", "fd-back");
   var sheets = Math.max(1, Math.min(3, nNotes));
+  var recent = notesOf(ch.id); // newest first: the newest note is the sheet on top
   for (var i = 1; i <= sheets; i++) {
-    back.append(el("span", "fd-sheet s" + i + (nNotes ? "" : " is-blank")));
+    var note = nNotes ? recent[sheets - i] : null;
+    var sheet = el("span", "fd-sheet s" + i + (nNotes ? " has-note" : " is-blank"));
+    if (note) {
+      var st = el("b", "fd-sheet-t", note.title || note.body || t("untitled"));
+      st.setAttribute("dir", "auto");
+      sheet.append(st);
+    }
+    back.append(sheet);
   }
   card.append(back);
   var front = el("span", "fd-front");
@@ -676,7 +684,9 @@ function noteCard(ch, n) {
   title.setAttribute("dir", "auto");
   var body = el("span", "note-body", n.body || "");
   body.setAttribute("dir", "auto");
-  card.append(title, body, el("small", "note-date", dateLabel(n.updatedAt)));
+  var foot = el("span", "note-foot");
+  foot.append(el("small", "note-date", dateLabel(n.updatedAt)), el("i", "note-dots"));
+  card.append(title, body, foot);
   card.addEventListener("click", function () {
     editing = n.id;
     noteDraft = { title: n.title || "", body: n.body || "" };
@@ -754,7 +764,10 @@ function noteEditor(ch) {
 function notesSection(ch) {
   var sec = el("section", "notes-section");
   var head = el("div", "notes-head");
-  head.append(el("h2", "ch-section-title", t("notes")), el("small", "ch-meta", t("notesHint")));
+  var count = notesOf(ch.id).length;
+  var h = el("h2", "ch-section-title", t("notes"));
+  if (count) h.append(el("span", "notes-count", String(count)));
+  head.append(h, el("small", "ch-meta", t("notesHint")));
   sec.append(head);
   if (!S.notesOk) {
     sec.append(el("p", "set-msg", t("notesFail")));
@@ -763,7 +776,7 @@ function notesSection(ch) {
   var grid = el("div", "note-grid");
   var add = el("button", "note-new");
   add.type = "button";
-  add.append(el("span", "note-plus", "+"), el("b", "", t("newNote")));
+  add.append(el("b", "note-new-title", t("newNote")), el("span", "note-plus", "+"));
   add.addEventListener("click", function () {
     editing = "new";
     noteDraft = { title: "", body: "" };
