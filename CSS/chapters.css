@@ -23,6 +23,137 @@
   margin-bottom: 12px;
 }
 
+/* ---------- subjects home: two big cards that fill the width ---------- */
+.student-chapters.is-subjects {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 26px;
+  padding: 34px clamp(16px, 5vw, 56px) 40px;
+  border: 1px solid var(--color-border);
+  border-radius: 22px;
+  /* faint grid, like a notebook page */
+  background-color: var(--color-surface);
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--color-border) 55%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--color-border) 55%, transparent) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+.subject-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 300px;
+  padding: 30px 22px 26px;
+  border: 0;
+  border-radius: 26px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 14px 34px rgba(1, 9, 45, 0.1);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.subject-card:nth-child(odd) {
+  transform: rotate(-1.8deg);
+}
+.subject-card:nth-child(even) {
+  transform: rotate(1.6deg) translateY(12px);
+}
+.subject-card:hover,
+.subject-card:focus-visible {
+  transform: rotate(0deg) translateY(-6px);
+  box-shadow: 0 22px 44px rgba(1, 9, 45, 0.16);
+  outline: none;
+}
+.sc-ico {
+  width: 96px;
+  height: 96px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  margin-bottom: 8px;
+}
+.sc-ico svg {
+  width: 44px;
+  height: 44px;
+}
+.is-prog .sc-ico {
+  background: var(--color-light-blue);
+  color: var(--color-primary);
+}
+.is-sti .sc-ico {
+  background: color-mix(in srgb, var(--color-accent) 40%, transparent);
+  color: var(--color-accent-ink);
+}
+.sc-title {
+  font-size: 22px;
+  font-weight: 900;
+}
+.sc-desc {
+  max-width: 260px;
+  color: var(--color-text-muted);
+  font-size: 14.5px;
+  line-height: 1.45;
+}
+.sc-pill {
+  margin-top: 6px;
+  padding: 5px 14px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 800;
+}
+.is-prog .sc-pill {
+  background: var(--color-light-blue);
+  color: var(--color-primary);
+}
+.is-sti .sc-pill {
+  background: color-mix(in srgb, var(--color-accent) 40%, transparent);
+  color: var(--color-accent-ink);
+}
+.sc-pill.is-soon {
+  background: var(--color-sunken);
+  color: var(--color-text-muted);
+}
+.sc-bar {
+  width: 80%;
+  max-width: 220px;
+  margin-top: 6px;
+}
+.sc-meta {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+@media (max-width: 720px) {
+  .student-chapters.is-subjects {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 18px 14px 22px;
+  }
+  .subject-card {
+    min-height: 0;
+    padding: 24px 18px 22px;
+  }
+  .subject-card:nth-child(odd),
+  .subject-card:nth-child(even) {
+    transform: none;
+  }
+  .sc-ico {
+    width: 80px;
+    height: 80px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .subject-card,
+  .subject-card:hover {
+    transition: none;
+  }
+}
+
 /* ---------- chapter cards ---------- */
 .ch-card {
   display: flex;

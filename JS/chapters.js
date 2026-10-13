@@ -42,6 +42,9 @@ var STR = {
     chaptersCount: "{n} chapters",
     chaptersOne: "1 chapter",
     soon: "Coming soon",
+    desc_prog: "Algorithms, Python and Bac-style exercises",
+    desc_sti: "Web, HTML, CSS and more",
+    desc_info: "Lessons and exercises, step by step",
     saveFail: "Couldn’t save your progress. Try again.",
     solFail: "Couldn’t load the solution. Try again.",
   },
@@ -77,6 +80,9 @@ var STR = {
     chaptersCount: "{n} فصول",
     chaptersOne: "فصل واحد",
     soon: "قريبا",
+    desc_prog: "خوارزميات وPython وتمارين على نمط الباك",
+    desc_sti: "الويب وHTML وCSS وأكثر",
+    desc_info: "دروس وتمارين خطوة بخطوة",
     saveFail: "ما نجمناش نحفظو تقدمك. عاود جرّب.",
     solFail: "ما نجمناش نحمّلو الحل. عاود جرّب.",
   },
@@ -322,33 +328,25 @@ function subjectCard(sub) {
     done += doneCount(c);
     total += Number(c.exerciseCount) || 0;
   });
-  var card = el("button", "ch-card");
+  var card = el("button", "subject-card is-" + sub);
   card.type = "button";
-  var ic = el("span", "ch-ico");
-  ic.style.background = SUBJECT_COLOR[sub];
-  if (sub === "sti") ic.style.color = "#01092d";
+  var ic = el("span", "sc-ico");
   ic.innerHTML = ctx.subjectIcon ? ctx.subjectIcon(sub) : ""; // static, trusted SVG
-  var text = el("span", "ch-text");
-  text.append(el("b", "ch-title", t("s_" + sub)));
-  text.append(
-    el(
-      "small",
-      "ch-meta",
-      chs.length === 1
-        ? t("chaptersOne")
-        : chs.length
-          ? tf("chaptersCount", { n: chs.length })
-          : t("soon"),
-    ),
-  );
+  var label =
+    chs.length === 1
+      ? t("chaptersOne")
+      : chs.length
+        ? tf("chaptersCount", { n: chs.length })
+        : t("soon");
+  card.append(ic, el("b", "sc-title", t("s_" + sub)), el("span", "sc-desc", t("desc_" + sub)));
+  card.append(el("span", "sc-pill" + (chs.length ? "" : " is-soon"), label));
   if (total) {
-    var bar = el("span", "domain-bar ch-bar");
+    var bar = el("span", "domain-bar sc-bar");
     var fill = el("i");
     fill.style.width = Math.min(100, Math.round((done / total) * 100)) + "%";
     bar.append(fill);
-    text.append(bar, el("small", "ch-meta", tf("progress", { done: done, total: total })));
+    card.append(bar, el("small", "sc-meta", tf("progress", { done: done, total: total })));
   }
-  card.append(ic, text);
   card.addEventListener("click", function () {
     openSubject(sub);
   });
@@ -415,6 +413,7 @@ function message(host, titleKey, textKey, retry) {
 
 function renderList(host, route) {
   host.textContent = "";
+  host.classList.remove("is-subjects");
   var title = $("sChaptersTitle");
   if (S.loading || !ctx.ready()) {
     setBackRow(host, false);
@@ -434,6 +433,7 @@ function renderList(host, route) {
     // home: the subjects of the level
     setBackRow(host, false);
     if (title) title.textContent = t("subjects");
+    host.classList.add("is-subjects");
     list.forEach(function (x) {
       host.append(subjectCard(x));
     });
