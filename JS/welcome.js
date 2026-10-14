@@ -8,7 +8,6 @@ var SDK_VERSION = "10.14.1";
 var SDK_BASE = "https://www.gstatic.com/firebasejs/" + SDK_VERSION + "/";
 var LANG_KEY = "classledger:lang";
 var PICK_KEY = "classledger:picked-role";
-var NOTICE_KEY = "classledger:notice"; // set by the student page when another device signed this one out
 var HOME = { teacher: "teacher", student: "student" };
 
 var STR = {
@@ -37,7 +36,6 @@ var STR = {
       "This website address isn’t authorized yet. Add it in Firebase → Authentication → Settings → Authorized domains.",
     rulesHint: "The cloud refused access. Check the Firestore security rules.",
     saveFail: "Couldn’t save your choice. Try again.",
-    remoteOut: "You were signed out from another device.",
   },
   ar: {
     title: "مرحبا! يلا نبداو",
@@ -64,7 +62,6 @@ var STR = {
       "عنوان الموقع هذا موش مصرّح بيه. زيدو في Firebase ← Authentication ← Settings ← Authorized domains.",
     rulesHint: "السحابة رفضت الوصول. تثبّت من قواعد أمان Firestore.",
     saveFail: "ما نجمناش نحفظو اختيارك. عاود جرّب.",
-    remoteOut: "تم تسجيل خروجك من جهاز آخر.",
   },
 };
 
@@ -121,16 +118,6 @@ function clearPick() {
   try {
     sessionStorage.removeItem(PICK_KEY);
   } catch (e) {}
-}
-// one-shot message left by the student page; read once, then forgotten
-function takeNotice() {
-  try {
-    var v = sessionStorage.getItem(NOTICE_KEY);
-    sessionStorage.removeItem(NOTICE_KEY);
-    return v;
-  } catch (e) {
-    return null;
-  }
 }
 function t(key) {
   return STR[lang][key];
@@ -274,7 +261,6 @@ async function main() {
   });
   setLang(lang, false);
   clearPick();
-  var notice = takeNotice();
 
   var cfg = window.CLASSLEDGER_FIREBASE_CONFIG;
   if (!cfg || !cfg.apiKey || !cfg.projectId || /^PASTE/i.test(cfg.apiKey)) {
@@ -365,10 +351,6 @@ async function main() {
       state.view = "signedout";
       state.picked = null;
       render();
-      if (notice === "remote") {
-        msg(t("remoteOut"), false);
-        notice = null;
-      }
       return;
     }
     state.view = "loading";

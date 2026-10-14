@@ -15,8 +15,9 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="CSS/style.css" />
-    <link rel="stylesheet" href="CSS/welcome.css?v=devices1" />
+    <link rel="stylesheet" href="CSS/welcome.css" />
     <link rel="stylesheet" href="CSS/test.css" />
+    <link rel="stylesheet" href="CSS/chapters.css" />
   </head>
   <body class="student-body">
     <div class="student-wrap" id="studentApp" hidden>
@@ -39,7 +40,7 @@
         </div>
       </header>
 
-      <section class="student-hero">
+      <section class="student-hero" id="sHero">
         <img
           class="hero-watermark"
           src="Images/logo-icon.svg"
@@ -53,10 +54,12 @@
       <div id="sPlacement"></div>
 
 
-      <section class="student-section">
+      <section class="student-section" id="sChaptersSection">
         <h2 id="sChaptersTitle"></h2>
         <div class="student-chapters" id="sChapters"></div>
       </section>
+
+      <div id="sChapterView" hidden></div>
     </div>
 
     <!-- Profile card (same look as the teacher's "My account") -->
@@ -121,6 +124,6 @@
 
 
     <script src="JS/firebase-config.js"></script>
-    <script type="module" src="JS/student.js?v=devices1"></script>
+    <script type="module" src="JS/student.js"></script>
   </body>
 </html>
