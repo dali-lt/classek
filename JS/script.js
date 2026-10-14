@@ -104,6 +104,21 @@
       studentAdded: "Student added.",
       studentUpdated: "Student information updated.",
       studentDeleted: "Student deleted.",
+      stopStudying: "Stop studying",
+      resumeStudying: "Resume studying",
+      stoppedBadge: "Stopped",
+      studentStopped: "Studies stopped.",
+      studentResumed: "Studies resumed. A new month starts today.",
+      stopConfirm: function (name) {
+        return (
+          "Stop " +
+          name +
+          "'s studies? They will be left out of payments, the calendar and the totals. You can resume anytime."
+        );
+      },
+      resumeConfirm: function (name) {
+        return "Resume " + name + "'s studies? A new month starts today.";
+      },
       firstName: "First name",
       lastName: "Last name",
       level: "Level",
@@ -361,6 +376,21 @@
       studentAdded: "تضاف التلميذ.",
       studentUpdated: "تعدّلت معلومات التلميذ.",
       studentDeleted: "تحذف التلميذ.",
+      stopStudying: "وقّف الدراسة",
+      resumeStudying: "رجّع الدراسة",
+      stoppedBadge: "موقوف",
+      studentStopped: "توقفت الدراسة.",
+      studentResumed: "رجعت الدراسة. شهر جديد يبدا اليوم.",
+      stopConfirm: function (name) {
+        return (
+          "توقّف الدراسة متاع " +
+          name +
+          "؟ ما يظهرش في المدفوعات والتقويم والإحصائيات، وتنجم ترجّعو وقت ما تحب."
+        );
+      },
+      resumeConfirm: function (name) {
+        return "ترجّع الدراسة متاع " + name + "؟ شهر جديد يبدا اليوم.";
+      },
       firstName: "الاسم",
       lastName: "اللقب",
       level: "القسم",
@@ -881,6 +911,18 @@
     }
   }
 
+  /* ---------------- stopped students ---------------- */
+  // a student who stopped studying keeps their data (and payment history) but is left
+  // out of the totals, payments, calendar and groups until they resume
+  function isStopped(student) {
+    return !!(student && student.stoppedAt);
+  }
+  function activeStudents() {
+    return students.filter(function (student) {
+      return !isStopped(student);
+    });
+  }
+
   /* ---------------- storage ---------------- */
   function loadStudents() {
     try {
@@ -952,6 +994,7 @@
     var today = toDateKey(new Date());
     var studentsByDate = {};
     students.forEach(function (student) {
+      if (isStopped(student)) return;
       if (!student.endDate || student.endDate > today) return;
       studentsByDate[student.endDate] = studentsByDate[student.endDate] || [];
       studentsByDate[student.endDate].push(student);
@@ -1917,12 +1960,13 @@
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/><path d="m3 17.5 9 5 9-5" opacity=".55"/></svg>';
 
   function renderStats() {
-    var total = students.length;
+    var activeList = activeStudents();
+    var total = activeList.length;
     var counts = {};
     LEVELS.forEach(function (l) {
       counts[l] = 0;
     });
-    students.forEach(function (s) {
+    activeList.forEach(function (s) {
       if (counts[s.level] !== undefined) counts[s.level]++;
     });
 
@@ -2101,6 +2145,9 @@
         return matchesQuery && matchesLevel && matchesGroup;
       })
       .sort(function (a, b) {
+        var aStopped = isStopped(a) ? 1 : 0,
+          bStopped = isStopped(b) ? 1 : 0;
+        if (aStopped !== bStopped) return aStopped - bStopped;
         var ai = LEVELS.indexOf(a.level),
           bi = LEVELS.indexOf(b.level);
         if (ai !== bi) return ai - bi;
@@ -2253,6 +2300,10 @@
   }
 
   function timeLeftMarkup(student) {
+    if (isStopped(student))
+      return (
+        '<span class="sc-days tl-stopped">' + t("stoppedBadge") + "</span>"
+      );
     var d = daysUntil(student.endDate);
     if (d === null) return '<span class="sc-days tl-none">—</span>';
     if (d < 0)
@@ -2314,7 +2365,9 @@
           var hasNotes = s.notes && s.notes.trim().length > 0;
           var fullName = escapeHtml(s.firstName) + " " + escapeHtml(s.lastName);
           return (
-            '<div class="student-card" data-id="' +
+            '<div class="student-card' +
+            (isStopped(s) ? " is-stopped" : "") +
+            '" data-id="' +
             s.id +
             '">' +
             avatarMarkup(s) +
@@ -2354,6 +2407,13 @@
             s.id +
             '">' +
             t("edit") +
+            "</button>" +
+            '<button type="button" data-action="' +
+            (isStopped(s) ? "resume" : "stop") +
+            '" data-id="' +
+            s.id +
+            '">' +
+            (isStopped(s) ? t("resumeStudying") : t("stopStudying")) +
             "</button>" +
             '<button type="button" data-action="delete" data-id="' +
             s.id +
@@ -2702,14 +2762,14 @@
     if (!els.paymentsKpiRow || !els.paymentsList) return;
 
     selectedHalfMonthIds = selectedHalfMonthIds.filter(function (id) {
-      return students.some(function (student) {
+      return activeStudents().some(function (student) {
         return student.id === id;
       });
     });
     renderHalfMonthPicker();
     updateHalfMonthCalcState();
 
-    var rows = students.map(function (s) {
+    var rows = activeStudents().map(function (s) {
       var charges = halfMonthChargeTotals(s);
       var today = toDateKey(new Date());
       var dueCycles = countDueMonthlyCycles(s.endDate, today);
@@ -2880,8 +2940,9 @@
   }
 
   function renderHalfMonthPicker() {
+    var pickList = activeStudents();
     var allSelected =
-      students.length > 0 && selectedHalfMonthIds.length === students.length;
+      pickList.length > 0 && selectedHalfMonthIds.length === pickList.length;
     var options =
       '<label class="half-month-option"><input type="checkbox" data-action="select-half-month-all" aria-label="' +
       t("halfMonthAllLabel") +
@@ -2890,8 +2951,8 @@
       "><span>" +
       t("halfMonthAll") +
       "</span></label>";
-    if (students.length) {
-      options += students
+    if (pickList.length) {
+      options += pickList
         .map(function (student) {
           var selected = selectedHalfMonthIds.indexOf(student.id) !== -1;
           var name = escapeHtml(student.firstName + " " + student.lastName);
@@ -2921,7 +2982,7 @@
   function updateHalfMonthPickerLabel() {
     if (selectedHalfMonthIds.length === 0) {
       els.halfMonthPickerLabel.textContent = t("halfMonthPickerLabel");
-    } else if (selectedHalfMonthIds.length === students.length) {
+    } else if (selectedHalfMonthIds.length === activeStudents().length) {
       els.halfMonthPickerLabel.textContent = t("halfMonthAllSelected");
     } else {
       els.halfMonthPickerLabel.textContent = t("halfMonthSelectedCount")(
@@ -2933,7 +2994,8 @@
     );
     if (allCheckbox) {
       allCheckbox.checked =
-        students.length > 0 && selectedHalfMonthIds.length === students.length;
+        activeStudents().length > 0 &&
+        selectedHalfMonthIds.length === activeStudents().length;
     }
   }
 
@@ -3052,7 +3114,7 @@
     if (!checkbox) return;
     if (checkbox.dataset.action === "select-half-month-all") {
       selectedHalfMonthIds = checkbox.checked
-        ? students.map(function (student) {
+        ? activeStudents().map(function (student) {
             return student.id;
           })
         : [];
@@ -3289,6 +3351,14 @@
     });
   }
 
+  function refreshAfterStatusChange() {
+    saveStudents();
+    renderGroups();
+    renderStudentsPage();
+    if (currentPage === "calendar") renderCalendar();
+    if (currentPage === "payments") renderPaymentsPage();
+  }
+
   function handleTableClick(e) {
     var btn = e.target.closest("button[data-action]");
     if (!btn) {
@@ -3322,6 +3392,37 @@
     if (btn.dataset.action === "edit") {
       closeAllKebabMenus();
       openModal("edit", student);
+    } else if (btn.dataset.action === "stop") {
+      closeAllKebabMenus();
+      if (
+        confirm(t("stopConfirm")(student.firstName + " " + student.lastName))
+      ) {
+        students = students.map(function (s) {
+          return s.id === id
+            ? Object.assign({}, s, { stoppedAt: toDateKey(new Date()) })
+            : s;
+        });
+        refreshAfterStatusChange();
+        showToast(t("studentStopped"));
+      }
+    } else if (btn.dataset.action === "resume") {
+      closeAllKebabMenus();
+      if (
+        confirm(t("resumeConfirm")(student.firstName + " " + student.lastName))
+      ) {
+        var resumeDate = toDateKey(new Date());
+        students = students.map(function (s) {
+          if (s.id !== id) return s;
+          var next = Object.assign({}, s, {
+            startDate: resumeDate,
+            endDate: autoEndDate(resumeDate),
+          });
+          delete next.stoppedAt;
+          return next;
+        });
+        refreshAfterStatusChange();
+        showToast(t("studentResumed"));
+      }
     } else if (btn.dataset.action === "delete") {
       closeAllKebabMenus();
       if (
@@ -3349,6 +3450,7 @@
     var startOffset = (firstOfMonth.getDay() + 6) % 7;
     var gridStart = new Date(year, month, 1 - startOffset);
     students.forEach(function (s) {
+      if (isStopped(s)) return;
       var memberships = studentGroupNames(s);
       if (activeGroup && memberships.indexOf(activeGroup) === -1) return;
       if (s.startDate) {
@@ -3409,6 +3511,7 @@
     // enrollment ranges (start date -> end date) of the visible students
     var ranges = students
       .filter(function (s) {
+        if (isStopped(s)) return false;
         if (!s.startDate || !s.endDate || s.endDate < s.startDate) return false;
         var memberships = studentGroupNames(s);
         return !activeGroup || memberships.indexOf(activeGroup) !== -1;
@@ -3636,7 +3739,10 @@
     groupDetailIndex = index;
     var color = GROUP_COLORS[index % GROUP_COLORS.length];
     var members = students.filter(function (student) {
-      return studentGroupNames(student).indexOf(group.name) !== -1;
+      return (
+        !isStopped(student) &&
+        studentGroupNames(student).indexOf(group.name) !== -1
+      );
     });
     var isPrice = group.type === "price";
     var priceText =
@@ -3770,7 +3876,10 @@
       "</b></button>";
     groups.forEach(function (group, index) {
       var groupMembers = students.filter(function (student) {
-        return studentGroupNames(student).indexOf(group.name) !== -1;
+        return (
+          !isStopped(student) &&
+          studentGroupNames(student).indexOf(group.name) !== -1
+        );
       });
       var count = groupMembers.length;
       var dayNames = Array.isArray(group.days)

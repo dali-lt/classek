@@ -55,6 +55,25 @@ service cloud.firestore {
         && request.resource.data.updatedAt is number;
     }
 
+    // appareils connectés de l'élève (un document par navigateur; jamais l'adresse IP)
+    match /users/{uid}/sessions/{sid} {
+      allow read, delete: if isOwner(uid);
+      allow create, update: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['type', 'os', 'browser', 'city', 'country', 'code', 'createdAt', 'lastActive', 'revoked', 'revokedAt'])
+        && request.resource.data.type in ['phone', 'tablet', 'computer']
+        && request.resource.data.get('os', '') is string
+        && request.resource.data.get('os', '').size() <= 30
+        && request.resource.data.get('browser', '') is string
+        && request.resource.data.get('browser', '').size() <= 30
+        && request.resource.data.get('city', '') is string
+        && request.resource.data.get('city', '').size() <= 60
+        && request.resource.data.get('country', '') is string
+        && request.resource.data.get('country', '').size() <= 60
+        && request.resource.data.get('code', '') is string
+        && request.resource.data.get('code', '').size() <= 2
+        && request.resource.data.get('revoked', false) is bool;
+    }
+
     // Contenu du livre: lecture pour les comptes connectés (chapitres publiés), écriture admin seulement.
     // Les requêtes de liste doivent filtrer sur published == true (le code le fait).
     match /chapters/{chapterId} {

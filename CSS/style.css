@@ -1537,6 +1537,17 @@ main {
   background: var(--color-sunken);
   color: var(--color-text-muted);
 }
+/* a student who stopped studying: dimmed, grey badge, still editable / resumable */
+.student-card.is-stopped > *:not(.card-menu) {
+  opacity: 0.55;
+}
+.student-card.is-stopped > .avatar {
+  filter: grayscale(1);
+}
+.sc-days.tl-stopped {
+  background: var(--color-sunken);
+  color: var(--color-text-muted);
+}
 .student-card .card-menu {
   grid-area: menu;
 }
