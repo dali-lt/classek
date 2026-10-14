@@ -3,7 +3,18 @@
    The profile card ("My account") reuses the teacher app's modal look (style.css)
    and saves to users/{uid}/meta/profile. */
 
-import { Chapters } from "./chapters.js";
+import {
+  MAX_SHOWN,
+  parseDevice,
+  normalizeGeo,
+  placeLabel,
+  readSession,
+  shouldForceSignOut,
+  sortSessions,
+  staleIds,
+  isActiveNow,
+  lastSeenLabel,
+} from "./sessions-core.js?v=1";
 
 var SDK_VERSION = "10.14.1";
 var SDK_BASE = "https://www.gstatic.com/firebasejs/" + SDK_VERSION + "/";
@@ -27,6 +38,25 @@ var STR = {
     deleteBtn: "Delete my account",
     deleting: "Deleting…",
     deleteFail: "Couldn’t delete the account.",
+    devTitle: "Where you’re signed in",
+    devHint: "Devices where your account is open. If you don’t recognise one, sign it out.",
+    devThis: "This device",
+    devNow: "Active now",
+    devOutBtn: "Sign out",
+    devOutAll: "Sign out all other devices",
+    devSure: "Tap again to confirm",
+    devPending: "Signing out…",
+    devPendingWait: "It will sign out the next time that device is online.",
+    devNone: "No other device is signed in.",
+    devLoading: "Loading your devices…",
+    devFail: "Couldn’t load your devices.",
+    devOutFail: "Couldn’t sign that device out. Try again.",
+    devWhereUnknown: "Location unavailable",
+    devGeoNote: "The place is approximate, based on the network. We don’t store your IP address.",
+    devPhone: "Phone",
+    devTablet: "Tablet",
+    devComputer: "Computer",
+    devBrowserOn: "{browser} on {os}",
     close: "Close",
     profileEdit: "Edit",
     profileSave: "Save",
@@ -55,11 +85,7 @@ var STR = {
     pTitle: "Placement test",
     pIntroTitle: "Let’s see where you stand",
     pIntro:
-      "10 questions picked for your level and your point in the school year. About 5 minutes, no grade, no pressure. It helps us suggest where to start.",
-    pLevelPick: "Your level",
-    pChipStage: "Term {n}",
-    pRecoOneHigh: "Solid start. Pick any chapter.",
-    pRecoOneLow: "Start with the basics.",
+      "10 quick questions on the basics of Programmation and STI. About 5 minutes, no grade, no pressure. It helps us suggest where to start.",
     pStart: "Start the test",
     pSkip: "Skip for now",
     pNext: "Next",
@@ -119,6 +145,25 @@ var STR = {
     deleteBtn: "حذف حسابي",
     deleting: "جاري الحذف…",
     deleteFail: "ما نجمناش نحذفو الحساب.",
+    devTitle: "الأجهزة اللي دخلت بيها",
+    devHint: "الأجهزة اللي حسابك مفتوح فيها. كان فما جهاز ما تعرفوش، سجّل منو الخروج.",
+    devThis: "هذا الجهاز",
+    devNow: "نشط توّا",
+    devOutBtn: "تسجيل الخروج",
+    devOutAll: "تسجيل الخروج من الأجهزة الأخرى",
+    devSure: "اضغط مرة أخرى للتأكيد",
+    devPending: "جاري الخروج…",
+    devPendingWait: "يخرج كي يتحل الجهاز هذا وتكون فيه شبكة.",
+    devNone: "ما فما حتى جهاز آخر داخل بحسابك.",
+    devLoading: "جاري تحميل الأجهزة…",
+    devFail: "ما نجمناش نحمّلو الأجهزة.",
+    devOutFail: "ما نجمناش نسجّلو الخروج من الجهاز هذا. عاود جرّب.",
+    devWhereUnknown: "الموقع غير متوفر",
+    devGeoNote: "المكان تقريبي حسب الشبكة. ما نخزّنوش عنوان الـ IP متاعك.",
+    devPhone: "هاتف",
+    devTablet: "تابلت",
+    devComputer: "كمبيوتر",
+    devBrowserOn: "{browser} على {os}",
     close: "إغلاق",
     profileEdit: "تعديل",
     profileSave: "حفظ",
@@ -147,11 +192,7 @@ var STR = {
     pTitle: "اختبار تحديد المستوى",
     pIntroTitle: "نشوفو وين وصلت",
     pIntro:
-      "10 أسئلة مختارة على حسب مستواك ووقت السنة الدراسية. حوالي 5 دقايق، من غير نقطة ومن غير ضغط. يعاوننا نقترحو عليك من وين تبدا.",
-    pLevelPick: "مستواك الدراسي",
-    pChipStage: "الثلاثي {n}",
-    pRecoOneHigh: "بداية قوية. اختار أي فصل.",
-    pRecoOneLow: "ابدا بالأساسيات.",
+      "10 أسئلة سريعة على أساسيات Programmation و STI. حوالي 5 دقايق، من غير نقطة ومن غير ضغط. يعاوننا نقترحو عليك من وين تبدا.",
     pStart: "ابدا الاختبار",
     pSkip: "نعملو بعد",
     pNext: "التالي",
@@ -391,7 +432,11 @@ function renderPage() {
     user.append(ini);
   }
 
-  Chapters.render();
+  var list = $("sChapters");
+  list.textContent = "";
+  var empty = el("div", "student-empty");
+  empty.append(el("b", "", t("emptyTitle")), el("span", "", t("emptyText")));
+  list.append(empty);
 
   renderPlacementCard();
   if (testIsOpen()) renderTest();
@@ -702,67 +747,6 @@ function domainLabel(key) {
   if (d && lang === "ar" && d.label_ar) return d.label_ar;
   return d && d.label ? d.label : key;
 }
-function topicLabel(key) {
-  var tp = testData && testData.topics && testData.topics[key];
-  if (tp && lang === "ar" && tp.label_ar) return tp.label_ar;
-  return tp && tp.label ? tp.label : String(key || "");
-}
-function domainOf(q) {
-  var tp = testData && testData.topics && testData.topics[q.topic];
-  return (tp && tp.domain) || q.domain || "programmation";
-}
-// level code ("2" / "3" / "4") from the profile's level text
-function levelCodeOf(v) {
-  var opt = levelOption(v);
-  var i = LEVELS.indexOf(opt);
-  return i < 0 ? "" : String(i + 2);
-}
-// school year in Tunisia: term 1 = Sep-Dec, term 2 = Jan-Mar, term 3 = Apr-Aug
-function currentStage() {
-  var m = new Date().getMonth();
-  return m >= 8 ? "1" : m <= 2 ? "2" : "3";
-}
-function blueprintFor(code, stage) {
-  var cfg = testData && testData.levels && testData.levels[code];
-  return cfg && cfg.stages ? cfg.stages[stage] || cfg.stages["3"] : null;
-}
-function plannedCount(code, stage) {
-  var bp = blueprintFor(code, stage);
-  if (!bp) return testData ? testData.questions.length : 10;
-  return Object.keys(bp).reduce(function (n, k) {
-    return n + bp[k];
-  }, 0);
-}
-// pick the questions: what this level has studied by this term, drawn at random, easy to hard
-function buildQuestions(code, stage) {
-  var bp = blueprintFor(code, stage);
-  if (!bp) return testData.questions.slice();
-  var range = (testData.difficulty && testData.difficulty[code]) || [1, 3];
-  var chosen = [];
-  Object.keys(bp).forEach(function (tp) {
-    var all = testData.questions.filter(function (q) {
-      return q.topic === tp;
-    });
-    var inRange = all.filter(function (q) {
-      var d = q.d || 2;
-      return d >= range[0] && d <= range[1];
-    });
-    var pool = inRange.length >= bp[tp] ? inRange : all;
-    shuffled(pool.length)
-      .slice(0, bp[tp])
-      .forEach(function (i) {
-        chosen.push(pool[i]);
-      });
-  });
-  var tie = {};
-  chosen.forEach(function (q) {
-    tie[q.id] = Math.random();
-  });
-  chosen.sort(function (a, b) {
-    return (a.d || 2) - (b.d || 2) || tie[a.id] - tie[b.id];
-  });
-  return chosen;
-}
 function pctOf(d) {
   return d && d.total ? d.correct / d.total : 0;
 }
@@ -891,33 +875,28 @@ async function viewResults() {
   if (!placement || !placement.domains) return;
   if (!(await loadTestData())) return;
   var picks = {};
-  var byId = {};
   testData.questions.forEach(function (q) {
-    byId[q.id] = q;
-  });
-  var qs = (placement.qids || [])
-    .map(function (id) {
-      return byId[id];
-    })
-    .filter(Boolean);
-  qs.forEach(function (q) {
     var v = placement.answers ? placement.answers[q.id] : undefined;
     picks[q.id] = typeof v === "number" ? v : -1;
   });
-  test = { step: "result", i: 0, perm: {}, picks: picks, timeouts: {}, qs: qs, result: placement, saveFailed: false, loadFailed: false };
+  test = { step: "result", i: 0, perm: {}, picks: picks, timeouts: {}, result: placement, saveFailed: false, loadFailed: false };
   if (menuIsOpen()) closeMenu();
   $("tOverlay").classList.add("open");
   renderTest("in");
 }
 
 async function openTest() {
-  test = { step: "intro", i: 0, perm: {}, picks: {}, timeouts: {}, qs: [], level: levelCodeOf(profile.level), stage: currentStage(), result: null, saveFailed: false, loadFailed: false };
+  test = { step: "intro", i: 0, perm: {}, picks: {}, timeouts: {}, result: null, saveFailed: false, loadFailed: false };
   if (menuIsOpen()) closeMenu();
   if (modalIsOpen()) closeModal();
   $("tOverlay").classList.add("open");
   renderTest("in");
   var ok = await loadTestData();
   test.loadFailed = !ok;
+  if (ok)
+    testData.questions.forEach(function (q) {
+      test.perm[q.id] = shuffled(q.choices.length);
+    });
   renderTest();
 }
 async function closeTest() {
@@ -936,9 +915,8 @@ function scoreTest() {
   var domains = {};
   var total = 0;
   var right = 0;
-  test.qs.forEach(function (q) {
-    var dk = domainOf(q);
-    var d = domains[dk] || (domains[dk] = { correct: 0, total: 0 });
+  testData.questions.forEach(function (q) {
+    var d = domains[q.domain] || (domains[q.domain] = { correct: 0, total: 0 });
     d.total++;
     total++;
     if (test.picks[q.id] === q.answer) {
@@ -953,7 +931,7 @@ async function finishTest() {
   test.result = res;
   test.step = "result";
   var answers = {};
-  test.qs.forEach(function (q) {
+  testData.questions.forEach(function (q) {
     answers[q.id] = typeof test.picks[q.id] === "number" ? test.picks[q.id] : -1;
   });
   var doc = {
@@ -963,11 +941,6 @@ async function finishTest() {
     total: res.total,
     domains: res.domains,
     answers: answers,
-    qids: test.qs.map(function (q) {
-      return q.id;
-    }),
-    level: test.level || "",
-    stage: test.stage || "",
   };
   placement = doc;
   renderTest("in");
@@ -1016,11 +989,11 @@ var I_CLOCK = S + '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2"/><path
 var I_UPLOAD = S + '<path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>';
 var I_SMILE = S + '<circle cx="12" cy="12" r="9"/><path d="M8.5 14a4.2 4.2 0 0 0 7 0"/><path d="M9 9.5h.01M15 9.5h.01"/></svg>';
 var I_ARROW = S + '<path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>';
-var I_CUBE = S + '<path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg>';
-var I_LAYERS = S + '<path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/></svg>';
-var I_FILE = S + '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>';
-var I_LOOP = S + '<path d="M4 12a8 8 0 0 1 14-5.3L20 9"/><path d="M20 4v5h-5"/><path d="M20 12a8 8 0 0 1-14 5.3L4 15"/><path d="M4 20v-5h5"/></svg>';
-var I_GRID = S + '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>';
+var I_PHONE = S + '<rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg>';
+var I_TABLET = S + '<rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M11 17.5h2"/></svg>';
+var I_LAPTOP = S + '<rect x="4.5" y="5" width="15" height="10.5" rx="2"/><path d="M2.5 19h19"/></svg>';
+var I_SHIELD = S + '<path d="M12 3 5 6v5.5c0 4.3 2.9 7.6 7 9.5 4.1-1.9 7-5.2 7-9.5V6z"/><path d="m9.2 12 2 2 3.6-4"/></svg>';
+var I_PIN = S + '<path d="M12 21s6.5-5.6 6.5-11A6.5 6.5 0 0 0 5.5 10c0 5.4 6.5 11 6.5 11z"/><circle cx="12" cy="10" r="2.2"/></svg>';
 var TOPICS = {
   algo: { color: "#032c7b", icon: I_FLOW },
   python: { color: "#0464de", icon: I_TERM },
@@ -1029,16 +1002,6 @@ var TOPICS = {
   js: { color: "#4aa52f", icon: I_BRACES },
   php: { color: "#032c7b", icon: I_SERVER },
   mysql: { color: "#4aa52f", icon: I_DB },
-  modular: { color: "#0464de", icon: I_CUBE },
-  records: { color: "#032c7b", icon: I_LAYERS },
-  files: { color: "#4aa52f", icon: I_FILE },
-  recursion: { color: "#01092d", icon: I_LOOP },
-  numeric: { color: "#0464de", icon: I_TARGET },
-  binary: { color: "#032c7b", icon: I_GRID },
-  arrays: { color: "#0464de", icon: I_GRID },
-  sorting: { color: "#4aa52f", icon: I_CHART },
-  qt: { color: "#032c7b", icon: I_CARDS },
-  integration: { color: "#4aa52f", icon: I_CARDS },
 };
 function topicOf(key) {
   return TOPICS[key] || { color: "#0464de", icon: I_CODE };
@@ -1096,64 +1059,21 @@ function renderIntroCard(body) {
   var hero = el("div", "tc-hero");
   hero.append(ico(I_CARDS, "tc-hero-ico"));
   body.append(hero, el("h3", "tc-h", t("pIntroTitle")), el("p", "tc-p", t("pIntro")));
-
-  // which year the student is in decides which questions they get
-  var pick = el("div", "tc-levelpick");
-  pick.append(el("span", "tc-levelpick-label", t("pLevelPick")));
-  var pills = el("div", "tc-levelpills");
-  var start;
+  var n = testData ? testData.questions.length : 10;
   var chips = el("div", "tc-chips");
-  function paintChips() {
-    chips.textContent = "";
-    var n = testData ? plannedCount(test.level, test.stage) : 10;
-    [
-      [I_CODE, tf("pChipQ", { n: n }), "c1"],
-      [I_TARGET, tf("pChipStage", { n: test.stage }), "c1"],
-      [I_CLOCK, t("pChipTimed"), "c2"],
-      [I_CHECK, t("pChipNoGrade"), "c3"],
-    ].forEach(function (c) {
-      var chip = el("span", "tc-chip " + c[2]);
-      chip.append(ico(c[0]), el("span", "", c[1]));
-      chips.append(chip);
-    });
-  }
-  ["2", "3", "4"].forEach(function (code, i) {
-    var b = el("button", "tc-pill" + (test.level === code ? " is-on" : ""));
-    b.type = "button";
-    b.append(el("b", "", ["2ème", "3ème", "4ème"][i]), el("small", "", i === 2 ? "Bac" : "Info"));
-    b.addEventListener("click", function () {
-      test.level = code;
-      pills.querySelectorAll(".tc-pill").forEach(function (x) {
-        x.classList.toggle("is-on", x === b);
-      });
-      paintChips();
-      if (start) start.disabled = !testData || test.loadFailed;
-    });
-    pills.append(b);
+  [
+    [I_CODE, tf("pChipQ", { n: n }), "c1"],
+    [I_CLOCK, t("pChipTimed"), "c2"],
+    [I_CHECK, t("pChipNoGrade"), "c3"],
+  ].forEach(function (c) {
+    var chip = el("span", "tc-chip " + c[2]);
+    chip.append(ico(c[0]), el("span", "", c[1]));
+    chips.append(chip);
   });
-  pick.append(pills);
-  body.append(pick);
-  paintChips();
   body.append(chips);
   if (test.loadFailed) body.append(el("p", "set-msg", t("pLoadFail")));
-
   var actions = el("div", "test-actions");
-  start = pBtn(t("pStart"), "", function () {
-    test.qs = buildQuestions(test.level, test.stage);
-    test.qs.forEach(function (q) {
-      test.perm[q.id] = shuffled(q.choices.length);
-    });
-    // remember the level on the profile (only once the cloud copy is loaded, so nothing gets overwritten)
-    var label = LEVELS[Number(test.level) - 2];
-    if (label && label !== profile.level && profileLoaded && saveProfile) {
-      var next = Object.assign({}, profile, { level: label });
-      saveProfile(next)
-        .then(function () {
-          profile = next;
-          renderPage();
-        })
-        .catch(function () {});
-    }
+  var start = pBtn(t("pStart"), "", function () {
     leaveThen(function () {
       test.step = "q";
       test.i = 0;
@@ -1161,8 +1081,7 @@ function renderIntroCard(body) {
     });
   });
   start.append(ico(I_ARROW, "tc-ico tc-flip"));
-  start.disabled = !testData || test.loadFailed || !test.level;
-  if (!test.level) start.title = t("pLevelPick");
+  start.disabled = !testData || test.loadFailed;
   actions.append(pBtn(t("pSkip"), "is-ghost", closeTest), start);
   body.append(actions);
 }
@@ -1187,7 +1106,7 @@ function stopTimer() {
 }
 
 function renderQuestionCard(body) {
-  var qs = test.qs;
+  var qs = testData.questions;
   var q = qs[test.i];
   var topic = topicOf(q.topic);
   var card = testCard();
@@ -1210,7 +1129,7 @@ function renderQuestionCard(body) {
 
   var head = el("div", "tc-head");
   var badge = el("span", "tc-topic");
-  badge.append(ico(topic.icon, "tc-topic-ico"), el("span", "tc-topic-name", topicLabel(q.topic)), el("span", "tc-topic-dom", " · " + domainLabel(domainOf(q))));
+  badge.append(ico(topic.icon, "tc-topic-ico"), el("span", "tc-topic-name", String(q.topic || "").toUpperCase()), el("span", "tc-topic-dom", " · " + domainLabel(q.domain)));
   var right = el("span", "tc-right");
   var clock = el("span", "tc-clock");
   clock.append(ico(I_CLOCK, "tc-clock-ico"), el("b", "", ""));
@@ -1418,7 +1337,7 @@ function renderResultCard(body) {
   requestAnimationFrame(tick);
 
   // one tile per domain
-  var tiles = el("div", "tc-tiles" + (Object.keys(r.domains).length === 1 ? " is-one" : ""));
+  var tiles = el("div", "tc-tiles");
   orderedKeys(r.domains).forEach(function (key, idx) {
     var d = r.domains[key];
     var p = pctOf(d);
@@ -1446,8 +1365,7 @@ function renderResultCard(body) {
     return pctOf(r.domains[k]);
   });
   var reco;
-  if (keys.length === 1) reco = pcts[0] >= 0.7 ? t("pRecoOneHigh") : t("pRecoOneLow");
-  else if (pcts.every(function (p) { return p >= 0.7; })) reco = t("pRecoBoth");
+  if (pcts.every(function (p) { return p >= 0.7; })) reco = t("pRecoBoth");
   else if (pcts.every(function (p) { return p < 0.5; })) reco = t("pRecoLow");
   else {
     var weakest = keys[pcts.indexOf(Math.min.apply(null, pcts))];
@@ -1458,7 +1376,7 @@ function renderResultCard(body) {
   body.append(banner);
   if (test.saveFailed) body.append(el("p", "set-msg", t("pSaveFail")));
 
-  var missed = test.qs.filter(function (q) {
+  var missed = testData.questions.filter(function (q) {
     return test.picks[q.id] !== q.answer;
   });
   if (missed.length) {
@@ -1540,6 +1458,407 @@ function onAvatarClick() {
   $("sUser").setAttribute("aria-expanded", "true");
 }
 
+/* ---------------- devices: where the account is open ----------------
+   Every browser writes users/{uid}/sessions/{sid}: device type, approximate place, last activity.
+   "Sign out" on another device sets revoked:true on THAT device's document. That device is listening
+   to it (or checks it the next time it opens) and signs itself out.
+   Firebase can't cancel another device's login from a browser, so this is enforced by the app and not
+   by Firebase: it is made for "I forgot to log out over there", not for a stolen account. */
+var SID_KEY = "classledger:sid";
+var GEO_KEY = "classledger:geo";
+var NOTICE_KEY = "classledger:notice";
+var BEAT_MS = 10 * 60 * 1000; // an open page says "still here" this often
+var GEO_TTL_MS = 6 * 60 * 60 * 1000; // look the place up again after 6 hours
+var GEO_SERVICES = [
+  "https://ipwho.is/?fields=success,city,country,country_code",
+  "https://get.geojs.io/v1/ip/geo.json",
+];
+var sess = {
+  active: false,
+  sdk: null,
+  db: null,
+  auth: null,
+  user: null,
+  sid: "",
+  ref: null,
+  col: null,
+  list: null, // null = not loaded yet
+  failed: false,
+  unsub: null,
+  timer: null,
+  lastBeat: 0,
+  signInMs: NaN,
+  geo: null,
+};
+var devTick = null;
+var devMsg = "";
+
+function deviceId() {
+  var id = "";
+  try {
+    id = localStorage.getItem(SID_KEY) || "";
+  } catch (e) {}
+  if (!/^[A-Za-z0-9-]{16,64}$/.test(id)) {
+    id =
+      window.crypto && crypto.randomUUID
+        ? crypto.randomUUID()
+        : "d-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 12);
+    try {
+      localStorage.setItem(SID_KEY, id);
+    } catch (e) {}
+  }
+  return id;
+}
+function deviceHints() {
+  var uad = navigator.userAgentData;
+  return {
+    maxTouchPoints: navigator.maxTouchPoints || 0,
+    mobile: uad && typeof uad.mobile === "boolean" ? uad.mobile : undefined,
+    brave: !!navigator.brave,
+  };
+}
+async function fetchPlace(url) {
+  var ctl = typeof AbortController === "function" ? new AbortController() : null;
+  var timer = ctl
+    ? setTimeout(function () {
+        ctl.abort();
+      }, 4500)
+    : null;
+  try {
+    // a plain GET (no custom headers) so the browser doesn't need a CORS preflight
+    var res = await fetch(url, {
+      credentials: "omit",
+      referrerPolicy: "no-referrer",
+      signal: ctl ? ctl.signal : undefined,
+    });
+    if (!res.ok) return null;
+    return normalizeGeo(await res.json()); // keeps city + country only, never the IP
+  } catch (e) {
+    return null; // offline, blocked by an ad blocker, slow...
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+async function lookupGeo() {
+  var now = Date.now();
+  if (!sess.geo) {
+    try {
+      var c = JSON.parse(localStorage.getItem(GEO_KEY) || "null");
+      var cp = c && typeof c.at === "number" ? normalizeGeo(c.place) : null;
+      if (cp) sess.geo = { at: c.at, place: cp };
+    } catch (e) {}
+  }
+  if (sess.geo && now - sess.geo.at < GEO_TTL_MS) return sess.geo.place;
+  for (var i = 0; i < GEO_SERVICES.length; i++) {
+    var place = await fetchPlace(GEO_SERVICES[i]);
+    if (place) {
+      sess.geo = { at: now, place: place };
+      try {
+        localStorage.setItem(GEO_KEY, JSON.stringify(sess.geo));
+      } catch (e) {}
+      return place;
+    }
+  }
+  return sess.geo ? sess.geo.place : null; // keep the last known place when the lookup fails
+}
+
+// write (or refresh) this device's entry; existed=false also stamps createdAt
+async function announce(existed) {
+  var sdk = sess.sdk;
+  var d = parseDevice(navigator.userAgent, deviceHints());
+  var place = await lookupGeo();
+  var data = {
+    type: d.type,
+    os: d.os,
+    browser: d.browser,
+    city: place ? place.city : "",
+    country: place ? place.country : "",
+    code: place ? place.code : "",
+    lastActive: sdk.serverTimestamp(),
+    revoked: false, // a fresh start here (see startSessions) cancels an old sign-out request
+    revokedAt: sdk.deleteField(),
+  };
+  if (!existed) data.createdAt = sdk.serverTimestamp();
+  sess.lastBeat = Date.now();
+  await sdk.setDoc(sess.ref, data, { merge: true });
+}
+
+// "still here": only touches lastActive (+ place), so it can never undo a sign-out request from another device
+async function beat(force) {
+  if (!sess.active || !sess.ref) return;
+  var now = Date.now();
+  if (!force && now - sess.lastBeat < BEAT_MS / 2) return;
+  sess.lastBeat = now;
+  var ref = sess.ref;
+  try {
+    var place = await lookupGeo();
+    var data = { lastActive: sess.sdk.serverTimestamp() };
+    if (place) {
+      data.city = place.city;
+      data.country = place.country;
+      data.code = place.code;
+    }
+    await sess.sdk.updateDoc(ref, data);
+  } catch (err) {
+    if (err && err.code === "not-found" && sess.ref === ref) announce(false).catch(function () {});
+  }
+}
+function onVisible() {
+  if (document.visibilityState === "visible") beat(false);
+}
+
+function onSessions(snap) {
+  if (!sess.active) return;
+  var list = [];
+  snap.forEach(function (d) {
+    list.push(readSession(d.id, d.data()));
+  });
+  sess.list = list;
+  sess.failed = false;
+  var me = null;
+  list.forEach(function (x) {
+    if (x.id === sess.sid) me = x;
+  });
+  if (me && shouldForceSignOut(me, sess.signInMs)) {
+    remoteSignOut();
+    return;
+  }
+  staleIds(list, sess.sid, Date.now()).forEach(function (id) {
+    sess.sdk.deleteDoc(sess.sdk.doc(sess.db, "users", sess.user.uid, "sessions", id)).catch(function () {});
+  });
+  paintDevices();
+}
+
+function stopSessions() {
+  sess.active = false;
+  if (sess.unsub) {
+    sess.unsub();
+    sess.unsub = null;
+  }
+  if (sess.timer) {
+    clearInterval(sess.timer);
+    sess.timer = null;
+  }
+  document.removeEventListener("visibilitychange", onVisible);
+  sess.ref = null;
+}
+
+async function startSessions(sdk, db, auth, user) {
+  stopSessions();
+  sess.active = true;
+  sess.sdk = sdk;
+  sess.db = db;
+  sess.auth = auth;
+  sess.user = user;
+  sess.sid = deviceId();
+  sess.col = sdk.collection(db, "users", user.uid, "sessions");
+  sess.ref = sdk.doc(db, "users", user.uid, "sessions", sess.sid);
+  sess.signInMs = Date.parse(user.metadata && user.metadata.lastSignInTime);
+  sess.list = null;
+  sess.failed = false;
+  var ref = sess.ref;
+  try {
+    // 1) another device may have asked this one to sign out while it was closed
+    var snap = await sdk.getDoc(ref);
+    if (sess.ref !== ref) return;
+    var existed = snap.exists();
+    if (existed && shouldForceSignOut(readSession(snap.id, snap.data()), sess.signInMs)) {
+      remoteSignOut();
+      return;
+    }
+    // 2) say "this device is here"
+    await announce(existed);
+    if (sess.ref !== ref) return;
+    // 3) live list of devices (this is also what notices a sign-out request while the page is open)
+    sess.unsub = sdk.onSnapshot(sess.col, onSessions, function (err) {
+      console.warn("Couldn’t read the devices list:", err);
+      sess.failed = true;
+      paintDevices();
+    });
+    sess.timer = setInterval(function () {
+      beat(false);
+    }, BEAT_MS);
+    document.addEventListener("visibilitychange", onVisible);
+  } catch (err) {
+    console.warn("Couldn’t register this device:", err);
+    sess.failed = true;
+    paintDevices();
+  }
+}
+
+// asked to sign out from another device
+async function remoteSignOut() {
+  if (!sess.active) return;
+  var sdk = sess.sdk;
+  var auth = sess.auth;
+  var ref = sess.ref;
+  stopSessions();
+  try {
+    sessionStorage.setItem(NOTICE_KEY, "remote"); // the welcome page tells the person why
+  } catch (e) {}
+  try {
+    await sdk.deleteDoc(ref);
+  } catch (e) {}
+  try {
+    await sdk.signOut(auth);
+  } catch (e) {}
+  window.location.replace("./");
+}
+
+// normal sign out on this device: remove its entry first, so it doesn't linger in the list
+async function leaveSession() {
+  if (!sess.active || !sess.ref) return;
+  var sdk = sess.sdk;
+  var ref = sess.ref;
+  stopSessions();
+  try {
+    await sdk.deleteDoc(ref);
+  } catch (e) {}
+}
+
+// ask other devices to sign out (one or many); a device that is already gone is simply skipped
+function signOutDevices(ids) {
+  var sdk = sess.sdk;
+  return Promise.all(
+    ids.map(function (id) {
+      return sdk
+        .updateDoc(sdk.doc(sess.db, "users", sess.user.uid, "sessions", id), {
+          revoked: true,
+          revokedAt: sdk.serverTimestamp(),
+        })
+        .catch(function (err) {
+          if (!err || err.code !== "not-found") throw err;
+        });
+    }),
+  );
+}
+
+// two taps: the first one arms the button, the second one runs it
+function confirmButton(label, cls, run) {
+  var b = el("button", cls, label);
+  b.type = "button";
+  var armed = false;
+  var timer = null;
+  function reset() {
+    armed = false;
+    b.textContent = label;
+    b.classList.remove("is-armed");
+  }
+  b.addEventListener("click", async function () {
+    if (!armed) {
+      armed = true;
+      devMsg = "";
+      b.textContent = t("devSure");
+      b.classList.add("is-armed");
+      timer = setTimeout(reset, 4000);
+      return;
+    }
+    clearTimeout(timer);
+    b.disabled = true;
+    b.classList.remove("is-armed"); // a confirmed button must not block the list from repainting
+    b.textContent = t("devPending");
+    try {
+      await run();
+    } catch (err) {
+      console.warn("Sign-out request failed:", err);
+      devMsg = t("devOutFail");
+      b.disabled = false;
+      reset();
+      paintDevices();
+    }
+  });
+  return b;
+}
+
+function deviceRow(s, now) {
+  var mine = s.id === sess.sid;
+  var loc = lang === "ar" ? "ar-TN" : "en-GB";
+  var kind = s.type === "phone" ? "devPhone" : s.type === "tablet" ? "devTablet" : "devComputer";
+  var li = el("li", "dev-row" + (mine ? " is-mine" : "") + (s.revoked ? " is-pending" : ""));
+  var icon = ico(s.type === "phone" ? I_PHONE : s.type === "tablet" ? I_TABLET : I_LAPTOP, "dev-ico");
+  icon.setAttribute("role", "img");
+  icon.setAttribute("aria-label", t(kind));
+
+  var main = el("div", "dev-main");
+  var title = el("div", "dev-title");
+  var name =
+    s.browser && s.os ? tf("devBrowserOn", { browser: s.browser, os: s.os }) : s.browser || s.os || t(kind);
+  title.append(el("b", "", name));
+  if (mine) title.append(el("span", "dev-badge", t("devThis")));
+
+  var meta = el("div", "dev-meta");
+  var where = el("span", "dev-where");
+  where.append(ico(I_PIN, "dev-pin"), el("span", "", placeLabel(s, loc) || t("devWhereUnknown")));
+  var live = mine || isActiveNow(s.lastActive, now);
+  var when = el("span", "dev-when" + (live ? " is-live" : ""));
+  if (live) when.append(el("i", "dev-dot"));
+  when.append(el("span", "", live ? t("devNow") : lastSeenLabel(s.lastActive, now, loc)));
+  meta.append(where, when);
+  main.append(title, meta);
+  if (s.revoked) main.append(el("div", "dev-hint", t("devPendingWait")));
+  li.append(icon, main);
+
+  if (!mine) {
+    var act = el("div", "dev-act");
+    if (s.revoked) act.append(el("span", "dev-pending", t("devPending")));
+    else
+      act.append(
+        confirmButton(t("devOutBtn"), "dev-btn", function () {
+          return signOutDevices([s.id]);
+        }),
+      );
+    li.append(act);
+  }
+  return li;
+}
+
+function paintDevices() {
+  var host = $("setDevices");
+  if (!host || !settingsOpen) return;
+  if (host.querySelector(".dev-btn.is-armed")) return; // don't wipe a confirmation in progress
+  host.textContent = "";
+
+  var head = el("div", "dev-head");
+  var headText = el("div", "dev-head-text");
+  headText.append(el("h3", "", t("devTitle")), el("p", "", t("devHint")));
+  head.append(ico(I_SHIELD, "dev-head-ico"), headText);
+  host.append(head);
+
+  if (sess.failed) {
+    host.append(el("p", "set-msg", t("devFail")));
+    return;
+  }
+  if (!sess.list) {
+    host.append(el("p", "me-hint", t("devLoading")));
+    return;
+  }
+  var now = Date.now();
+  var rows = sortSessions(sess.list, sess.sid);
+  var list = el("ul", "dev-list");
+  list.setAttribute("aria-label", t("devTitle"));
+  rows.slice(0, MAX_SHOWN).forEach(function (s) {
+    list.append(deviceRow(s, now));
+  });
+  host.append(list);
+
+  var others = rows.filter(function (s) {
+    return s.id !== sess.sid && !s.revoked;
+  });
+  if (!others.length) host.append(el("p", "dev-none", t("devNone")));
+  else if (others.length > 1)
+    host.append(
+      confirmButton(t("devOutAll"), "dev-btn dev-btn-all", function () {
+        return signOutDevices(
+          others.map(function (s) {
+            return s.id;
+          }),
+        );
+      }),
+    );
+  if (devMsg) host.append(el("p", "set-msg", devMsg));
+  host.append(el("p", "dev-note", t("devGeoNote")));
+}
+
 /* ---------------- settings box ---------------- */
 function settingsIsOpen() {
   return $("setOverlay").classList.contains("open");
@@ -1549,16 +1868,29 @@ function openSettings() {
   settingsOpen = true;
   renderSettings();
   $("setOverlay").classList.add("open");
+  if (devTick) clearInterval(devTick);
+  devTick = setInterval(paintDevices, 30000); // keeps "5 minutes ago" fresh while the box is open
 }
 function closeSettings() {
   $("setOverlay").classList.remove("open");
   settingsOpen = false;
   settingsText = "";
+  devMsg = "";
+  if (devTick) {
+    clearInterval(devTick);
+    devTick = null;
+  }
 }
 function renderSettings() {
   $("setTitle").textContent = t("settings");
   var body = $("setBody");
   body.textContent = "";
+
+  // where the account is open (live list, filled by paintDevices)
+  var devHost = el("section", "dev-section");
+  devHost.id = "setDevices";
+  body.append(devHost);
+  paintDevices();
 
   // delete account (more options will join this list later)
   var details = el("details", "acct-details");
@@ -1657,7 +1989,8 @@ async function main() {
   var auth = sdk.getAuth(fbApp);
   var db = sdk.getFirestore(fbApp);
 
-  signOutNow = function () {
+  signOutNow = async function () {
+    await leaveSession(); // remove this device from the list first
     return sdk.signOut(auth);
   };
   $("sSignOut").addEventListener("click", signOutNow);
@@ -1684,26 +2017,9 @@ async function main() {
       return;
     }
     currentUser = u;
-    Chapters.init({
-      sdk: sdk,
-      db: db,
-      uid: u.uid,
-      getLang: function () {
-        return lang;
-      },
-      getLevel: function () {
-        return levelCodeOf(profile.level);
-      },
-      ready: function () {
-        return profileLoaded;
-      },
-      topicOf: topicOf,
-      subjectIcon: function (sub) {
-        return sub === "sti" ? I_GLOBE : I_TERM;
-      },
-    });
     $("studentApp").hidden = false;
     renderPage();
+    startSessions(sdk, db, auth, u); // devices list (runs on its own, never blocks the page)
 
     var profileRef = sdk.doc(db, "users", u.uid, "meta", "profile");
     saveProfile = function (p) {
@@ -1715,22 +2031,28 @@ async function main() {
       // deleting an account is sensitive: Google asks the person to sign in again first
       await sdk.reauthenticateWithPopup(u, new sdk.GoogleAuthProvider());
       var uid = u.uid;
-      var prog = await sdk.getDocs(sdk.collection(db, "users", uid, "progress"));
-      var notesSnap = await sdk.getDocs(sdk.collection(db, "users", uid, "notes"));
-      var refs = prog.docs
-        .concat(notesSnap.docs)
-        .map(function (d) {
-          return d.ref;
-        })
-        .concat([profileRef, sdk.doc(db, "users", uid, "meta", "account")]);
-      for (var i = 0; i < refs.length; i += 400) {
-        var batch = sdk.writeBatch(db);
-        refs.slice(i, i + 400).forEach(function (ref) {
-          batch.delete(ref);
-        });
-        await batch.commit();
+      stopSessions(); // otherwise the "still here" signal would write the device entry back after the delete
+      try {
+        var prog = await sdk.getDocs(sdk.collection(db, "users", uid, "progress"));
+        var devs = await sdk.getDocs(sdk.collection(db, "users", uid, "sessions"));
+        var refs = prog.docs
+          .concat(devs.docs)
+          .map(function (d) {
+            return d.ref;
+          })
+          .concat([profileRef, sdk.doc(db, "users", uid, "meta", "account")]);
+        for (var i = 0; i < refs.length; i += 400) {
+          var batch = sdk.writeBatch(db);
+          refs.slice(i, i + 400).forEach(function (ref) {
+            batch.delete(ref);
+          });
+          await batch.commit();
+        }
+        await sdk.deleteUser(u);
+      } catch (err) {
+        startSessions(sdk, db, auth, u); // the account is still there: keep the devices list running
+        throw err;
       }
-      await sdk.deleteUser(u);
     };
     var placementRef = sdk.doc(db, "users", u.uid, "progress", "placement");
     savePlacement = function (p) {
@@ -1745,6 +2067,7 @@ async function main() {
     }
     placementLoaded = true;
     renderPlacementCard();
+    if (!placement) openTest(); // first visit: offer the test once (skippable)
     try {
       var ps = await sdk.getDoc(profileRef);
       if (ps.exists()) {
@@ -1764,7 +2087,7 @@ async function main() {
     }
     profileLoaded = true;
     renderPage();
-    if (!placement) openTest(); // first visit: offer the test once (skippable)
+
   });
 }
 
