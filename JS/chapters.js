@@ -151,6 +151,7 @@ var S = {
 };
 var drafts = {}; // "chapterId/exId" -> typed answer (survives re-renders)
 var hintShown = {}; // "chapterId/exId" -> how many hints the student has revealed (one per click)
+var openEx = {}; // chapterId -> id of the exercise that is open on phones (the others are one row each)
 var lessonOpen = {}; // chapterId -> the lesson is open (it is closed until the student asks)
 var sectionOpen = {}; // "chapterId#index" -> that lesson section is open
 var revealed = {};
@@ -619,6 +620,23 @@ var ICON_CHECK_PIN =
 var ICON_REVIEW_PIN =
   '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 14-5.3L20 9"/><path d="M20 4v5h-5"/></svg>';
 
+// first line of the statement in plain text, for the one-line preview of a closed exercise on phones
+function previewOf(text) {
+  var lines = String(text || "").split("\n");
+  var inFence = false;
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i].trim();
+    if (/^```/.test(line)) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence || !line) continue;
+    line = line.replace(/\*\*/g, "").replace(/`/g, "");
+    return line.length > 110 ? line.slice(0, 107).trimEnd() + "…" : line;
+  }
+  return "";
+}
+
 // an exercise has hints[] (1 to 3 by habit: easy 1, medium 2, bac 3); the old single `hint` still works
 function hintsOf(ex) {
   var list = Array.isArray(ex.hints) ? ex.hints : ex.hint ? [ex.hint] : [];
@@ -716,7 +734,11 @@ function exerciseCard(ch, ex, index) {
   var key = ch.id + "/" + ex.id;
   var st = statusOf(ch.id)[ex.id];
   var diff = ex.difficulty === "bac" || ex.difficulty === "medium" ? ex.difficulty : "easy";
-  var card = el("article", "ex-card d-" + diff + (index % 2 ? " is-b" : " is-a") + (st ? " is-" + st : ""));
+  var isOpenCard = openEx[ch.id] === ex.id;
+  var card = el(
+    "article",
+    "ex-card d-" + diff + (index % 2 ? " is-b" : " is-a") + (st ? " is-" + st : "") + (isOpenCard ? "" : " is-collapsed")
+  );
   card.id = "ex-" + ex.id;
   var pin = el("span", "ex-pin");
   pin.innerHTML = st === "done" ? ICON_CHECK_PIN : st === "review" ? ICON_REVIEW_PIN : ""; // static, trusted SVG
@@ -727,7 +749,26 @@ function exerciseCard(ch, ex, index) {
   head.append(el("span", "ex-num", (index < 9 ? "0" : "") + (index + 1)));
   head.append(el("span", "ex-diff is-" + diff, t("d_" + diff)));
   if (st) head.append(el("span", "ex-state is-" + st, t(st)));
-  panel.append(head, md(ex.statement));
+  // phones: a tappable row (number, level, state, one-line preview); only one exercise is open at a time
+  var sum = el("button", "ex-sum");
+  sum.type = "button";
+  sum.setAttribute("aria-expanded", isOpenCard ? "true" : "false");
+  sum.append(el("span", "ex-num", (index < 9 ? "0" : "") + (index + 1)), el("span", "ex-diff is-" + diff, t("d_" + diff)));
+  if (st) sum.append(el("span", "ex-state is-" + st, t(st)));
+  sum.append(el("span", "ex-chev"));
+  var prev = previewOf(ex.statement);
+  if (prev) sum.append(el("span", "ex-preview", prev));
+  sum.addEventListener("click", function () {
+    openEx[ch.id] = isOpenCard ? null : ex.id;
+    render();
+    if (!isOpenCard) {
+      setTimeout(function () {
+        var c = document.getElementById("ex-" + ex.id);
+        if (c) c.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 0);
+    }
+  });
+  panel.append(sum, head, md(ex.statement));
   card.append(pin, panel, work);
 
   // hints come one at a time: each click puts the next hint on screen in place of the previous one
@@ -805,6 +846,7 @@ function exerciseCard(ch, ex, index) {
     function choose(value) {
       return async function () {
         await setStatus(ch.id, ex.id, value);
+        openEx[ch.id] = null; // back to the list of rows
         render();
       };
     }

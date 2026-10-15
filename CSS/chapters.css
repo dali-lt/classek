@@ -713,6 +713,71 @@ html[dir="rtl"] .ex-path.is-b svg {
   background: var(--color-surface);
   box-shadow: 0 1px 2px rgba(1, 9, 45, 0.06);
 }
+/* phones: a closed exercise is a single row (see .ex-sum in chapters.js); desktop keeps the full cards */
+.ex-sum {
+  display: none;
+}
+@media (max-width: 800px) {
+  .ex-dots {
+    display: none;
+  }
+  .ex-panel > .ex-head {
+    display: none;
+  }
+  .ex-sum {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 10px;
+    width: 100%;
+    min-height: 48px;
+    margin: 0;
+    padding: 2px 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: start;
+    cursor: pointer;
+  }
+  .ex-sum .ex-state {
+    margin-inline-start: 0;
+  }
+  .ex-chev {
+    width: 9px;
+    height: 9px;
+    margin-inline-start: auto;
+    margin-inline-end: 6px;
+    border-inline-end: 3px solid currentColor;
+    border-bottom: 3px solid currentColor;
+    opacity: 0.55;
+    transform: translateY(-2px) rotate(45deg);
+    transition: transform 0.2s ease;
+  }
+  .ex-sum[aria-expanded="true"] .ex-chev {
+    transform: translateY(2px) rotate(-135deg);
+  }
+  .ex-preview {
+    flex: 0 0 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-text-muted);
+    font-size: 13px;
+    direction: ltr;
+    text-align: left;
+  }
+  .ex-sum[aria-expanded="true"] .ex-preview {
+    display: none;
+  }
+  .ex-card.is-collapsed .ex-panel > :not(.ex-sum),
+  .ex-card.is-collapsed .ex-work {
+    display: none;
+  }
+  .ex-card.is-collapsed .ex-panel {
+    padding: 8px 16px 10px;
+  }
+}
 .ex-hint-tag {
   display: inline-block;
   margin-bottom: 6px;
@@ -856,7 +921,7 @@ html[dir="rtl"] .ex-path.is-b svg {
     font-size: 26px;
   }
   .ex-path {
-    height: 56px;
+    height: 44px;
   }
   .ex-path svg {
     display: none;
