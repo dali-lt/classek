@@ -922,6 +922,23 @@
       return !isStopped(student);
     });
   }
+  // a stopped student's debt is frozen on the day they stopped (no new months pile up)
+  function paymentReferenceDate(student) {
+    return isStopped(student) ? student.stoppedAt : toDateKey(new Date());
+  }
+  function amountOwed(student) {
+    var cycles = countDueMonthlyCycles(
+      student.endDate,
+      paymentReferenceDate(student),
+    );
+    return studentFee(student) * cycles + halfMonthChargeTotals(student).due;
+  }
+  // payments list: everyone who studies, plus stopped students who still owe money
+  function paymentStudents() {
+    return students.filter(function (student) {
+      return !isStopped(student) || amountOwed(student) > 0;
+    });
+  }
 
   /* ---------------- storage ---------------- */
   function loadStudents() {
@@ -2591,7 +2608,10 @@
     })[0];
     if (!student) return;
     var paidAt = toDateKey(new Date());
-    var monthlyDueCycles = countDueMonthlyCycles(student.endDate, paidAt);
+    var monthlyDueCycles = countDueMonthlyCycles(
+      student.endDate,
+      paymentReferenceDate(student),
+    );
     var monthlyDue = studentFee(student) * monthlyDueCycles;
     var unpaidCharges = (
       Array.isArray(student.halfMonthCharges) ? student.halfMonthCharges : []
@@ -2762,16 +2782,16 @@
     if (!els.paymentsKpiRow || !els.paymentsList) return;
 
     selectedHalfMonthIds = selectedHalfMonthIds.filter(function (id) {
-      return activeStudents().some(function (student) {
+      return paymentStudents().some(function (student) {
         return student.id === id;
       });
     });
     renderHalfMonthPicker();
     updateHalfMonthCalcState();
 
-    var rows = activeStudents().map(function (s) {
+    var rows = paymentStudents().map(function (s) {
       var charges = halfMonthChargeTotals(s);
-      var today = toDateKey(new Date());
+      var today = paymentReferenceDate(s);
       var dueCycles = countDueMonthlyCycles(s.endDate, today);
       var cyclePaid = dueCycles === 0 && isCurrentCyclePaid(s);
       return {
@@ -2788,9 +2808,10 @@
     });
 
     var expected = rows.reduce(function (sum, r) {
-      return sum + r.fee;
+      return isStopped(r.student) ? sum : sum + r.fee;
     }, 0);
     var paidAmount = rows.reduce(function (sum, r) {
+      if (isStopped(r.student)) return sum;
       return (
         sum +
         paidAmountForCycle(
@@ -2892,6 +2913,7 @@
           t("dueOn") +
           " " +
           formatDate(s.endDate) +
+          (isStopped(s) ? " · " + t("stoppedBadge") : "") +
           "</p></span>" +
           '<span class="payment-fee">' +
           (r.amountDue > 0 ? r.amountDue : r.fee) +
@@ -2940,7 +2962,7 @@
   }
 
   function renderHalfMonthPicker() {
-    var pickList = activeStudents();
+    var pickList = paymentStudents();
     var allSelected =
       pickList.length > 0 && selectedHalfMonthIds.length === pickList.length;
     var options =
@@ -2982,7 +3004,7 @@
   function updateHalfMonthPickerLabel() {
     if (selectedHalfMonthIds.length === 0) {
       els.halfMonthPickerLabel.textContent = t("halfMonthPickerLabel");
-    } else if (selectedHalfMonthIds.length === activeStudents().length) {
+    } else if (selectedHalfMonthIds.length === paymentStudents().length) {
       els.halfMonthPickerLabel.textContent = t("halfMonthAllSelected");
     } else {
       els.halfMonthPickerLabel.textContent = t("halfMonthSelectedCount")(
@@ -2994,8 +3016,8 @@
     );
     if (allCheckbox) {
       allCheckbox.checked =
-        activeStudents().length > 0 &&
-        selectedHalfMonthIds.length === activeStudents().length;
+        paymentStudents().length > 0 &&
+        selectedHalfMonthIds.length === paymentStudents().length;
     }
   }
 
@@ -3114,7 +3136,7 @@
     if (!checkbox) return;
     if (checkbox.dataset.action === "select-half-month-all") {
       selectedHalfMonthIds = checkbox.checked
-        ? activeStudents().map(function (student) {
+        ? paymentStudents().map(function (student) {
             return student.id;
           })
         : [];
