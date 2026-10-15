@@ -2,7 +2,7 @@
 
    Firestore layout (content is written by the admin only, see firestore.rules):
      chapters/{chapterId}                                   level, subject, topic, title, title_ar, order, published, rappel, exerciseCount
-     chapters/{chapterId}/exercises/{exId}                  order, difficulty, statement, hint
+     chapters/{chapterId}/exercises/{exId}                  order, difficulty, statement, hints[]  (hint: legacy single string)
      chapters/{chapterId}/exercises/{exId}/private/solution { text }   (fetched only when the student asks for it)
    Student progress:
      users/{uid}/progress/{chapterId}                       { status: { exId: "done" | "review" } }
@@ -25,6 +25,11 @@ var STR = {
     rappel: "Reminder",
     hint: "Show a hint",
     hideHint: "Hide the hint",
+    hintN: "Show a hint ({n}/{total})",
+    lesson: "Lesson",
+    lessonOpen: "Open the lesson",
+    lessonClose: "Hide the lesson",
+    lessonSections: "{n} sections",
     answerLabel: "Your answer",
     answerPlaceholder: "Try it first: write your answer here to unlock the solution.",
     showSolution: "Show the solution",
@@ -76,6 +81,11 @@ var STR = {
     rappel: "تذكير",
     hint: "شوف تلميح",
     hideHint: "خبّي التلميح",
+    hintN: "شوف تلميح ({n}/{total})",
+    lesson: "الدرس",
+    lessonOpen: "شوف الدرس",
+    lessonClose: "خبّي الدرس",
+    lessonSections: "{n} أقسام",
     answerLabel: "جوابك",
     answerPlaceholder: "جرّب الأول: اكتب جوابك هنا باش يتفتح الحل.",
     showSolution: "شوف الحل",
@@ -136,7 +146,9 @@ var S = {
   cur: null, // { id, exercises, loading, failed } for the open chapter
 };
 var drafts = {}; // "chapterId/exId" -> typed answer (survives re-renders)
-var hintOpen = {};
+var hintShown = {}; // "chapterId/exId" -> how many hints the student has revealed (one per click)
+var lessonOpen = {}; // chapterId -> the lesson is open (it is closed until the student asks)
+var sectionOpen = {}; // "chapterId#index" -> that lesson section is open
 var revealed = {};
 var solutions = {}; // "chapterId/exId" -> text
 var rowError = {};
@@ -603,12 +615,96 @@ var ICON_CHECK_PIN =
 var ICON_REVIEW_PIN =
   '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 14-5.3L20 9"/><path d="M20 4v5h-5"/></svg>';
 
-// the dashed link between two cards of the path; solid green once the card above is done
+// an exercise has hints[] (1 to 3 by habit: easy 1, medium 2, bac 3); the old single `hint` still works
+function hintsOf(ex) {
+  var list = Array.isArray(ex.hints) ? ex.hints : ex.hint ? [ex.hint] : [];
+  return list.filter(function (h) {
+    return typeof h === "string" && h.trim();
+  });
+}
+
+// the lesson is split on its "## " headings (outside code fences) so it can be read one section at a time
+function lessonSections(text) {
+  var out = [];
+  var cur = null;
+  var inFence = false;
+  String(text || "")
+    .split("\n")
+    .forEach(function (line) {
+      if (/^```/.test(line)) inFence = !inFence;
+      if (!inFence && line.slice(0, 3) === "## ") {
+        cur = { title: line.slice(3).trim(), lines: [] };
+        out.push(cur);
+        return;
+      }
+      if (!cur) {
+        cur = { title: "", lines: [] };
+        out.push(cur);
+      }
+      cur.lines.push(line);
+    });
+  return out
+    .map(function (s) {
+      return { title: s.title, body: s.lines.join("\n").trim() };
+    })
+    .filter(function (s) {
+      return s.title || s.body;
+    });
+}
+
+// closed by default: the student opens the lesson (and then each section) only if they want it
+function lessonBlock(ch) {
+  var sections = lessonSections(ch.rappel);
+  var open = !!lessonOpen[ch.id];
+  var block = el("section", "ch-block ch-rappel" + (open ? " is-open" : ""));
+  var panelR = el("div", "ch-panel");
+  var head = el("div", "lesson-head");
+  var titles = el("div", "lesson-title");
+  titles.append(el("span", "test-chip", t("lesson")));
+  var named = sections.filter(function (s) {
+    return s.title;
+  }).length;
+  if (named > 1) titles.append(el("small", "ch-meta", tf("lessonSections", { n: named })));
+  var toggle = el("button", "pc-btn lesson-toggle" + (open ? " is-ghost" : ""), open ? t("lessonClose") : t("lessonOpen"));
+  toggle.type = "button";
+  toggle.setAttribute("aria-expanded", open ? "true" : "false");
+  toggle.addEventListener("click", function () {
+    lessonOpen[ch.id] = !open;
+    render();
+  });
+  head.append(titles, toggle);
+  panelR.append(head);
+  if (open) {
+    var body = el("div", "lesson-body");
+    sections.forEach(function (s, i) {
+      if (!s.title) {
+        body.append(md(s.body));
+        return;
+      }
+      var k = ch.id + "#" + i;
+      var d = el("details", "lesson-sec");
+      d.setAttribute("lang", "fr");
+      d.setAttribute("dir", "ltr");
+      d.open = !!sectionOpen[k];
+      d.append(el("summary", "", s.title), md(s.body));
+      d.addEventListener("toggle", function () {
+        sectionOpen[k] = d.open;
+      });
+      body.append(d);
+    });
+    panelR.append(body);
+  }
+  block.append(el("span", "ch-tape"), panelR);
+  return block;
+}
+
+// the ribbon between two cards (same thick, round-ended green line as the welcome page); it runs
+// behind the cards, so each card looks like a piece laid on top of it. Paler until the card above is done
 function exPath(index, prevDone) {
   var p = el("div", "ex-path " + (index % 2 ? "is-a" : "is-b") + (prevDone ? " is-done" : ""));
   p.setAttribute("aria-hidden", "true");
   p.innerHTML =
-    '<svg viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M0 0 C0 75, 100 25, 100 100"/></svg>';
+    '<svg viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M0 0 C0 85, 100 15, 100 100"/></svg>';
   return p;
 }
 
@@ -630,18 +726,28 @@ function exerciseCard(ch, ex, index) {
   panel.append(head, md(ex.statement));
   card.append(pin, panel, work);
 
-  if (ex.hint) {
-    var hintBtn = el("button", "ex-link", hintOpen[key] ? t("hideHint") : t("hint"));
-    hintBtn.type = "button";
-    hintBtn.addEventListener("click", function () {
-      hintOpen[key] = !hintOpen[key];
-      card.replaceWith(exerciseCard(ch, ex, index));
-    });
-    panel.append(hintBtn);
-    if (hintOpen[key]) {
+  // hints come one at a time: each click reveals the next one, the earlier ones stay visible
+  var hints = hintsOf(ex);
+  if (hints.length) {
+    var shown = Math.min(hintShown[key] || 0, hints.length);
+    for (var hi = 0; hi < shown; hi++) {
       var hint = el("div", "ex-hint");
-      hint.append(md(ex.hint));
+      if (hints.length > 1) hint.setAttribute("data-n", hi + 1 + "/" + hints.length);
+      hint.append(md(hints[hi]));
       panel.append(hint);
+    }
+    if (shown < hints.length) {
+      var hintBtn = el(
+        "button",
+        "ex-link",
+        hints.length > 1 ? tf("hintN", { n: shown + 1, total: hints.length }) : t("hint")
+      );
+      hintBtn.type = "button";
+      hintBtn.addEventListener("click", function () {
+        hintShown[key] = shown + 1;
+        card.replaceWith(exerciseCard(ch, ex, index));
+      });
+      panel.append(hintBtn);
     }
   }
 
@@ -848,13 +954,7 @@ function renderView(view, ch) {
 
   view.append(back, hero);
 
-  if (ch.rappel) {
-    var block = el("section", "ch-block ch-rappel");
-    var panelR = el("div", "ch-panel");
-    panelR.append(el("span", "test-chip", t("rappel")), md(ch.rappel));
-    block.append(el("span", "ch-tape"), panelR);
-    view.append(block);
-  }
+  if (ch.rappel) view.append(lessonBlock(ch));
 
   view.append(notesSection(ch));
 
