@@ -101,6 +101,12 @@
         var mode = $("pubMode").value;
         return mode === "all" ? true : mode === "none" ? false : !!d.published;
       }
+      function hintList(ex) {
+        var list = Array.isArray(ex.hints) ? ex.hints : ex.hint ? [ex.hint] : [];
+        return list.filter(function (h) {
+          return typeof h === "string" && h.trim();
+        });
+      }
       async function uploadOne(data) {
         var chRef = sdk.doc(db, "chapters", data.chapterId);
         var batch = sdk.writeBatch(db);
@@ -125,7 +131,8 @@
             order: ex.order || 0,
             difficulty: ex.difficulty || "easy",
             statement: ex.statement || "",
-            hint: ex.hint || "",
+            hints: hintList(ex),
+            hint: hintList(ex)[0] || "",
           });
           batch.set(sdk.doc(exRef, "private", "solution"), { text: ex.solution || "" });
         });

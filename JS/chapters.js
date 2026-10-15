@@ -25,7 +25,9 @@ var STR = {
     rappel: "Reminder",
     hint: "Show a hint",
     hideHint: "Hide the hint",
-    hintN: "Show a hint ({n}/{total})",
+    hintNext: "Next hint ({n}/{total})",
+    hintLabel: "Hint {n}/{total}",
+    hintLabelOne: "Hint",
     lesson: "Lesson",
     lessonOpen: "Open the lesson",
     lessonClose: "Hide the lesson",
@@ -81,7 +83,9 @@ var STR = {
     rappel: "تذكير",
     hint: "شوف تلميح",
     hideHint: "خبّي التلميح",
-    hintN: "شوف تلميح ({n}/{total})",
+    hintNext: "التلميح الموالي ({n}/{total})",
+    hintLabel: "تلميح {n}/{total}",
+    hintLabelOne: "تلميح",
     lesson: "الدرس",
     lessonOpen: "شوف الدرس",
     lessonClose: "خبّي الدرس",
@@ -726,21 +730,23 @@ function exerciseCard(ch, ex, index) {
   panel.append(head, md(ex.statement));
   card.append(pin, panel, work);
 
-  // hints come one at a time: each click reveals the next one, the earlier ones stay visible
+  // hints come one at a time: each click puts the next hint on screen in place of the previous one
   var hints = hintsOf(ex);
   if (hints.length) {
     var shown = Math.min(hintShown[key] || 0, hints.length);
-    for (var hi = 0; hi < shown; hi++) {
+    if (shown > 0) {
       var hint = el("div", "ex-hint");
-      if (hints.length > 1) hint.setAttribute("data-n", hi + 1 + "/" + hints.length);
-      hint.append(md(hints[hi]));
+      hint.append(
+        el("span", "ex-hint-tag", hints.length > 1 ? tf("hintLabel", { n: shown, total: hints.length }) : t("hintLabelOne")),
+        md(hints[shown - 1])
+      );
       panel.append(hint);
     }
     if (shown < hints.length) {
       var hintBtn = el(
         "button",
         "ex-link",
-        hints.length > 1 ? tf("hintN", { n: shown + 1, total: hints.length }) : t("hint")
+        shown === 0 ? t("hint") : tf("hintNext", { n: shown + 1, total: hints.length })
       );
       hintBtn.type = "button";
       hintBtn.addEventListener("click", function () {
