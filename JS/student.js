@@ -940,11 +940,13 @@ function renderPlacementCard() {
     var ht = el("div", "pc-head-text");
     ht.append(el("h3", "", t("pCardDoneTitle")), el("p", "", t("pCardDoneSub")));
     head.append(ht);
-    text.append(head, levelGauge(placement));
-    var view = pBtn(t("pViewResults"), "", function () {
+    text.append(head);
+    var view = pBtn("", "is-ghost is-mini", function () {
       viewResults();
     });
-    view.prepend(ico(I_EYE, "tc-ico"));
+    view.setAttribute("aria-label", t("pViewResults"));
+    view.title = t("pViewResults");
+    view.append(ico(I_EYE, "tc-ico"), el("span", "pc-btn-label", t("pViewResults")));
     actions.append(view);
   } else {
     var halo = el("div", "pc-alert");

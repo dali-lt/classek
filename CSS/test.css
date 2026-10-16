@@ -1789,3 +1789,57 @@ html[dir="rtl"] .tc-timer i {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* ---------- level card (done): one calm row, details live in "View my results" ---------- */
+.placement-card.is-done {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 18px;
+}
+.placement-card.is-done::after {
+  display: none;
+}
+.placement-card.is-done .pc-ico {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  box-shadow: none;
+}
+.placement-card.is-done .pc-ico svg {
+  width: 20px;
+  height: 20px;
+}
+.placement-card.is-done h3 {
+  font-size: 15px;
+}
+.placement-card.is-done p {
+  margin-top: 1px;
+  font-size: 12.5px;
+}
+.placement-card.is-done .pc-head {
+  grid-column: 1;
+  grid-row: 1;
+  gap: 12px;
+}
+.placement-card.is-done .pc-actions {
+  grid-column: 2;
+  grid-row: 1;
+}
+.pc-actions .pc-btn.is-mini {
+  flex: none;
+  min-height: 38px;
+  padding: 6px 14px;
+  font-size: 13px;
+}
+@media (max-width: 520px) {
+  .pc-btn.is-mini .pc-btn-label {
+    display: none;
+  }
+  .pc-actions .pc-btn.is-mini {
+    width: 38px;
+    padding: 0;
+    border-radius: 50%;
+  }
+}
