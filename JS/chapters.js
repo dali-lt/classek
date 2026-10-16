@@ -536,8 +536,10 @@ function setBackRow(host, show) {
   var back = el("button", "ch-back");
   back.type = "button";
   back.append(icon(ICON_BACK, "ch-back-ico"), el("span", "", t("allSubjects")));
+  back.setAttribute("aria-label", t("allSubjects"));
   back.addEventListener("click", closeToHome);
   row.append(back);
+  syncBackButton();
 }
 
 function message(host, titleKey, textKey, retry) {
@@ -711,6 +713,15 @@ function lessonBlock(ch) {
       d.append(el("summary", "", s.title), md(s.body));
       d.addEventListener("toggle", function () {
         sectionOpen[k] = d.open;
+        if (!d.open) return;
+        // one section at a time: opening this one closes the others
+        body.querySelectorAll("details.lesson-sec[open]").forEach(function (o) {
+          if (o !== d) o.open = false;
+        });
+        // closing a section above can push this one off screen: bring it back to the top
+        requestAnimationFrame(function () {
+          if (d.getBoundingClientRect().top < 70) d.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
       });
       body.append(d);
     });
@@ -984,6 +995,10 @@ function notesSection(ch) {
 function syncBackButton() {
   var b = document.querySelector("#sChapterView > .ch-back");
   if (b) b.classList.toggle("is-stuck", window.scrollY > 140);
+  // the same button on the chapters page: round once its row has reached the top of the screen
+  var row = $("sChapterTabs");
+  var lb = row && !row.hidden ? row.querySelector(".ch-back") : null;
+  if (lb) lb.classList.toggle("is-stuck", row.getBoundingClientRect().top <= 14);
 }
 
 function renderView(view, ch) {

@@ -21,6 +21,14 @@
 .ch-tabs {
   display: flex;
   margin-bottom: 12px;
+  /* the row is as tall as the button; its button sticks while the list scrolls */
+  position: sticky;
+  top: calc(10px + env(safe-area-inset-top, 0px));
+  z-index: 30;
+  pointer-events: none;
+}
+.ch-tabs .ch-back {
+  pointer-events: auto;
 }
 
 /* ---------- subjects home: two big cards that fill the width ---------- */
@@ -377,13 +385,15 @@ html[dir="rtl"] .fd-back {
   background: var(--color-light-blue);
 }
 /* chapter page: the back button follows the scroll (start edge, top), then shrinks to a round arrow */
-#sChapterView > .ch-back {
+#sChapterView > .ch-back,
+#sChapterTabs .ch-back {
   position: sticky;
   top: calc(10px + env(safe-area-inset-top, 0px));
   z-index: 30;
   box-shadow: 0 6px 18px rgba(1, 9, 45, 0.14);
 }
-#sChapterView > .ch-back.is-stuck {
+#sChapterView > .ch-back.is-stuck,
+#sChapterTabs .ch-back.is-stuck {
   width: 46px;
   height: 46px;
   min-height: 0;
@@ -391,10 +401,12 @@ html[dir="rtl"] .fd-back {
   justify-content: center;
   border-radius: 50%;
 }
-#sChapterView > .ch-back.is-stuck > span:not(.ch-back-ico) {
+#sChapterView > .ch-back.is-stuck > span:not(.ch-back-ico),
+#sChapterTabs .ch-back.is-stuck > span:not(.ch-back-ico) {
   display: none;
 }
-#sChapterView > .ch-back.is-stuck .ch-back-ico svg {
+#sChapterView > .ch-back.is-stuck .ch-back-ico svg,
+#sChapterTabs .ch-back.is-stuck .ch-back-ico svg {
   width: 22px;
   height: 22px;
 }
@@ -1188,5 +1200,52 @@ input.note-input {
   }
   .folder.is-soon .fd-sheet {
     display: none;
+  }
+}
+
+/* lesson: sections scroll to a clear spot under the sticky back button */
+.lesson-sec {
+  scroll-margin-top: 70px;
+}
+
+/* phone: two folders per row */
+@media (max-width: 520px) {
+  .student-chapters:not(.is-subjects) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .folder {
+    height: 168px;
+  }
+  .fd-tab {
+    height: 36px;
+    border-radius: 14px 14px 0 0;
+  }
+  .fd-back {
+    inset: 16px 0 0;
+    border-radius: 0 18px 18px 18px;
+  }
+  .fd-sheet {
+    bottom: 74px;
+    height: 70px;
+  }
+  .fd-sheet.s2 {
+    height: 76px;
+  }
+  .fd-sheet.s3 {
+    height: 72px;
+  }
+  .fd-front {
+    padding: 10px 12px 12px;
+    border-radius: 0 0 18px 18px;
+  }
+  .fd-title {
+    font-size: 14.5px;
+  }
+  .fd-meta {
+    font-size: 11.5px;
+  }
+  .folder.is-soon {
+    height: 104px;
   }
 }
