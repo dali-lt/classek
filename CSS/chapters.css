@@ -21,14 +21,7 @@
 .ch-tabs {
   display: flex;
   margin-bottom: 12px;
-  /* the row is as tall as the button; its button sticks while the list scrolls */
-  position: sticky;
-  top: calc(10px + env(safe-area-inset-top, 0px));
-  z-index: 30;
-  pointer-events: none;
-}
-.ch-tabs .ch-back {
-  pointer-events: auto;
+  min-height: 38px;
 }
 
 /* ---------- subjects home: two big cards that fill the width ---------- */
@@ -384,29 +377,29 @@ html[dir="rtl"] .fd-back {
   border-color: var(--color-primary);
   background: var(--color-light-blue);
 }
-/* chapter page: the back button follows the scroll (start edge, top), then shrinks to a round arrow */
-#sChapterView > .ch-back,
-#sChapterTabs .ch-back {
-  position: sticky;
-  top: calc(10px + env(safe-area-inset-top, 0px));
-  z-index: 30;
-  box-shadow: 0 6px 18px rgba(1, 9, 45, 0.14);
+/* the back button sits in a slot that keeps its height; once the slot has scrolled off the top, the button
+   becomes a round arrow pinned with position:fixed (sticky drifted off-screen on phones when the browser bar hid) */
+.ch-back-slot {
+  display: flex;
+  min-height: 38px;
 }
-#sChapterView > .ch-back.is-stuck,
-#sChapterTabs .ch-back.is-stuck {
+.ch-back.is-stuck {
+  position: fixed;
+  top: calc(10px + env(safe-area-inset-top, 0px));
+  inset-inline-start: max(14px, calc((100vw - 1040px) / 2));
+  z-index: 30;
   width: 46px;
   height: 46px;
   min-height: 0;
   padding: 0;
   justify-content: center;
   border-radius: 50%;
+  box-shadow: 0 6px 18px rgba(1, 9, 45, 0.18);
 }
-#sChapterView > .ch-back.is-stuck > span:not(.ch-back-ico),
-#sChapterTabs .ch-back.is-stuck > span:not(.ch-back-ico) {
+.ch-back.is-stuck > span:not(.ch-back-ico) {
   display: none;
 }
-#sChapterView > .ch-back.is-stuck .ch-back-ico svg,
-#sChapterTabs .ch-back.is-stuck .ch-back-ico svg {
+.ch-back.is-stuck .ch-back-ico svg {
   width: 22px;
   height: 22px;
 }

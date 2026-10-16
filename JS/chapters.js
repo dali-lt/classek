@@ -993,12 +993,11 @@ function notesSection(ch) {
 
 // the back button stays on screen while the page scrolls; once the page has moved it shrinks to a round arrow
 function syncBackButton() {
-  var b = document.querySelector("#sChapterView > .ch-back");
-  if (b) b.classList.toggle("is-stuck", window.scrollY > 140);
-  // the same button on the chapters page: round once its row has reached the top of the screen
-  var row = $("sChapterTabs");
-  var lb = row && !row.hidden ? row.querySelector(".ch-back") : null;
-  if (lb) lb.classList.toggle("is-stuck", row.getBoundingClientRect().top <= 14);
+  ["#sChapterView > .ch-back-slot", "#sChapterTabs"].forEach(function (sel) {
+    var slot = document.querySelector(sel);
+    var b = slot && slot.offsetParent ? slot.querySelector(".ch-back") : null;
+    if (b) b.classList.toggle("is-stuck", slot.getBoundingClientRect().top <= 10);
+  });
 }
 
 function renderView(view, ch) {
@@ -1022,7 +1021,9 @@ function renderView(view, ch) {
   hero.append(mark, el("h1", "", title || ""));
   hero.append(el("p", "", total ? tf("progress", { done: doneCount(ch), total: total }) : ""));
 
-  view.append(back, hero);
+  var slot = el("div", "ch-back-slot");
+  slot.append(back);
+  view.append(slot, hero);
 
   if (ch.rappel) view.append(lessonBlock(ch));
 
