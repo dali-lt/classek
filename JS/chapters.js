@@ -539,6 +539,7 @@ function setBackRow(host, show) {
   back.setAttribute("aria-label", t("allSubjects"));
   back.addEventListener("click", closeToHome);
   row.append(back);
+  backTargets.list = { label: t("allSubjects"), fn: closeToHome };
   syncBackButton();
 }
 
@@ -992,12 +993,44 @@ function notesSection(ch) {
 }
 
 // the back button stays on screen while the page scrolls; once the page has moved it shrinks to a round arrow
-function syncBackButton() {
-  ["#sChapterView > .ch-back-slot", "#sChapterTabs"].forEach(function (sel) {
-    var slot = document.querySelector(sel);
-    var b = slot && slot.offsetParent ? slot.querySelector(".ch-back") : null;
-    if (b) b.classList.toggle("is-stuck", slot.getBoundingClientRect().top <= 10);
+/* The round "back" arrow that follows the scroll. It lives directly under <body> (not inside the page), so no
+   parent with a transform / overflow / stacking rule can carry it off screen. It shows once the real back
+   button of the current page has scrolled out of view. */
+var backTargets = { view: null, list: null }; // { label, fn } for the chapter page / the chapters list
+var floatBack = null;
+function getFloatBack() {
+  if (floatBack) return floatBack;
+  floatBack = el("button", "ch-back ch-back-float");
+  floatBack.type = "button";
+  floatBack.append(icon(ICON_BACK, "ch-back-ico"));
+  floatBack.addEventListener("click", function () {
+    var tg = floatBack.__target;
+    if (tg) tg.fn();
   });
+  document.body.append(floatBack);
+  return floatBack;
+}
+function syncBackButton() {
+  var fb = getFloatBack();
+  var view = $("sChapterView");
+  var tabs = $("sChapterTabs");
+  var slot = null;
+  var target = null;
+  if (view && !view.hidden && view.offsetParent) {
+    slot = view.querySelector(":scope > .ch-back-slot");
+    target = backTargets.view;
+  } else if (tabs && !tabs.hidden && tabs.offsetParent) {
+    slot = tabs;
+    target = backTargets.list;
+  }
+  var on = !!(slot && target && slot.getBoundingClientRect().bottom <= 8);
+  if (on) {
+    fb.__target = target;
+    fb.setAttribute("aria-label", target.label);
+    fb.title = target.label;
+  }
+  fb.classList.toggle("is-on", on);
+  fb.tabIndex = on ? 0 : -1;
 }
 
 function renderView(view, ch) {
@@ -1021,6 +1054,12 @@ function renderView(view, ch) {
   hero.append(mark, el("h1", "", title || ""));
   hero.append(el("p", "", total ? tf("progress", { done: doneCount(ch), total: total }) : ""));
 
+  backTargets.view = {
+    label: tf("back", { name: t("s_" + ch.subject) }),
+    fn: function () {
+      openSubject(ch.subject);
+    },
+  };
   var slot = el("div", "ch-back-slot");
   slot.append(back);
   view.append(slot, hero);

@@ -377,17 +377,17 @@ html[dir="rtl"] .fd-back {
   border-color: var(--color-primary);
   background: var(--color-light-blue);
 }
-/* the back button sits in a slot that keeps its height; once the slot has scrolled off the top, the button
-   becomes a round arrow pinned with position:fixed (sticky drifted off-screen on phones when the browser bar hid) */
+/* the back button sits in a slot that keeps its height. Once it has scrolled out of view, a round arrow
+   (.ch-back-float, a child of <body>) stays pinned at the top while the page scrolls */
 .ch-back-slot {
   display: flex;
   min-height: 38px;
 }
-.ch-back.is-stuck {
+.ch-back.ch-back-float {
   position: fixed;
   top: calc(10px + env(safe-area-inset-top, 0px));
   inset-inline-start: max(14px, calc((100vw - 1040px) / 2));
-  z-index: 30;
+  z-index: 1000;
   width: 46px;
   height: 46px;
   min-height: 0;
@@ -395,11 +395,22 @@ html[dir="rtl"] .fd-back {
   justify-content: center;
   border-radius: 50%;
   box-shadow: 0 6px 18px rgba(1, 9, 45, 0.18);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px);
+  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0s linear 0.18s;
 }
-.ch-back.is-stuck > span:not(.ch-back-ico) {
-  display: none;
+.ch-back.ch-back-float.is-on {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition-delay: 0s;
 }
-.ch-back.is-stuck .ch-back-ico svg {
+.ch-back-float .ch-back-ico svg {
+  width: 22px;
+  height: 22px;
+}
+.ch-back-ico svg {
   width: 22px;
   height: 22px;
 }
