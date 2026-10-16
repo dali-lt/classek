@@ -2,7 +2,7 @@
 
    Firestore layout (content is written by the admin only, see firestore.rules):
      chapters/{chapterId}                                   level, subject, topic, title, title_ar, order, published, rappel, exerciseCount
-     chapters/{chapterId}/exercises/{exId}                  order, difficulty, statement, hints[]  (hint: legacy single string)
+     chapters/{chapterId}/exercises/{exId}                  order, difficulty, lang (algo | python, optional), statement, hints[]  (hint: legacy single string)
      chapters/{chapterId}/exercises/{exId}/private/solution { text }   (fetched only when the student asks for it)
    Student progress:
      users/{uid}/progress/{chapterId}                       { status: { exId: "done" | "review" } }
@@ -198,35 +198,133 @@ function inline(parent, text) {
       }
     });
 }
+// code blocks: ```algo and ```python written one after the other become one block with two tabs
+// (Algorithme is the default, the choice is remembered); a block with no language stays as it is (traces, outputs)
+var CODE_LABEL = { algo: "Algorithme", python: "Python" };
+var codeLang = "algo";
+try {
+  var savedLang = window.localStorage.getItem("cl.codeLang");
+  if (savedLang === "python" || savedLang === "algo") codeLang = savedLang;
+} catch (e) {}
+
+function setCodeLang(l) {
+  codeLang = l;
+  try {
+    window.localStorage.setItem("cl.codeLang", l);
+  } catch (e) {}
+  Array.prototype.forEach.call(document.querySelectorAll(".code-pair"), function (p) {
+    p.setAttribute("data-lang", l);
+    Array.prototype.forEach.call(p.querySelectorAll(".code-tab"), function (b) {
+      b.setAttribute("aria-pressed", b.getAttribute("data-l") === l ? "true" : "false");
+    });
+  });
+}
+
+function wordSet(list) {
+  var o = Object.create(null);
+  list.split(" ").forEach(function (w) {
+    o[w] = true;
+  });
+  return o;
+}
+var KEYWORDS = {
+  algo: wordSet("Fonction Procédure DEBUT FIN Si Alors Sinon FinSi Pour de à Faire FinPour Tant que FinTantQue Répéter Jusqu'à Vrai Faux div mod"),
+  python: wordSet("def if elif else return for while in range and or not True False"),
+};
+// light colouring (keywords, comments) built with DOM nodes only; the text itself is never changed
+function codeBlock(code, lang) {
+  var pre = el("pre", "test-code" + (lang ? " code-" + lang : ""));
+  var kw = KEYWORDS[lang];
+  if (!kw) {
+    pre.textContent = code;
+    return pre;
+  }
+  var re =
+    lang === "python"
+      ? /(#[^\n]*)|([A-Za-zÀ-ÿ_'][A-Za-zÀ-ÿ_0-9']*)|([\s\S])/g
+      : /(\{[^}]*\})|([A-Za-zÀ-ÿ_'][A-Za-zÀ-ÿ_0-9']*)|([\s\S])/g;
+  var m;
+  while ((m = re.exec(code))) {
+    if (m[1]) pre.append(el("span", "tk-com", m[1]));
+    else if (m[2] && kw[m[2]]) pre.append(el("span", "tk-kw", m[2]));
+    else pre.append(document.createTextNode(m[0]));
+  }
+  return pre;
+}
+function codePair(a, b) {
+  var wrap = el("div", "code-pair");
+  wrap.setAttribute("data-lang", codeLang);
+  var tabs = el("div", "code-tabs");
+  tabs.setAttribute("role", "group");
+  ["algo", "python"].forEach(function (l) {
+    var btn = el("button", "code-tab", CODE_LABEL[l]);
+    btn.type = "button";
+    btn.setAttribute("data-l", l);
+    btn.setAttribute("aria-pressed", codeLang === l ? "true" : "false");
+    btn.addEventListener("click", function () {
+      setCodeLang(l);
+    });
+    tabs.append(btn);
+  });
+  wrap.append(tabs, codeBlock(a.v, a.lang), codeBlock(b.v, b.lang));
+  return wrap;
+}
+
 function md(text) {
   var box = el("div", "ch-content");
   box.setAttribute("lang", "fr");
   box.setAttribute("dir", "ltr");
-  String(text || "")
-    .split(/```[a-zA-Z]*\n?/)
-    .forEach(function (part, i) {
-      if (i % 2 === 1) {
-        box.append(el("pre", "test-code", part.replace(/\n+$/, "")));
-        return;
-      }
-      part
-        .split(/\n{2,}/)
-        .map(function (p) {
-          return p.replace(/^\n+|\n+$/g, "");
-        })
-        .filter(Boolean)
-        .forEach(function (para) {
-          if (para.slice(0, 3) === "## ") {
-            var h = el("h3", "ch-h");
-            inline(h, para.slice(3));
-            box.append(h);
-          } else {
-            var p = el("p", "ch-p");
-            inline(p, para);
-            box.append(p);
-          }
-        });
-    });
+  var src = String(text || "");
+  var segs = [];
+  var fence = /```([a-zA-Z]*)\n?([\s\S]*?)```/g;
+  var last = 0;
+  var f;
+  while ((f = fence.exec(src))) {
+    if (f.index > last) segs.push({ code: false, v: src.slice(last, f.index) });
+    segs.push({ code: true, lang: f[1], v: f[2].replace(/\n+$/, "") });
+    last = fence.lastIndex;
+  }
+  if (last < src.length) segs.push({ code: false, v: src.slice(last) });
+
+  function words(v) {
+    v.split(/\n{2,}/)
+      .map(function (p) {
+        return p.replace(/^\n+|\n+$/g, "");
+      })
+      .filter(Boolean)
+      .forEach(function (para) {
+        if (para.slice(0, 3) === "## ") {
+          var h = el("h3", "ch-h");
+          inline(h, para.slice(3));
+          box.append(h);
+        } else {
+          var p = el("p", "ch-p");
+          inline(p, para);
+          box.append(p);
+        }
+      });
+  }
+  for (var i = 0; i < segs.length; i++) {
+    var s = segs[i];
+    if (!s.code) {
+      words(s.v);
+      continue;
+    }
+    var known = s.lang === "algo" || s.lang === "python";
+    var j = i + 1;
+    if (j < segs.length && !segs[j].code && !segs[j].v.trim()) j++;
+    var nx = segs[j];
+    if (known && nx && nx.code && (nx.lang === "algo" || nx.lang === "python") && nx.lang !== s.lang) {
+      box.append(codePair(s, nx));
+      i = j;
+    } else if (known) {
+      var one = el("div", "code-one");
+      one.append(el("span", "code-label", CODE_LABEL[s.lang]), codeBlock(s.v, s.lang));
+      box.append(one);
+    } else {
+      box.append(codeBlock(s.v, ""));
+    }
+  }
   return box;
 }
 
@@ -811,7 +909,11 @@ function exerciseCard(ch, ex, index) {
   }
 
   var isOpen = !!revealed[key];
-  var label = el("label", "ex-label", t("answerLabel"));
+  var label = el(
+    "label",
+    "ex-label",
+    t("answerLabel") + (CODE_LABEL[ex.lang] ? " · " + CODE_LABEL[ex.lang] : "")
+  );
   var ta = el("textarea", "ex-answer");
   ta.rows = 5;
   ta.spellcheck = false;

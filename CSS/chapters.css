@@ -1253,3 +1253,65 @@ input.note-input {
     height: 104px;
   }
 }
+
+/* ---------- code in two writings: Algorithme (the base) and Python, one block with two tabs ---------- */
+.code-pair,
+.code-one {
+  margin: 10px 0;
+}
+.code-tabs {
+  display: inline-flex;
+  gap: 4px;
+  margin-bottom: 6px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--color-light-blue);
+}
+.code-tab {
+  min-height: 30px;
+  padding: 4px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.code-tab[aria-pressed="true"] {
+  background: var(--color-primary);
+  color: #fff;
+}
+.code-label {
+  display: inline-block;
+  margin-bottom: 6px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--color-light-blue);
+  color: var(--color-primary);
+  font-size: 11.5px;
+  font-weight: 800;
+}
+.code-pair .test-code,
+.code-one .test-code {
+  margin: 0;
+}
+.code-pair[data-lang="algo"] .code-python,
+.code-pair[data-lang="python"] .code-algo {
+  display: none;
+}
+.code-algo {
+  border-inline-start: 4px solid var(--color-accent);
+}
+.tk-kw {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+.code-python .tk-kw {
+  color: #8ab4ff;
+}
+.tk-com {
+  color: #8da2c8;
+  font-style: italic;
+}
