@@ -403,6 +403,33 @@ function genderText(v) {
   return v === "female" ? t("genderFemale") : v === "male" ? t("genderMale") : "";
 }
 
+/* ---------------- week strip (today highlighted) ---------------- */
+function paintWeek() {
+  var host = $("sWeek");
+  if (!host) return;
+  var loc = lang === "ar" ? "ar-TN-u-nu-latn" : "en-GB";
+  var now = new Date();
+  var mon = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  mon.setDate(mon.getDate() - ((mon.getDay() + 6) % 7)); // week starts on Monday
+  var wd = new Intl.DateTimeFormat(loc, { weekday: "short" });
+  host.textContent = "";
+  var cap = el("div", "week-cap");
+  cap.textContent = new Intl.DateTimeFormat(loc, { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(now);
+  var row = el("div", "week-row");
+  for (var i = 0; i < 7; i++) {
+    var d = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + i);
+    var isToday = d.toDateString() === now.toDateString();
+    var cell = el("div", "week-day" + (isToday ? " is-today" : ""));
+    if (isToday) cell.setAttribute("aria-current", "date");
+    cell.append(el("span", "week-name", wd.format(d)), el("span", "week-num", String(d.getDate())));
+    row.append(cell);
+  }
+  host.append(cap, row);
+}
+document.addEventListener("visibilitychange", function () {
+  if (!document.hidden) paintWeek();
+});
+
 /* ---------------- page ---------------- */
 function renderPage() {
   document.documentElement.lang = lang;
@@ -420,6 +447,7 @@ function renderPage() {
   var first = shownNames().first;
   $("sGreeting").textContent = first ? t("hello") + (lang === "ar" ? " " : ", ") + first : t("hello");
   $("sSub").textContent = t("sub");
+  paintWeek();
   $("sChaptersTitle").textContent = t("chapters");
   $("sSignOut").textContent = t("signOut");
 

@@ -975,3 +975,53 @@ html[dir="rtl"] .welcome-link .welcome-ico:first-child svg {
     transition: none;
   }
 }
+
+/* week strip: today's date, kept minimal */
+.week-strip {
+  margin-top: 14px;
+  padding: 14px 12px 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 22px;
+  box-shadow: 0 10px 26px -18px rgba(1, 9, 45, 0.3);
+}
+.week-cap {
+  padding: 0 6px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+.week-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+.week-day {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 8px 0;
+  border-radius: 14px;
+  color: var(--color-text-muted);
+}
+.week-name {
+  font-size: 12px;
+}
+.week-num {
+  font-size: 18px;
+  font-weight: 600;
+}
+.week-day.is-today {
+  background: var(--color-navy);
+  color: #fff;
+}
+.week-day.is-today .week-name {
+  opacity: 0.8;
+}
+.week-day.is-today .week-num {
+  font-weight: 700;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .week-day.is-today { background: var(--color-primary); }
+}
+:root[data-theme="dark"] .week-day.is-today { background: var(--color-primary); }

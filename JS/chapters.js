@@ -1105,6 +1105,10 @@ export var Chapters = {
   /* c: { sdk, db, uid, getLang(), getLevel(), ready(), topicOf(key), subjectIcon(subject) } */
   init: function (c) {
     ctx = c;
+    /* a reload always starts on the subjects page */
+    if (window.location.hash && window.history && window.history.replaceState) {
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
     window.addEventListener("hashchange", render);
     window.addEventListener("scroll", syncBackButton, { passive: true });
   },
