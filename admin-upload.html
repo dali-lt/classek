@@ -9,38 +9,79 @@
     <link rel="stylesheet" href="CSS/style.css" />
     <link rel="stylesheet" href="CSS/welcome.css" />
     <link rel="stylesheet" href="CSS/chapters.css" />
+    <link rel="stylesheet" href="CSS/admin-upload.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap"
+    />
     <style>
       [hidden] { display: none !important; }
     </style>
   </head>
   <body class="student-body">
-    <div class="student-wrap" style="max-width: 640px">
+    <div class="student-wrap up-wrap">
       <header class="student-top">
         <img class="welcome-logo" src="Images/logo-wordmark.svg" alt="ClassLedger" />
         <button type="button" class="student-out" id="out" style="display: none">Sign out</button>
       </header>
 
-      <section class="ch-block">
-        <h1 style="margin: 0 0 6px; font-size: 20px">Upload chapters</h1>
-        <p class="welcome-sub">
-          Admin only. Only the uid written in <code class="ch-inline-code">firestore.rules</code> can write.
-        </p>
-        <div id="signedOut" style="margin-top: 12px">
+      <section class="up-card">
+        <div class="up-head">
+          <h1>Upload chapters</h1>
+          <p>Add chapter JSON files, choose who can see them, then publish.</p>
+          <span class="up-uid" id="uidRow" hidden>Admin uid <code id="uid"></code></span>
+        </div>
+
+        <div class="up-signin" id="signedOut">
+          <p class="up-msg">Admin only. Only the uid written in <code class="ch-inline-code">firestore.rules</code> can write.</p>
           <button type="button" class="welcome-btn is-solid" id="signIn" style="width: 100%">Sign in with Google</button>
         </div>
-        <div id="signedIn" hidden style="display: grid; gap: 12px; margin-top: 12px">
-          <p class="welcome-sub">Your uid: <code class="ch-inline-code" id="uid"></code></p>
-          <input type="file" id="file" accept="application/json,.json" multiple />
-          <label style="display: grid; gap: 4px; font-size: 14px">
-            Visibility
-            <select id="pubMode" class="note-input">
-              <option value="file">As written in each file (published: true / false)</option>
-              <option value="all">Publish all (visible to students)</option>
-              <option value="none">Hide all</option>
-            </select>
-          </label>
-          <button type="button" class="pc-btn" id="go" disabled>Upload</button>
-          <p class="welcome-msg" id="msg" role="status"></p>
+
+        <div id="signedIn" hidden style="display: grid; gap: 18px">
+          <div class="up-drop" id="drop" tabindex="0" role="button" aria-label="Choose chapter files">
+            <span class="up-drop-ico">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 7.97"/><path d="M12 21v-8m0 0-3 3m3-3 3 3"/></svg>
+            </span>
+            <strong>Drop your files here or <u>browse</u></strong>
+            <small>One or many .json chapter files</small>
+            <button type="button" class="up-folder" id="pickFolder">or choose a whole folder</button>
+          </div>
+          <input type="file" id="file" accept="application/json,.json" multiple hidden />
+          <input type="file" id="folder" webkitdirectory multiple hidden />
+
+          <div class="up-field">
+            <span class="up-label" id="visLabel">
+              Visibility
+            </span>
+            <div class="up-seg" role="group" aria-labelledby="visLabel" id="seg">
+              <button type="button" data-mode="file" aria-pressed="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>
+                From file
+              </button>
+              <button type="button" data-mode="all" aria-pressed="false">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                Publish all
+              </button>
+              <button type="button" data-mode="none" aria-pressed="false">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"/><path d="M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4.2M6.6 6.6C3.8 8.4 2 12 2 12s3.5 7 10 7a9.8 9.8 0 0 0 4.4-1"/></svg>
+                Hide all
+              </button>
+            </div>
+            <p class="up-hint" id="visHint"></p>
+          </div>
+
+          <div id="listWrap" hidden style="display: grid; gap: 10px">
+            <div class="up-count"><span id="count"></span></div>
+            <ul class="up-list" id="list"></ul>
+          </div>
+
+          <p class="up-msg" id="msg" role="status"></p>
+          <div class="up-actions">
+            <button type="button" id="clear" disabled>Clear</button>
+            <button type="button" class="up-go" id="go" disabled>Upload</button>
+          </div>
         </div>
       </section>
     </div>
@@ -58,12 +99,26 @@
       var auth = sdk.getAuth(app);
       var db = sdk.getFirestore(app);
       var $ = function (id) { return document.getElementById(id); };
-      var items = []; // parsed chapter files
+      var items = []; // {data, state: "", error: ""}
+      var mode = "file";
       var busy = false;
+      var HINTS = {
+        file: "Each chapter keeps the published value written in its own JSON file (true shows it to students, false keeps it as a draft).",
+        all: "Every uploaded chapter becomes visible to students right away, whatever its file says.",
+        none: "Every uploaded chapter is saved as a hidden draft. Students cannot see it until you publish it.",
+      };
+      var ICON_OK = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.6 2.6L16 9.5"/></svg>';
+      var ICON_BAD = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.5v.01"/></svg>';
+      var ICON_DEL = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>';
 
-      function msg(text, bad) {
+      function msg(text, kind) {
         $("msg").textContent = text;
-        $("msg").classList.toggle("is-error", !!bad);
+        $("msg").className = "up-msg" + (kind ? " is-" + kind : "");
+      }
+      function esc(t) {
+        return String(t).replace(/[&<>"]/g, function (c) {
+          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+        });
       }
       $("signIn").addEventListener("click", function () {
         sdk.signInWithPopup(auth, new sdk.GoogleAuthProvider());
@@ -72,33 +127,12 @@
       sdk.onAuthStateChanged(auth, function (u) {
         $("signedOut").hidden = !!u;
         $("signedIn").hidden = !u;
+        $("uidRow").hidden = !u;
         $("out").style.display = u ? "" : "none";
         if (u) $("uid").textContent = u.uid;
       });
-      $("file").addEventListener("change", async function () {
-        items = [];
-        $("go").disabled = true;
-        var files = Array.prototype.slice.call($("file").files);
-        if (!files.length) return;
-        var bad = [];
-        for (var i = 0; i < files.length; i++) {
-          try {
-            var d = JSON.parse(await files[i].text());
-            if (!d.chapterId || !d.level || !d.subject || !d.title || !Array.isArray(d.exercises)) throw new Error("missing fields");
-            items.push(d);
-          } catch (e) {
-            bad.push(files[i].name + " (" + e.message + ")");
-          }
-        }
-        $("go").disabled = !items.length;
-        var n = items.reduce(function (t, d) { return t + d.exercises.length; }, 0);
-        msg(
-          items.length + " chapter(s), " + n + " exercise(s) ready." + (bad.length ? " Invalid: " + bad.join(", ") : ""),
-          !!bad.length
-        );
-      });
+
       function visible(d) {
-        var mode = $("pubMode").value;
         return mode === "all" ? true : mode === "none" ? false : !!d.published;
       }
       function hintList(ex) {
@@ -107,7 +141,87 @@
           return typeof h === "string" && h.trim();
         });
       }
-      async function uploadOne(data) {
+
+      function render() {
+        $("listWrap").hidden = !items.length;
+        $("clear").disabled = busy || !items.length;
+        $("go").disabled = busy || !items.length;
+        var n = items.reduce(function (t, it) { return t + it.data.exercises.length; }, 0);
+        $("count").textContent = items.length + " chapter" + (items.length === 1 ? "" : "s") + " · " + n + " exercises";
+        $("go").textContent = items.length ? "Upload " + items.length + " chapter" + (items.length === 1 ? "" : "s") : "Upload";
+        $("list").innerHTML = items.map(function (it, k) {
+          var d = it.data, pub = visible(d);
+          var state = it.state === "done" ? '<span class="up-state is-ok">' + ICON_OK + "</span>"
+            : it.state === "fail" ? '<span class="up-state is-bad">' + ICON_BAD + "</span>"
+            : '<button type="button" class="up-x" data-del="' + k + '" aria-label="Remove" ' + (busy ? "disabled" : "") + ">" + ICON_DEL + "</button>";
+          return '<li class="up-row ' + (it.state ? "is-" + it.state : "") + '" data-k="' + k + '">' +
+            '<span class="up-badge">' + (d.order || "·") + "</span>" +
+            '<div class="up-info"><div class="up-title">' + esc(d.title) + "</div>" +
+            '<div class="up-meta"><span>' + d.exercises.length + " exercises</span>" +
+            '<span class="up-pill ' + (pub ? "is-pub" : "is-draft") + '">' + (pub ? "Published" : "Hidden") + "</span>" +
+            (it.error ? '<span class="up-err">' + esc(it.error) + "</span>" : "") + "</div></div>" +
+            state + '<span class="up-bar"><i></i></span></li>';
+        }).join("");
+      }
+
+      async function addFiles(fileList) {
+        var files = Array.prototype.slice.call(fileList).filter(function (f) { return /\.json$/i.test(f.name); });
+        if (!files.length) { msg("No .json files in that selection.", "error"); return; }
+        var bad = [];
+        for (var i = 0; i < files.length; i++) {
+          try {
+            var d = JSON.parse(await files[i].text());
+            if (!d.chapterId || !d.level || !d.subject || !d.title || !Array.isArray(d.exercises)) throw new Error("missing fields");
+            var at = items.findIndex(function (it) { return it.data.chapterId === d.chapterId; });
+            var entry = { data: d, state: "", error: "" };
+            if (at >= 0) items[at] = entry; else items.push(entry);
+          } catch (e) {
+            bad.push(files[i].name + " (" + e.message + ")");
+          }
+        }
+        items.sort(function (a, b) { return (a.data.order || 0) - (b.data.order || 0); });
+        render();
+        msg(bad.length ? "Skipped: " + bad.join(", ") : "", bad.length ? "error" : "");
+      }
+
+      var drop = $("drop");
+      drop.addEventListener("click", function (e) { if (e.target.id !== "pickFolder") $("file").click(); });
+      drop.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("file").click(); }
+      });
+      $("pickFolder").addEventListener("click", function () { $("folder").click(); });
+      ["dragenter", "dragover"].forEach(function (ev) {
+        drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add("is-over"); });
+      });
+      ["dragleave", "drop"].forEach(function (ev) {
+        drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove("is-over"); });
+      });
+      drop.addEventListener("drop", function (e) { addFiles(e.dataTransfer.files); });
+      ["file", "folder"].forEach(function (id) {
+        $(id).addEventListener("change", function () { addFiles($(id).files); $(id).value = ""; });
+      });
+
+      $("seg").addEventListener("click", function (e) {
+        var b = e.target.closest("button[data-mode]");
+        if (!b || busy) return;
+        mode = b.dataset.mode;
+        Array.prototype.forEach.call($("seg").children, function (x) {
+          x.setAttribute("aria-pressed", x === b ? "true" : "false");
+        });
+        $("visHint").textContent = HINTS[mode];
+        render();
+      });
+      $("visHint").textContent = HINTS[mode];
+
+      $("list").addEventListener("click", function (e) {
+        var b = e.target.closest("[data-del]");
+        if (!b || busy) return;
+        items.splice(+b.dataset.del, 1);
+        render();
+      });
+      $("clear").addEventListener("click", function () { items = []; render(); msg(""); });
+
+      async function uploadOne(data, bar) {
         var chRef = sdk.doc(db, "chapters", data.chapterId);
         var batch = sdk.writeBatch(db);
         batch.set(chRef, {
@@ -136,27 +250,39 @@
           });
           batch.set(sdk.doc(exRef, "private", "solution"), { text: ex.solution || "" });
         });
+        bar.style.width = "40%";
         await batch.commit();
+        bar.style.width = "100%";
       }
       $("go").addEventListener("click", async function () {
         if (busy || !items.length) return;
         busy = true;
-        $("go").disabled = true;
+        items.forEach(function (it) { it.state = ""; it.error = ""; });
+        render();
         var ok = 0;
-        var failed = [];
         for (var i = 0; i < items.length; i++) {
-          msg("Uploading " + (i + 1) + " / " + items.length + ": " + items[i].title + "…");
+          var row = $("list").children[i];
+          row.classList.add("is-busy");
+          var bar = row.querySelector(".up-bar i");
+          bar.style.width = "10%";
+          msg("Uploading " + (i + 1) + " / " + items.length + "…");
           try {
-            await uploadOne(items[i]);
+            await uploadOne(items[i].data, bar);
+            items[i].state = "done";
             ok++;
           } catch (e) {
-            failed.push(items[i].chapterId + " (" + (e.code || e.message) + ")");
+            items[i].state = "fail";
+            items[i].error = e.code || e.message;
           }
+          row.classList.remove("is-busy");
+          render();
         }
-        msg(ok + " chapter(s) uploaded." + (failed.length ? " Failed: " + failed.join(", ") : ""), !!failed.length);
+        var failed = items.length - ok;
+        msg(ok + " uploaded" + (failed ? ", " + failed + " failed" : "") + ".", failed ? "error" : "ok");
         busy = false;
-        $("go").disabled = false;
+        render();
       });
+      render();
     </script>
   </body>
 </html>
