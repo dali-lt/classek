@@ -376,6 +376,28 @@ html[dir="rtl"] .fd-back {
   border-color: var(--color-primary);
   background: var(--color-light-blue);
 }
+/* chapter page: the back button follows the scroll (start edge, top), then shrinks to a round arrow */
+#sChapterView > .ch-back {
+  position: sticky;
+  top: calc(10px + env(safe-area-inset-top, 0px));
+  z-index: 30;
+  box-shadow: 0 6px 18px rgba(1, 9, 45, 0.14);
+}
+#sChapterView > .ch-back.is-stuck {
+  width: 46px;
+  height: 46px;
+  min-height: 0;
+  padding: 0;
+  justify-content: center;
+  border-radius: 50%;
+}
+#sChapterView > .ch-back.is-stuck > span:not(.ch-back-ico) {
+  display: none;
+}
+#sChapterView > .ch-back.is-stuck .ch-back-ico svg {
+  width: 22px;
+  height: 22px;
+}
 .ch-back-ico svg {
   width: 18px;
   height: 18px;
@@ -511,7 +533,7 @@ html[dir="rtl"] .ch-back-ico svg {
   box-shadow:
     0 1px 2px rgba(1, 9, 45, 0.06),
     0 18px 40px rgba(1, 9, 45, 0.1);
-  scroll-margin-top: 24px;
+  scroll-margin-top: 72px; /* clear of the sticky back button */
   transition:
     transform 0.25s ease,
     box-shadow 0.25s ease;

@@ -980,12 +980,19 @@ function notesSection(ch) {
   return sec;
 }
 
+// the back button stays on screen while the page scrolls; once the page has moved it shrinks to a round arrow
+function syncBackButton() {
+  var b = document.querySelector("#sChapterView > .ch-back");
+  if (b) b.classList.toggle("is-stuck", window.scrollY > 140);
+}
+
 function renderView(view, ch) {
   view.textContent = "";
   var back = el("button", "ch-back");
   back.type = "button";
   back.append(icon(ICON_BACK, "ch-back-ico"));
   back.append(el("span", "", tf("back", { name: t("s_" + ch.subject) })));
+  back.setAttribute("aria-label", tf("back", { name: t("s_" + ch.subject) }));
   back.addEventListener("click", function () {
     openSubject(ch.subject);
   });
@@ -1042,6 +1049,7 @@ function renderView(view, ch) {
     });
     view.append(list);
   }
+  syncBackButton();
 }
 
 /* ---------------- entry points ---------------- */
@@ -1098,6 +1106,7 @@ export var Chapters = {
   init: function (c) {
     ctx = c;
     window.addEventListener("hashchange", render);
+    window.addEventListener("scroll", syncBackButton, { passive: true });
   },
   render: render,
 };
