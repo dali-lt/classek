@@ -113,3 +113,15 @@
 .up-msg.is-ok { color: var(--color-study-day); font-weight: 600; }
 .up-signin { display: grid; gap: 10px; justify-items: center; padding: 14px 0 4px; }
 @media (max-width: 420px) { .up-card { padding: 16px; border-radius: 22px; } .up-seg button { font-size: 12px; } }
+
+/* content type picker */
+.up-types { display: flex; flex-wrap: wrap; gap: 8px; }
+.up-types button {
+  border: 1.5px solid var(--color-border); background: var(--color-surface); color: var(--color-text-muted);
+  border-radius: 999px; padding: 8px 14px; font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.up-types button:hover { border-color: var(--color-primary); }
+.up-types button[aria-pressed="true"] { background: var(--color-navy); border-color: var(--color-navy); color: #fff; }
+.up-types button:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.up-field[hidden] { display: none; }

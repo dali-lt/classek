@@ -74,6 +74,13 @@ service cloud.firestore {
         && request.resource.data.get('revoked', false) is bool;
     }
 
+    // Test de niveau: un seul document (tests/placement) envoyé depuis la page admin.
+    // Lecture pour les comptes connectés, écriture admin seulement.
+    match /tests/{testId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
     // Contenu du livre: lecture pour les comptes connectés (chapitres publiés), écriture admin seulement.
     // Les requêtes de liste doivent filtrer sur published == true (le code le fait).
     match /chapters/{chapterId} {

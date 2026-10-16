@@ -1027,19 +1027,19 @@ html[dir="rtl"] .welcome-link .welcome-ico:first-child svg {
 :root[data-theme="dark"] .week-day.is-today { background: var(--color-primary); }
 
 /* greeting: plain text above the calendar, no box */
-.student-hero {
+#sHero.student-hero {
   padding: 6px 4px 0;
   border-radius: 0;
   background: none;
   overflow: visible;
 }
-.student-hero h1 {
+#sHero.student-hero h1 {
   font-size: 24px;
   letter-spacing: -0.02em;
 }
-.student-hero p {
+#sHero.student-hero p {
   font-size: 14px;
 }
-.student-hero + .week-strip {
+#sHero.student-hero + .week-strip {
   margin-top: 16px;
 }

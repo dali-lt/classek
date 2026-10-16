@@ -3,7 +3,7 @@
    The profile card ("My account") reuses the teacher app's modal look (style.css)
    and saves to users/{uid}/meta/profile. */
 
-import { Chapters } from "./chapters.js?v=21";
+import { Chapters } from "./chapters.js?v=22";
 import {
   MAX_SHOWN,
   parseDevice,
@@ -382,7 +382,8 @@ var signOutNow = null; // set once Firebase is ready
 var placement = null; // saved placement result / skip marker, null = never seen
 var placementLoaded = false;
 var savePlacement = null; // set once Firebase is ready
-var testData = null; // questions loaded from data/placement-test.json
+var testData = null; // placement questions: Firestore tests/placement (uploaded from the admin page), else data/placement-test.json
+var loadRemoteTest = null; // set once Firebase is ready
 var settingsText = ""; // survives re-rendering of the settings box
 var settingsOpen = false;
 var isPhone = window.matchMedia("(max-width: 720px)");
@@ -763,11 +764,25 @@ function shuffled(n) {
 }
 async function loadTestData() {
   if (testData) return true;
+  var okShape = function (d) {
+    return d && Array.isArray(d.questions) && d.questions.length;
+  };
+  if (loadRemoteTest) {
+    try {
+      var remote = await loadRemoteTest();
+      if (okShape(remote)) {
+        testData = remote;
+        return true;
+      }
+    } catch (e) {
+      console.warn("Couldn’t read the placement test from Firestore, using the bundled file:", e);
+    }
+  }
   try {
     var res = await fetch("data/placement-test.json", { cache: "no-cache" });
     if (!res.ok) throw new Error("HTTP " + res.status);
     var data = await res.json();
-    if (!data || !Array.isArray(data.questions) || !data.questions.length) throw new Error("empty");
+    if (!okShape(data)) throw new Error("empty");
     testData = data;
     return true;
   } catch (e) {
@@ -2240,6 +2255,10 @@ async function main() {
         startSessions(sdk, db, auth, u); // the account is still there: keep the devices list running
         throw err;
       }
+    };
+    loadRemoteTest = async function () {
+      var snap = await sdk.getDoc(sdk.doc(db, "tests", "placement"));
+      return snap.exists() ? snap.data() : null;
     };
     var placementRef = sdk.doc(db, "users", u.uid, "progress", "placement");
     savePlacement = function (p) {
