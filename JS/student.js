@@ -3,7 +3,7 @@
    The profile card ("My account") reuses the teacher app's modal look (style.css)
    and saves to users/{uid}/meta/profile. */
 
-import { Chapters } from "./chapters.js?v=26";
+import { Chapters } from "./chapters.js?v=27";
 import {
   MAX_SHOWN,
   parseDevice,
@@ -29,6 +29,8 @@ var STR = {
     emptyTitle: "Your first chapters are on their way",
     emptyText: "Come back soon: new exercises are being added.",
     signOut: "Sign out",
+    home: "Home",
+    language: "Language",
     account: "My account",
     settings: "Settings",
     retakeTest: "Retake the level test",
@@ -141,6 +143,8 @@ var STR = {
     emptyTitle: "أول الفصول في الطريق",
     emptyText: "ارجع قريب: تمارين جديدة تتزاد.",
     signOut: "تسجيل الخروج",
+    home: "الرئيسية",
+    language: "اللغة",
     account: "حسابي",
     settings: "الإعدادات",
     retakeTest: "عاود اختبار المستوى",
@@ -435,9 +439,6 @@ document.addEventListener("visibilitychange", function () {
 function renderPage() {
   document.documentElement.lang = lang;
   document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
-  document.querySelectorAll("#langSwitch .lang-btn").forEach(function (b) {
-    b.classList.toggle("active", b.dataset.lang === lang);
-  });
   $("pClose").setAttribute("aria-label", t("close"));
   $("pGear").setAttribute("aria-label", t("settings"));
   $("pGear").title = t("settings");
@@ -450,7 +451,9 @@ function renderPage() {
   $("sSub").textContent = t("sub");
   paintWeek();
   $("sChaptersTitle").textContent = t("chapters");
-  $("sSignOut").textContent = t("signOut");
+  $("rBrandLabel").textContent = t("home");
+  $("rBrand").setAttribute("aria-label", t("home"));
+  $("rBrand").title = t("home");
 
   var user = $("sUser");
   user.setAttribute("aria-label", t("account"));
@@ -1615,22 +1618,44 @@ function menuItem(label, icon, onClick) {
   });
   return b;
 }
+function setLang(code) {
+  lang = code === "ar" ? "ar" : "en";
+  try {
+    localStorage.setItem(LANG_KEY, lang);
+  } catch (e) {}
+  renderPage();
+}
+function langRow() {
+  var row = el("div", "menu-lang");
+  row.append(el("span", "menu-lang-label", t("language")));
+  var sw = el("div", "lang-switch");
+  sw.id = "langSwitch";
+  ["en", "ar"].forEach(function (code) {
+    var b = el("button", "lang-btn" + (lang === code ? " active" : ""), code.toUpperCase());
+    b.type = "button";
+    b.dataset.lang = code;
+    b.addEventListener("click", function (e) {
+      e.stopPropagation(); // the menu stays open while the language changes
+      setLang(code);
+    });
+    sw.append(b);
+  });
+  row.append(sw);
+  return row;
+}
 function renderMenu() {
   var m = $("sMenu");
   m.textContent = "";
   m.append(
     menuItem(t("account"), ICON_USER, openModal),
     menuItem(t("settings"), ICON_GEAR, openSettings),
+    langRow(),
     menuItem(t("signOut"), ICON_OUT, function () {
       if (signOutNow) signOutNow();
     }),
   );
 }
 function onAvatarClick() {
-  if (!isPhone.matches) {
-    openModal(); // big screens: straight to the profile card
-    return;
-  }
   if (menuIsOpen()) {
     closeMenu();
     return;
@@ -2120,16 +2145,11 @@ function renderSettings() {
 
 /* ---------------- start ---------------- */
 async function main() {
-  document.querySelectorAll("#langSwitch .lang-btn").forEach(function (b) {
-    b.addEventListener("click", function () {
-      lang = b.dataset.lang === "ar" ? "ar" : "en";
-      try {
-        localStorage.setItem(LANG_KEY, lang);
-      } catch (e) {}
-      renderPage();
-    });
-  });
   $("sUser").addEventListener("click", onAvatarClick);
+  $("rBrand").addEventListener("click", function () {
+    closeMenu();
+    Chapters.home();
+  });
   $("pClose").addEventListener("click", closeModal);
   $("pGear").addEventListener("click", openSettings);
   $("setClose").addEventListener("click", closeSettings);
@@ -2175,7 +2195,6 @@ async function main() {
     await leaveSession(); // remove this device from the list first
     return sdk.signOut(auth);
   };
-  $("sSignOut").addEventListener("click", signOutNow);
 
   sdk.onAuthStateChanged(auth, async function (u) {
     if (!u) {

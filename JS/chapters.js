@@ -29,6 +29,8 @@ var STR = {
     hintLabel: "Hint {n}/{total}",
     hintLabelOne: "Hint",
     lesson: "Lesson",
+    tabCourse: "Course",
+    tabNotes: "Notes",
     lessonOpen: "Open the lesson",
     lessonClose: "Hide the lesson",
     lessonSections: "{n} sections",
@@ -94,6 +96,8 @@ var STR = {
     hintLabel: "تلميح {n}/{total}",
     hintLabelOne: "تلميح",
     lesson: "الدرس",
+    tabCourse: "الدرس",
+    tabNotes: "ملاحظات",
     lessonOpen: "شوف الدرس",
     lessonClose: "خبّي الدرس",
     lessonSections: "{n} أقسام",
@@ -171,6 +175,8 @@ var saveVer = {}; // "chapterId/exId" -> counter, to know if more was typed whil
 var hintShown = {}; // "chapterId/exId" -> how many hints the student has revealed (one per click)
 var deskOpen = {}; // "chapterId/exId" -> true/false once the student opened/closed an exercise on a wide screen (until then: only finished exercises are closed)
 var openEx = {}; // chapterId -> id of the exercise that is open on phones (the others are one row each)
+var tabs = {}; // chapterId -> "course" | "ex" | "notes": what the middle of the chapter page shows
+var notesWide = window.matchMedia("(min-width: 1101px)"); // wide: notes sit in a column on the right; narrower: they are a third tab
 var lessonOpen = {}; // chapterId -> the lesson is open (it is closed until the student asks)
 var sectionOpen = {}; // "chapterId#index" -> that lesson section is open
 var revealed = {};
@@ -875,9 +881,10 @@ function lessonSections(text) {
 }
 
 // closed by default: the student opens the lesson (and then each section) only if they want it
-function lessonBlock(ch) {
+function lessonBlock(ch, always) {
+  // always: the Course tab of the chapter page, where the lesson is simply open (no "open" button)
   var sections = lessonSections(ch.rappel);
-  var open = !!lessonOpen[ch.id];
+  var open = always || !!lessonOpen[ch.id];
   var block = el("section", "ch-block ch-rappel" + (open ? " is-open" : ""));
   var panelR = el("div", "ch-panel");
   var head = el("div", "lesson-head");
@@ -894,10 +901,15 @@ function lessonBlock(ch) {
     lessonOpen[ch.id] = !open;
     render();
   });
-  head.append(titles, toggle);
+  head.append(titles);
+  if (!always) head.append(toggle);
   panelR.append(head);
   if (open) {
     var body = el("div", "lesson-body");
+    var firstNamed = -1;
+    sections.forEach(function (s, i) {
+      if (firstNamed < 0 && s.title) firstNamed = i;
+    });
     sections.forEach(function (s, i) {
       if (!s.title) {
         body.append(md(s.body));
@@ -907,7 +919,7 @@ function lessonBlock(ch) {
       var d = el("details", "lesson-sec");
       d.setAttribute("lang", "fr");
       d.setAttribute("dir", "ltr");
-      d.open = !!sectionOpen[k];
+      d.open = sectionOpen[k] !== undefined ? !!sectionOpen[k] : !!always && i === firstNamed;
       d.append(el("summary", "", s.title), md(s.body));
       d.addEventListener("toggle", function () {
         sectionOpen[k] = d.open;
@@ -1048,10 +1060,17 @@ function codeEditor(ta) {
   });
 }
 
-function answerBox(ch, ex, boxId, placeholder, onInput) {
+function autoGrow(ta) {
+  // starts small and grows with what is typed (up to a limit, then it scrolls)
+  if (!ta.scrollHeight) return; // not on screen (a closed exercise): try again when it opens
+  ta.style.height = "auto";
+  ta.style.height = Math.min(ta.scrollHeight + 2, 380) + "px";
+}
+
+function answerBox(ch, ex, boxId, placeholder, onInput, rows) {
   var dk = ch.id + "/" + ex.id + "#" + boxId;
   var ta = el("textarea", "ex-answer");
-  ta.rows = 5;
+  ta.rows = rows || 2;
   ta.maxLength = ANSWER_MAX;
   ta.spellcheck = false;
   ta.setAttribute("autocapitalize", "off");
@@ -1064,9 +1083,13 @@ function answerBox(ch, ex, boxId, placeholder, onInput) {
   codeEditor(ta);
   ta.addEventListener("input", function () {
     drafts[dk] = ta.value;
+    autoGrow(ta);
     queueSave(ch.id, ex.id);
     onInput();
   });
+  setTimeout(function () {
+    autoGrow(ta); // once it is in the page (a saved answer comes back already long)
+  }, 0);
   ta.addEventListener("blur", function () {
     flushSave(ch.id, ex.id);
   });
@@ -1191,7 +1214,7 @@ function exerciseCard(ch, ex, index) {
       "ex-label",
       t("answerLabel") + (CODE_LABEL[ex.lang] ? " · " + CODE_LABEL[ex.lang] : "")
     );
-    var bx1 = answerBox(ch, ex, "0", t("answerPlaceholder"), onType);
+    var bx1 = answerBox(ch, ex, "0", t("answerPlaceholder"), onType, 4);
     label.append(bx1.wrap);
     work.append(label);
     boxes.push(bx1.ta);
@@ -1343,22 +1366,17 @@ function noteEditor(ch) {
   return box;
 }
 
-function notesSection(ch) {
-  var sec = el("section", "notes-section");
+function notesSection(ch, col) {
+  var sec = el("section", "notes-section" + (col ? " is-col" : ""));
   var head = el("div", "notes-head");
-  var count = notesOf(ch.id).length;
-  var h = el("h2", "ch-section-title", t("notes"));
-  if (count) h.append(el("span", "notes-count", String(count)));
-  head.append(h, el("small", "ch-meta", t("notesHint")));
-  sec.append(head);
-  if (!S.notesOk) {
-    sec.append(el("p", "set-msg", t("notesFail")));
-    return sec;
-  }
-  var grid = el("div", "note-grid");
-  var add = el("button", "note-new");
+  var list = notesOf(ch.id);
+  var h = el("h2", "ch-section-title", t("tabNotes"));
+  if (list.length) h.append(el("span", "notes-count", String(list.length)));
+  var add = el("button", "note-add", "+");
   add.type = "button";
-  add.append(el("b", "note-new-title", t("newNote")), el("span", "note-plus", "+"));
+  add.setAttribute("aria-label", t("newNote"));
+  add.title = t("newNote");
+  add.disabled = !S.notesOk;
   add.addEventListener("click", function () {
     editing = "new";
     noteDraft = { title: "", body: "" };
@@ -1366,11 +1384,18 @@ function notesSection(ch) {
     render();
     focusNote();
   });
+  head.append(h, add);
+  sec.append(head);
+  if (!S.notesOk) {
+    sec.append(el("p", "set-msg", t("notesFail")));
+    return sec;
+  }
+  var grid = el("div", "note-grid" + (col ? " is-col" : ""));
   if (editing === "new") grid.append(noteEditor(ch));
-  else grid.append(add);
-  notesOf(ch.id).forEach(function (n) {
+  list.forEach(function (n) {
     grid.append(editing === n.id ? noteEditor(ch) : noteCard(ch, n));
   });
+  if (!list.length && editing !== "new") grid.append(el("p", "note-empty", t("notesHint")));
   sec.append(grid);
   return sec;
 }
@@ -1400,7 +1425,7 @@ function syncBackButton() {
   var slot = null;
   var target = null;
   if (view && !view.hidden && view.offsetParent) {
-    slot = view.querySelector(":scope > .ch-back-slot");
+    slot = view.querySelector(".ch-back-slot");
     target = backTargets.view;
   } else if (tabs && !tabs.hidden && tabs.offsetParent) {
     slot = tabs;
@@ -1416,8 +1441,93 @@ function syncBackButton() {
   fb.tabIndex = on ? 0 : -1;
 }
 
+/* What the middle of the chapter page shows. Exercises first: that is why a student comes. */
+function curTab(ch) {
+  var tab = tabs[ch.id] || "ex";
+  if (tab === "course" && !ch.rappel) tab = "ex";
+  if (tab === "notes" && notesWide.matches) tab = "ex"; // wide screens already show the notes in their own column
+  return tab;
+}
+
+/* The side rail (or the bottom bar on phones): Course / Exercises / Notes buttons exist only inside a chapter */
+var RAIL_BTNS = [
+  ["rCourse", "course", "tabCourse"],
+  ["rEx", "ex", "exercises"],
+  ["rNotes", "notes", "tabNotes"],
+];
+function syncRail(ch) {
+  var nav = $("rNav");
+  if (!nav) return;
+  nav.hidden = !ch;
+  if (!ch) return;
+  var tab = curTab(ch);
+  RAIL_BTNS.forEach(function (b) {
+    var btn = $(b[0]);
+    if (!btn) return;
+    var label = t(b[2]);
+    btn.querySelector(".s-rail-label").textContent = label;
+    btn.setAttribute("aria-label", label);
+    btn.title = label;
+    var on = tab === b[1];
+    btn.classList.toggle("active", on);
+    btn.setAttribute("aria-pressed", on ? "true" : "false");
+    btn.disabled = b[1] === "course" && !ch.rappel;
+  });
+}
+function currentChapter() {
+  var id = readRoute().c;
+  if (!id) return null;
+  return (
+    S.chapters.filter(function (c) {
+      return c.id === id;
+    })[0] || null
+  );
+}
+function pickTab(tab) {
+  var ch = currentChapter();
+  if (!ch) return;
+  if (tab === "notes" && notesWide.matches) return;
+  tabs[ch.id] = tab;
+  render();
+  window.scrollTo(0, 0);
+}
+
+function exercisesPart(ch) {
+  var box = el("div", "ch-ex");
+  box.append(el("h2", "ch-section-title", t("exercises")));
+  var cur = S.cur;
+  if (!cur || cur.loading) {
+    box.append(el("div", "student-empty", t("loading")));
+  } else if (cur.failed) {
+    var fail = el("div", "student-empty");
+    fail.append(el("b", "", t("loadFail")));
+    var retry = el("button", "pc-btn", t("retry"));
+    retry.type = "button";
+    retry.addEventListener("click", function () {
+      loadExercises(ch.id).then(null, function () {});
+      render();
+    });
+    fail.append(retry);
+    box.append(fail);
+  } else {
+    var list = el("div", "ex-list");
+    cur.exercises.forEach(function (ex, i) {
+      if (i) list.append(exPath(i, statusOf(ch.id)[cur.exercises[i - 1].id] === "done"));
+      list.append(exerciseCard(ch, ex, i));
+    });
+    box.append(list);
+  }
+  return box;
+}
+
 function renderView(view, ch) {
   view.textContent = "";
+  var side = notesWide.matches;
+  view.className = "ch-grid" + (side ? " has-side" : "");
+  var tab = curTab(ch);
+  syncRail(ch);
+
+  var main = el("div", "ch-main");
   var back = el("button", "ch-back");
   back.type = "button";
   back.append(icon(ICON_BACK, "ch-back-ico"));
@@ -1445,47 +1555,17 @@ function renderView(view, ch) {
   };
   var slot = el("div", "ch-back-slot");
   slot.append(back);
-  view.append(slot, hero);
+  main.append(slot, hero);
 
-  if (ch.rappel) view.append(lessonBlock(ch));
+  if (tab === "course") main.append(lessonBlock(ch, true));
+  else if (tab === "notes") main.append(notesSection(ch, false));
+  else main.append(exercisesPart(ch));
+  view.append(main);
 
-  view.append(notesSection(ch));
-
-  var h2 = el("h2", "ch-section-title", t("exercises"));
-  view.append(h2);
-  var cur = S.cur;
-  if (!cur || cur.loading) {
-    view.append(el("div", "student-empty", t("loading")));
-  } else if (cur.failed) {
-    var box = el("div", "student-empty");
-    box.append(el("b", "", t("loadFail")));
-    var retry = el("button", "pc-btn", t("retry"));
-    retry.type = "button";
-    retry.addEventListener("click", function () {
-      loadExercises(ch.id).then(null, function () {});
-      render();
-    });
-    box.append(retry);
-    view.append(box);
-  } else {
-    var dots = el("div", "ex-dots");
-    cur.exercises.forEach(function (ex, i) {
-      var sd = statusOf(ch.id)[ex.id];
-      var dot = el("button", "ex-dot" + (sd ? " is-" + sd : ""), String(i + 1));
-      dot.type = "button";
-      dot.addEventListener("click", function () {
-        var target = document.getElementById("ex-" + ex.id);
-        if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
-      });
-      dots.append(dot);
-    });
-    view.append(dots);
-    var list = el("div", "ex-list");
-    cur.exercises.forEach(function (ex, i) {
-      if (i) list.append(exPath(i, statusOf(ch.id)[cur.exercises[i - 1].id] === "done"));
-      list.append(exerciseCard(ch, ex, i));
-    });
-    view.append(list);
+  if (side) {
+    var aside = el("aside", "ch-side");
+    aside.append(notesSection(ch, true));
+    view.append(aside);
   }
   syncBackButton();
 }
@@ -1513,10 +1593,19 @@ function render() {
     : null;
   var opening = !!id && (ch || S.loading || !ctx.ready());
 
-  if (hero) hero.hidden = !!opening;
-  if (placement) placement.hidden = !!opening;
+  // greeting, calendar and level card belong to the home page only (not inside a subject, not inside a chapter)
+  var subs = subjectList();
+  var inSubject = !opening && subs.length > 1 && subs.indexOf(route.s) >= 0;
+  var onHome = !opening && !inSubject;
+  var week = $("sWeek");
+  var shell = $("sMain");
+  if (hero) hero.hidden = !onHome;
+  if (placement) placement.hidden = !onHome;
+  if (week) week.hidden = !onHome;
   if (section) section.hidden = !!opening;
+  if (shell) shell.classList.toggle("is-wide", !!opening);
   view.hidden = !opening;
+  syncRail(opening && ch ? ch : null);
 
   if (!opening) {
     if (id) {
@@ -1549,6 +1638,20 @@ export var Chapters = {
     }
     window.addEventListener("hashchange", render);
     window.addEventListener("scroll", syncBackButton, { passive: true });
+    RAIL_BTNS.forEach(function (b) {
+      var btn = $(b[0]);
+      if (btn) {
+        btn.addEventListener("click", function () {
+          pickTab(b[1]);
+        });
+      }
+    });
+    var onResize = function () {
+      if (readRoute().c) render(); // the notes move between their column and the tab bar when the width crosses the breakpoint
+    };
+    if (notesWide.addEventListener) notesWide.addEventListener("change", onResize);
+    else if (notesWide.addListener) notesWide.addListener(onResize);
   },
+  home: closeToHome,
   render: render,
 };

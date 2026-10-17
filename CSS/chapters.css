@@ -7,14 +7,39 @@
 #sPlacement[hidden],
 #sChaptersSection[hidden],
 #sChapterView[hidden],
+#sWeek[hidden],
 #sChapterTabs[hidden] {
   display: none !important;
 }
 
-#sChapterView {
+/* chapter page: the middle (course / exercises / notes) and, on wide screens, the notes column */
+#sChapterView.ch-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+#sChapterView.ch-grid.has-side {
+  grid-template-columns: minmax(0, 1fr) 316px;
+}
+.ch-main {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  min-width: 0;
+}
+.ch-ex {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ch-side {
+  position: sticky;
+  top: 14px;
+  max-height: calc(100vh - 28px);
+  overflow-y: auto;
+  padding: 12px 12px 14px; /* room for the tape on the first note and for the cards' shadows (overflow clips them) */
+  scrollbar-width: thin;
 }
 
 /* ---------- back row above a subject's chapters ---------- */
@@ -1388,4 +1413,184 @@ input.note-input {
   color: var(--color-text-muted);
   font-size: 12px;
   font-weight: 700;
+}
+
+
+/* ================= v27: back button stays put on wide screens, notes column, lighter exercise cards ================= */
+@media (min-width: 801px) {
+  .ch-back-slot,
+  .ch-tabs {
+    position: sticky;
+    top: 10px;
+    z-index: 20;
+    width: fit-content;
+    pointer-events: none;
+  }
+  .ch-back-slot .ch-back,
+  .ch-tabs .ch-back {
+    pointer-events: auto;
+    box-shadow: 0 4px 14px rgba(1, 9, 45, 0.08);
+  }
+  .ch-back.ch-back-float {
+    display: none;
+  }
+}
+
+.notes-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.note-add {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  padding: 0 0 2px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #fff;
+  font: inherit;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.note-add:hover {
+  transform: scale(1.08);
+}
+.note-add:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.note-grid.is-col {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+.is-col .note-card {
+  min-height: 112px;
+  padding: 16px 16px 11px;
+  border-radius: 18px;
+}
+.is-col .note-title {
+  font-size: 15.5px;
+}
+.note-empty {
+  margin: 0;
+  padding: 18px 16px;
+  border: 1.5px dashed var(--color-border);
+  border-radius: 16px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+}
+.note-grid > .note-empty {
+  grid-column: 1 / -1;
+}
+.is-col .note-textarea {
+  min-height: 110px;
+}
+
+/* exercise cards: white, a thin bar in the level colour, smaller answer boxes */
+.ex-list {
+  padding-top: 8px;
+}
+.ex-card {
+  --lvl: var(--color-accent);
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  box-shadow:
+    0 1px 2px rgba(1, 9, 45, 0.04),
+    0 12px 26px -18px rgba(1, 9, 45, 0.28);
+}
+.ex-card.d-medium {
+  --lvl: var(--color-primary);
+}
+.ex-card.d-bac {
+  --lvl: #e64d6b;
+}
+.ex-card.is-done {
+  --lvl: #6fbf3f;
+}
+.ex-card::after {
+  content: "";
+  position: absolute;
+  inset-block: 18px;
+  inset-inline-start: 0;
+  width: 4px;
+  border-start-end-radius: 4px;
+  border-end-end-radius: 4px;
+  background: var(--lvl);
+}
+.ex-panel {
+  padding: 16px 20px 12px;
+  border-radius: 19px 19px 14px 14px;
+  background: color-mix(in srgb, var(--tint) 38%, var(--color-surface));
+}
+.ex-card.is-collapsed .ex-panel {
+  padding: 6px 18px 8px;
+  background: transparent;
+}
+.ex-work {
+  gap: 10px;
+  padding: 12px 20px 16px;
+}
+.ex-q {
+  gap: 6px;
+}
+.ex-q-n {
+  width: 24px;
+  height: 24px;
+  font-size: 12.5px;
+}
+.ex-pin {
+  top: -12px;
+  width: 24px;
+  height: 24px;
+  margin-inline-start: -12px;
+}
+.ex-pin svg {
+  width: 12px;
+  height: 12px;
+}
+.ex-path {
+  height: 28px;
+}
+.ex-path::before {
+  top: -14px;
+  bottom: -14px;
+  width: 8px;
+  margin-inline-start: -4px;
+}
+.ex-answer {
+  min-height: 64px;
+  padding: 10px 12px;
+  resize: none;
+  overflow-y: auto;
+}
+.ex-actions .pc-btn {
+  flex: 0 0 auto;
+  min-height: 38px;
+  padding: 8px 20px;
+  font-size: 13.5px;
+}
+@media (max-width: 800px) {
+  .ex-panel {
+    padding: 14px 16px 10px;
+  }
+  .ex-work {
+    padding: 10px 16px 14px;
+  }
+  .ex-card.is-collapsed .ex-panel {
+    padding: 4px 14px 6px;
+  }
+  .ex-actions .pc-btn {
+    min-height: 40px;
+  }
 }

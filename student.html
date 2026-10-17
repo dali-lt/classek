@@ -15,31 +15,39 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="CSS/style.css" />
-    <link rel="stylesheet" href="CSS/welcome.css?v=26" />
-    <link rel="stylesheet" href="CSS/test.css?v=26" />
-    <link rel="stylesheet" href="CSS/chapters.css?v=26" />
+    <link rel="stylesheet" href="CSS/welcome.css?v=27" />
+    <link rel="stylesheet" href="CSS/test.css?v=27" />
+    <link rel="stylesheet" href="CSS/chapters.css?v=27" />
   </head>
   <body class="student-body">
-    <div class="student-wrap" id="studentApp" hidden>
-      <header class="student-top">
-        <img
-          class="welcome-logo"
-          src="Images/logo-wordmark.svg"
-          alt="ClassLedger"
-        />
-        <div class="student-top-right">
-          <div class="lang-switch" id="langSwitch">
-            <button type="button" class="lang-btn" data-lang="en">EN</button>
-            <button type="button" class="lang-btn" data-lang="ar">AR</button>
-          </div>
-          <div class="student-user-wrap">
-            <button type="button" class="student-user" id="sUser" aria-haspopup="menu" aria-expanded="false"></button>
-            <div class="student-menu" id="sMenu" role="menu" hidden></div>
-          </div>
-          <button type="button" class="student-out" id="sSignOut"></button>
+    <div class="student-shell" id="studentApp" hidden>
+      <!-- side rail on big screens, tab bar at the bottom on phones -->
+      <aside class="s-rail" id="sRail">
+        <button type="button" class="s-rail-brand" id="rBrand">
+          <img src="Images/logo-icon.svg" alt="" />
+          <span class="s-rail-label" id="rBrandLabel"></span>
+        </button>
+        <nav class="s-rail-nav" id="rNav" hidden>
+          <button type="button" class="rail-btn s-rail-btn" id="rCourse" data-tab="course">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"/></svg>
+            <span class="s-rail-label"></span>
+          </button>
+          <button type="button" class="rail-btn s-rail-btn" id="rEx" data-tab="ex">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg>
+            <span class="s-rail-label"></span>
+          </button>
+          <button type="button" class="rail-btn s-rail-btn s-rail-notes" id="rNotes" data-tab="notes">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3Z"/><path d="M15 3v6h6"/></svg>
+            <span class="s-rail-label"></span>
+          </button>
+        </nav>
+        <div class="student-user-wrap s-rail-user">
+          <button type="button" class="student-user" id="sUser" aria-haspopup="menu" aria-expanded="false"></button>
+          <div class="student-menu" id="sMenu" role="menu" hidden></div>
         </div>
-      </header>
+      </aside>
 
+      <main class="student-wrap" id="sMain">
       <section class="student-hero" id="sHero">
         <h1 id="sGreeting"></h1>
         <p id="sSub"></p>
@@ -56,6 +64,7 @@
       </section>
 
       <div id="sChapterView" hidden></div>
+      </main>
     </div>
 
     <!-- Profile card (same look as the teacher's "My account") -->
@@ -120,6 +129,6 @@
 
 
     <script src="JS/firebase-config.js"></script>
-    <script type="module" src="JS/student.js?v=26"></script>
+    <script type="module" src="JS/student.js?v=27"></script>
   </body>
 </html>
