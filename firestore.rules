@@ -41,6 +41,15 @@ service cloud.firestore {
       allow read, write: if isOwner(uid);
     }
 
+    // réponses de l'élève aux exercices: un document par chapitre { items: { exId: { a: {1: texte, ...}, h: indices vus } } }
+    match /users/{uid}/answers/{chapterId} {
+      allow read, delete: if isOwner(uid);
+      allow create, update: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['items', 'updatedAt'])
+        && request.resource.data.items is map
+        && request.resource.data.items.size() <= 60;
+    }
+
     // notes personnelles de l'élève (une note = un feuillet dans le dossier du chapitre)
     match /users/{uid}/notes/{noteId} {
       allow read, delete: if isOwner(uid);

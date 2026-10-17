@@ -1315,3 +1315,77 @@ input.note-input {
   color: #8da2c8;
   font-style: italic;
 }
+
+/* ---------- answers: one box per question, code-friendly, saved ---------- */
+.ex-box {
+  display: grid;
+  gap: 6px;
+}
+.ex-q {
+  display: grid;
+  gap: 8px;
+}
+.ex-q-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.ex-q-head > :last-child {
+  flex: 1;
+  min-width: 0;
+}
+.ex-q-head .ch-p {
+  margin: 2px 0 0;
+}
+.ex-q-n {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-navy);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+}
+/* phones have no Tab key: indent / outdent buttons, shown on touch screens only */
+.ex-tools {
+  display: none;
+  gap: 8px;
+}
+@media (pointer: coarse) {
+  .ex-tools {
+    display: flex;
+  }
+}
+.ex-tool {
+  min-height: 34px;
+  padding: 4px 12px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ex-tool:active {
+  background: var(--color-light-blue);
+}
+.ex-saved {
+  min-height: 1.3em;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+.ex-saved.is-error {
+  color: var(--color-danger);
+}
+/* how many hints were opened: plain information, not a score */
+.ex-hints-used {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}

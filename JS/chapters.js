@@ -34,6 +34,13 @@ var STR = {
     lessonSections: "{n} sections",
     answerLabel: "Your answer",
     answerPlaceholder: "Try it first: write your answer here to unlock the solution.",
+    qPlaceholder: "Your answer to question {n}…",
+    saving: "Saving…",
+    savedAns: "Saved",
+    saveAnsFail: "Couldn’t save your answer. We’ll try again.",
+    hintsUsed: "Hints {n}/{total}",
+    indent: "Indent",
+    outdent: "Outdent",
     showSolution: "Show the solution",
     solution: "Solution",
     gotIt: "I got it",
@@ -92,6 +99,13 @@ var STR = {
     lessonSections: "{n} أقسام",
     answerLabel: "جوابك",
     answerPlaceholder: "جرّب الأول: اكتب جوابك هنا باش يتفتح الحل.",
+    qPlaceholder: "جوابك على السؤال {n}…",
+    saving: "نحفظو…",
+    savedAns: "تمّ الحفظ",
+    saveAnsFail: "ما نجمناش نحفظو جوابك. باش نعاودو المحاولة.",
+    hintsUsed: "تلميحات {n}/{total}",
+    indent: "إزاحة",
+    outdent: "تراجع",
     showSolution: "شوف الحل",
     solution: "الحل",
     gotIt: "نجحت",
@@ -149,7 +163,11 @@ var S = {
   subject: null,
   cur: null, // { id, exercises, loading, failed } for the open chapter
 };
-var drafts = {}; // "chapterId/exId" -> typed answer (survives re-renders)
+var drafts = {}; // "chapterId/exId#box" -> typed answer (survives re-renders; box "0" = the only box, "1".."n" = one per question)
+var answersLoaded = {}; // chapterId -> the saved answers were read from Firestore
+var saveTimers = {}; // "chapterId/exId" -> pending save (debounce)
+var saveState = {}; // "chapterId/exId" -> "saving" | "saved" | "error"
+var saveVer = {}; // "chapterId/exId" -> counter, to know if more was typed while a save was running
 var hintShown = {}; // "chapterId/exId" -> how many hints the student has revealed (one per click)
 var openEx = {}; // chapterId -> id of the exercise that is open on phones (the others are one row each)
 var lessonOpen = {}; // chapterId -> the lesson is open (it is closed until the student asks)
@@ -162,6 +180,8 @@ var noteDraft = { title: "", body: "" };
 var noteError = "";
 var NOTE_TITLE_MAX = 100;
 var NOTE_BODY_MAX = 4000;
+var ANSWER_MAX = 4000; // characters per answer box
+var MIN_Q = 5; // characters typed in each question box before the solution unlocks
 
 function t(key) {
   return STR[ctx && ctx.getLang() === "ar" ? "ar" : "en"][key];
@@ -465,9 +485,87 @@ async function loadExercises(chId) {
     console.warn("Couldn’t load the exercises:", e);
     if (S.cur && S.cur.id === chId) S.cur.failed = true;
   }
+  if (S.cur && S.cur.id === chId && !S.cur.failed) await loadAnswers(chId);
   if (S.cur && S.cur.id === chId) S.cur.loading = false;
   render();
 }
+
+/* ---------------- saved answers: users/{uid}/answers/{chapterId} = { items: { exId: { a: { "1": text, ... }, h: hints } } } ---------------- */
+async function loadAnswers(chId) {
+  if (answersLoaded[chId]) return;
+  try {
+    var snap = await ctx.sdk.getDoc(ctx.sdk.doc(ctx.db, "users", ctx.uid, "answers", chId));
+    var items = snap.exists() ? snap.data().items || {} : {};
+    Object.keys(items).forEach(function (exId) {
+      var it = items[exId] || {};
+      var key = chId + "/" + exId;
+      var a = it.a || {};
+      Object.keys(a).forEach(function (n) {
+        var dk = key + "#" + n;
+        if (drafts[dk] === undefined && typeof a[n] === "string") drafts[dk] = a[n]; // what is typed now wins
+      });
+      if (typeof it.h === "number") hintShown[key] = Math.max(hintShown[key] || 0, it.h);
+    });
+    answersLoaded[chId] = true;
+  } catch (e) {
+    console.warn("Couldn’t load the saved answers:", e);
+  }
+}
+function paintSaved(key) {
+  var exId = key.slice(key.indexOf("/") + 1);
+  var node = document.querySelector("#ex-" + exId + " .ex-saved");
+  if (!node) return;
+  var st = saveState[key];
+  node.textContent = st === "saving" ? t("saving") : st === "saved" ? "✓ " + t("savedAns") : st === "error" ? t("saveAnsFail") : "";
+  node.classList.toggle("is-error", st === "error");
+}
+function queueSave(chId, exId) {
+  var key = chId + "/" + exId;
+  saveVer[key] = (saveVer[key] || 0) + 1;
+  saveState[key] = "saving";
+  paintSaved(key);
+  clearTimeout(saveTimers[key]);
+  saveTimers[key] = setTimeout(function () {
+    flushSave(chId, exId);
+  }, 1500);
+}
+async function flushSave(chId, exId) {
+  var key = chId + "/" + exId;
+  clearTimeout(saveTimers[key]);
+  saveTimers[key] = null;
+  if (saveState[key] !== "saving" && saveState[key] !== "error") return;
+  var ver = saveVer[key];
+  var a = {};
+  var prefix = key + "#";
+  Object.keys(drafts).forEach(function (k) {
+    if (k.indexOf(prefix) === 0) a[k.slice(prefix.length)] = drafts[k];
+  });
+  var items = {};
+  items[exId] = { a: a, h: hintShown[key] || 0 };
+  try {
+    await ctx.sdk.setDoc(
+      ctx.sdk.doc(ctx.db, "users", ctx.uid, "answers", chId),
+      { items: items, updatedAt: ctx.sdk.serverTimestamp() },
+      { merge: true },
+    );
+    if (saveVer[key] === ver) saveState[key] = "saved";
+  } catch (e) {
+    console.warn("Couldn’t save the answer:", e);
+    saveState[key] = "error";
+    saveTimers[key] = setTimeout(function () {
+      flushSave(chId, exId);
+    }, 8000);
+  }
+  paintSaved(key);
+}
+window.addEventListener("pagehide", function () {
+  Object.keys(saveTimers).forEach(function (key) {
+    if (saveTimers[key]) {
+      var i = key.indexOf("/");
+      flushSave(key.slice(0, i), key.slice(i + 1));
+    }
+  });
+});
 
 async function loadSolution(chId, exId) {
   var key = chId + "/" + exId;
@@ -840,6 +938,159 @@ function exPath(index, prevDone) {
   return p;
 }
 
+/* ---------------- statement: "intro, then 1) 2) 3)" -> one answer box per question ---------------- */
+function splitQuestions(text) {
+  var lines = String(text || "").split("\n");
+  var inFence = false;
+  var intro = [];
+  var qs = [];
+  var cur = null;
+  lines.forEach(function (line) {
+    if (/^\s*```/.test(line)) inFence = !inFence;
+    var m = !inFence ? /^\s*(\d+)\)\s+(.*)$/.exec(line) : null;
+    if (m && Number(m[1]) === qs.length + 1) {
+      cur = { n: qs.length + 1, lines: [m[2]] };
+      qs.push(cur);
+      return;
+    }
+    (cur ? cur.lines : intro).push(line);
+  });
+  if (qs.length < 2) return null;
+  return {
+    intro: intro.join("\n").trim(),
+    questions: qs.map(function (q) {
+      return { n: q.n, text: q.lines.join("\n").trim() };
+    }),
+  };
+}
+
+/* ---------------- code-friendly textarea: Tab indents, Enter keeps the indentation ---------------- */
+var INDENT = "    ";
+var OPENER = /(:|\b(alors|sinon|faire|début|debut|répéter|repeter))\s*$/i; // a line ending like this opens a block
+function lineStartOf(v, pos) {
+  return v.lastIndexOf("\n", pos - 1) + 1;
+}
+function editText(ta, text) {
+  // goes through the browser's editing command so Ctrl+Z still works; falls back to setRangeText
+  ta.focus();
+  var ok = false;
+  try {
+    ok = document.execCommand("insertText", false, text);
+  } catch (e) {}
+  if (!ok) {
+    ta.setRangeText(text, ta.selectionStart, ta.selectionEnd, "end");
+    ta.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+}
+function shiftLines(ta, dir) {
+  var v = ta.value;
+  var s = ta.selectionStart;
+  var e = ta.selectionEnd;
+  var from = lineStartOf(v, s);
+  var end = e > s && v.charAt(e - 1) === "\n" ? e - 1 : e;
+  var to = v.indexOf("\n", end);
+  if (to < 0) to = v.length;
+  var lines = v.slice(from, to).split("\n");
+  var out = lines.map(function (l) {
+    return dir > 0 ? INDENT + l : l.replace(/^( {1,4}|\t)/, "");
+  });
+  var block = lines.join("\n");
+  var next = out.join("\n");
+  if (next === block) return;
+  ta.setSelectionRange(from, to);
+  editText(ta, next);
+  var first = out[0].length - lines[0].length;
+  ta.setSelectionRange(Math.max(from, s + first), Math.max(from, e + next.length - block.length));
+}
+function tabAction(ta, dir) {
+  var multi = ta.value.slice(ta.selectionStart, ta.selectionEnd).indexOf("\n") >= 0;
+  if (dir < 0 || multi) shiftLines(ta, dir);
+  else editText(ta, INDENT);
+}
+function codeEditor(ta) {
+  ta.addEventListener("keydown", function (e) {
+    if (e.isComposing || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key === "Escape") {
+      ta.dataset.free = "1"; // the next Tab leaves the box (keyboard users are never trapped)
+      return;
+    }
+    if (e.key === "Tab") {
+      if (ta.dataset.free) {
+        delete ta.dataset.free;
+        return;
+      }
+      e.preventDefault();
+      tabAction(ta, e.shiftKey ? -1 : 1);
+      return;
+    }
+    delete ta.dataset.free;
+    var v = ta.value;
+    var s = ta.selectionStart;
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      var before = v.slice(lineStartOf(v, s), s);
+      var indent = /^[ \t]*/.exec(before)[0];
+      editText(ta, "\n" + indent + (OPENER.test(before) ? INDENT : ""));
+      return;
+    }
+    if (e.key === "Backspace" && s === ta.selectionEnd && s > 0) {
+      var lead = v.slice(lineStartOf(v, s), s);
+      if (lead.length > 1 && /^ +$/.test(lead)) {
+        e.preventDefault(); // delete back to the previous indentation step
+        ta.setSelectionRange(s - (lead.length % 4 || 4), s);
+        editText(ta, "");
+      }
+    }
+  });
+  ta.addEventListener("blur", function () {
+    delete ta.dataset.free;
+  });
+}
+
+function answerBox(ch, ex, boxId, placeholder, onInput) {
+  var dk = ch.id + "/" + ex.id + "#" + boxId;
+  var ta = el("textarea", "ex-answer");
+  ta.rows = 5;
+  ta.maxLength = ANSWER_MAX;
+  ta.spellcheck = false;
+  ta.setAttribute("autocapitalize", "off");
+  ta.setAttribute("autocorrect", "off");
+  ta.setAttribute("autocomplete", "off");
+  ta.setAttribute("dir", "ltr");
+  ta.setAttribute("lang", "fr");
+  ta.placeholder = placeholder;
+  ta.value = drafts[dk] || "";
+  codeEditor(ta);
+  ta.addEventListener("input", function () {
+    drafts[dk] = ta.value;
+    queueSave(ch.id, ex.id);
+    onInput();
+  });
+  ta.addEventListener("blur", function () {
+    flushSave(ch.id, ex.id);
+  });
+  // phones have no Tab key: two small buttons (shown on touch screens only)
+  var tools = el("div", "ex-tools");
+  [
+    ["indent", 1],
+    ["outdent", -1],
+  ].forEach(function (b) {
+    var btn = el("button", "ex-tool", (b[1] > 0 ? "⇥ " : "⇤ ") + t(b[0]));
+    btn.type = "button";
+    btn.addEventListener("pointerdown", function (e) {
+      e.preventDefault(); // keep the keyboard open and the caret where it is
+    });
+    btn.addEventListener("click", function () {
+      ta.focus();
+      tabAction(ta, b[1]);
+    });
+    tools.append(btn);
+  });
+  var wrap = el("div", "ex-box");
+  wrap.append(ta, tools);
+  return { wrap: wrap, ta: ta };
+}
+
 function exerciseCard(ch, ex, index) {
   var key = ch.id + "/" + ex.id;
   var st = statusOf(ch.id)[ex.id];
@@ -854,11 +1105,15 @@ function exerciseCard(ch, ex, index) {
   pin.innerHTML = st === "done" ? ICON_CHECK_PIN : st === "review" ? ICON_REVIEW_PIN : ""; // static, trusted SVG
   var panel = el("div", "ex-panel");
   var work = el("div", "ex-work");
+  var hints = hintsOf(ex);
+  var usedN = Math.min(hintShown[key] || 0, hints.length);
+  var usedTxt = usedN ? tf("hintsUsed", { n: usedN, total: hints.length }) : "";
 
   var head = el("div", "ex-head");
   head.append(el("span", "ex-num", (index < 9 ? "0" : "") + (index + 1)));
   head.append(el("span", "ex-diff is-" + diff, t("d_" + diff)));
   if (st) head.append(el("span", "ex-state is-" + st, t(st)));
+  if (usedTxt) head.append(el("span", "ex-hints-used", usedTxt));
   // phones: a tappable row (number, level, state, one-line preview); only one exercise is open at a time
   var sum = el("button", "ex-sum");
   sum.type = "button";
@@ -866,6 +1121,7 @@ function exerciseCard(ch, ex, index) {
   sum.append(el("span", "ex-num", (index < 9 ? "0" : "") + (index + 1)), el("span", "ex-diff is-" + diff, t("d_" + diff)));
   if (st) sum.append(el("span", "ex-state is-" + st, t(st)));
   sum.append(el("span", "ex-chev"));
+  var split = splitQuestions(ex.statement);
   var prev = previewOf(ex.statement);
   if (prev) sum.append(el("span", "ex-preview", prev));
   sum.addEventListener("click", function () {
@@ -878,11 +1134,10 @@ function exerciseCard(ch, ex, index) {
       }, 0);
     }
   });
-  panel.append(sum, head, md(ex.statement));
+  panel.append(sum, head, md(split ? split.intro : ex.statement));
   card.append(pin, panel, work);
 
   // hints come one at a time: each click puts the next hint on screen in place of the previous one
-  var hints = hintsOf(ex);
   if (hints.length) {
     var shown = Math.min(hintShown[key] || 0, hints.length);
     if (shown > 0) {
@@ -902,6 +1157,8 @@ function exerciseCard(ch, ex, index) {
       hintBtn.type = "button";
       hintBtn.addEventListener("click", function () {
         hintShown[key] = shown + 1;
+        queueSave(ch.id, ex.id);
+        flushSave(ch.id, ex.id);
         card.replaceWith(exerciseCard(ch, ex, index));
       });
       panel.append(hintBtn);
@@ -909,33 +1166,55 @@ function exerciseCard(ch, ex, index) {
   }
 
   var isOpen = !!revealed[key];
-  var label = el(
-    "label",
-    "ex-label",
-    t("answerLabel") + (CODE_LABEL[ex.lang] ? " · " + CODE_LABEL[ex.lang] : "")
-  );
-  var ta = el("textarea", "ex-answer");
-  ta.rows = 5;
-  ta.spellcheck = false;
-  ta.setAttribute("dir", "ltr");
-  ta.setAttribute("lang", "fr");
-  ta.placeholder = t("answerPlaceholder");
-  ta.value = drafts[key] || "";
-  label.append(ta);
-  work.append(label);
+  var boxes = [];
+  var refresh = function () {};
+  var onType = function () {
+    refresh();
+  };
+  if (split) {
+    split.questions.forEach(function (q) {
+      var item = el("div", "ex-q");
+      var qh = el("div", "ex-q-head");
+      qh.append(el("span", "ex-q-n", String(q.n)), md(q.text));
+      var bx = answerBox(ch, ex, String(q.n), tf("qPlaceholder", { n: q.n }), onType);
+      item.append(qh, bx.wrap);
+      work.append(item);
+      boxes.push(bx.ta);
+    });
+  } else {
+    var label = el(
+      "label",
+      "ex-label",
+      t("answerLabel") + (CODE_LABEL[ex.lang] ? " · " + CODE_LABEL[ex.lang] : "")
+    );
+    var bx1 = answerBox(ch, ex, "0", t("answerPlaceholder"), onType);
+    label.append(bx1.wrap);
+    work.append(label);
+    boxes.push(bx1.ta);
+  }
+  var savedLine = el("small", "ex-saved");
+  work.append(savedLine);
+  if (saveState[key]) {
+    var sv = saveState[key];
+    savedLine.textContent = sv === "saving" ? t("saving") : sv === "saved" ? "✓ " + t("savedAns") : t("saveAnsFail");
+    savedLine.classList.toggle("is-error", sv === "error");
+  }
 
   if (!isOpen) {
     var actions = el("div", "ex-actions");
     var show = el("button", "pc-btn", t("showSolution"));
     show.type = "button";
     var unlocked = function () {
-      return !!st || ta.value.trim().length >= MIN_ANSWER;
+      if (st) return true;
+      var need = split ? MIN_Q : MIN_ANSWER; // with several questions, every box needs an attempt
+      return boxes.every(function (b) {
+        return b.value.trim().length >= need;
+      });
     };
     show.disabled = !unlocked();
-    ta.addEventListener("input", function () {
-      drafts[key] = ta.value;
+    refresh = function () {
       show.disabled = !unlocked();
-    });
+    };
     show.addEventListener("click", async function () {
       show.disabled = true;
       try {
@@ -951,9 +1230,6 @@ function exerciseCard(ch, ex, index) {
     actions.append(show);
     work.append(actions);
   } else {
-    ta.addEventListener("input", function () {
-      drafts[key] = ta.value;
-    });
     var sol = el("div", "ex-solution");
     sol.append(el("div", "ex-sol-title", t("solution")), md(solutions[key]));
     var mark = el("div", "ex-actions");
