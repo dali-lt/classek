@@ -169,6 +169,7 @@ var saveTimers = {}; // "chapterId/exId" -> pending save (debounce)
 var saveState = {}; // "chapterId/exId" -> "saving" | "saved" | "error"
 var saveVer = {}; // "chapterId/exId" -> counter, to know if more was typed while a save was running
 var hintShown = {}; // "chapterId/exId" -> how many hints the student has revealed (one per click)
+var deskOpen = {}; // "chapterId/exId" -> true/false once the student opened/closed an exercise on a wide screen (until then: only finished exercises are closed)
 var openEx = {}; // chapterId -> id of the exercise that is open on phones (the others are one row each)
 var lessonOpen = {}; // chapterId -> the lesson is open (it is closed until the student asks)
 var sectionOpen = {}; // "chapterId#index" -> that lesson section is open
@@ -1095,7 +1096,9 @@ function exerciseCard(ch, ex, index) {
   var key = ch.id + "/" + ex.id;
   var st = statusOf(ch.id)[ex.id];
   var diff = ex.difficulty === "bac" || ex.difficulty === "medium" ? ex.difficulty : "easy";
-  var isOpenCard = openEx[ch.id] === ex.id;
+  var wide = !!(window.matchMedia && window.matchMedia("(min-width: 801px)").matches);
+  // phones: one exercise open at a time. Wide screens: every exercise is open except the finished ones (a row you can open)
+  var isOpenCard = wide ? (deskOpen[key] !== undefined ? deskOpen[key] : st !== "done") : openEx[ch.id] === ex.id;
   var card = el(
     "article",
     "ex-card d-" + diff + (index % 2 ? " is-b" : " is-a") + (st ? " is-" + st : "") + (isOpenCard ? "" : " is-collapsed")
@@ -1125,7 +1128,8 @@ function exerciseCard(ch, ex, index) {
   var prev = previewOf(ex.statement);
   if (prev) sum.append(el("span", "ex-preview", prev));
   sum.addEventListener("click", function () {
-    openEx[ch.id] = isOpenCard ? null : ex.id;
+    if (wide) deskOpen[key] = !isOpenCard;
+    else openEx[ch.id] = isOpenCard ? null : ex.id;
     render();
     if (!isOpenCard) {
       setTimeout(function () {
@@ -1236,6 +1240,7 @@ function exerciseCard(ch, ex, index) {
     function choose(value) {
       return async function () {
         await setStatus(ch.id, ex.id, value);
+        delete deskOpen[key]; // wide screens: a finished exercise closes, "to review" stays open
         openEx[ch.id] = null; // back to the list of rows
         render();
       };

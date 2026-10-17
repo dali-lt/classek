@@ -386,7 +386,7 @@ html[dir="rtl"] .fd-back {
 .ch-back.ch-back-float {
   position: fixed;
   top: calc(10px + env(safe-area-inset-top, 0px));
-  inset-inline-start: max(14px, calc((100vw - 1040px) / 2));
+  inset-inline-start: max(14px, calc((100vw - 1040px) / 2 - 62px)); /* in the margin beside the page when the screen is wide */
   z-index: 1000;
   width: 46px;
   height: 46px;
@@ -751,11 +751,11 @@ html[dir="rtl"] .ex-path.is-b svg {
   background: var(--color-surface);
   box-shadow: 0 1px 2px rgba(1, 9, 45, 0.06);
 }
-/* phones: a closed exercise is a single row (see .ex-sum in chapters.js); desktop keeps the full cards */
+/* a closed exercise is a single row on every screen size (see .ex-sum in chapters.js): number, level, state, first line, arrow */
 .ex-sum {
   display: none;
 }
-@media (max-width: 800px) {
+@media all {
   .ex-dots {
     display: none;
   }
@@ -937,7 +937,7 @@ html[dir="rtl"] .ex-path.is-b svg {
   font-weight: 800;
 }
 
-@media (max-width: 800px) {
+@media all {
   .ex-card {
     width: 100%;
   }
