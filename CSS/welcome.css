@@ -1147,73 +1147,183 @@ html[dir="rtl"] .welcome-link .welcome-ico:first-child svg {
   background: var(--color-primary);
 }
 
-/* phones and small tablets: the rail becomes a tab bar at the bottom */
+/* phone menu button, drawer backdrop and close button exist on phones only */
+.s-menu-btn,
+.s-scrim,
+.s-drawer-close {
+  display: none;
+}
+/* the language switch inside the menu: a full pill, round ends */
+.student-menu .lang-btn {
+  display: block;
+  min-height: 0;
+  gap: 0;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  text-align: center;
+}
+
+/* phones and small tablets: the rail is a drawer that slides in from the side (like an app's menu) */
 @media (max-width: 800px) {
   .student-shell {
     flex-direction: column;
     gap: 14px;
-    padding: calc(12px + env(safe-area-inset-top, 0px)) 12px calc(92px + env(safe-area-inset-bottom, 0px));
+    padding: calc(12px + env(safe-area-inset-top, 0px)) 12px calc(40px + env(safe-area-inset-bottom, 0px));
   }
   .student-wrap {
     width: 100%;
   }
+  .s-menu-btn {
+    position: fixed;
+    top: calc(10px + env(safe-area-inset-top, 0px));
+    inset-inline-end: 12px;
+    z-index: 60;
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 1px solid var(--color-border);
+    border-radius: 50%;
+    background: var(--color-surface);
+    box-shadow: 0 6px 18px rgba(1, 9, 45, 0.14);
+    color: var(--color-text);
+    cursor: pointer;
+  }
+  .s-menu-btn svg {
+    width: 22px;
+    height: 22px;
+  }
+  .s-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    background: rgba(1, 9, 45, 0.45);
+    opacity: 0;
+    pointer-events: none;
+    touch-action: none;
+    transition: opacity 0.25s ease;
+  }
+  html.s-drawer-open .s-scrim {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  html.s-drawer-open,
+  html.s-drawer-open body {
+    overflow: hidden; /* the page behind the menu does not scroll */
+  }
   .s-rail {
     position: fixed;
-    top: auto;
+    top: 0;
     bottom: 0;
-    inset-inline: 0;
-    width: auto;
+    inset-inline-start: 0;
+    z-index: 90;
+    width: min(84vw, 300px);
     min-height: 0;
-    flex-direction: row;
-    justify-content: space-around;
-    gap: 4px;
-    padding: 6px 10px calc(6px + env(safe-area-inset-bottom, 0px));
-    border-width: 1px 0 0;
-    border-radius: 20px 20px 0 0;
-    box-shadow: 0 -8px 24px rgba(1, 9, 45, 0.08);
-  }
-  .s-rail-nav {
-    flex: 1;
-    flex-direction: row;
-    justify-content: space-evenly;
-    gap: 2px;
-  }
-  .s-rail-user {
-    margin-top: 0;
-  }
-  .rail-btn.s-rail-btn,
-  .s-rail-brand {
-    width: auto;
-    min-width: 58px;
-    height: 52px;
     flex-direction: column;
-    justify-content: center;
-    gap: 3px;
-    padding: 0 6px;
-    border-radius: 14px;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 6px;
+    padding: calc(16px + env(safe-area-inset-top, 0px)) 14px calc(16px + env(safe-area-inset-bottom, 0px));
+    border-width: 0;
+    border-radius: 0 24px 24px 0;
+    box-shadow: 0 0 40px rgba(1, 9, 45, 0.25);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    transform: translateX(-104%);
+    visibility: hidden;
+    transition:
+      transform 0.26s ease,
+      visibility 0s linear 0.26s;
   }
-  .rail-btn.s-rail-btn svg {
-    width: 20px;
-    height: 20px;
+  html[dir="rtl"] .s-rail {
+    border-radius: 24px 0 0 24px;
+    transform: translateX(104%);
+  }
+  html.s-drawer-open .s-rail {
+    transform: none;
+    visibility: visible;
+    transition-delay: 0s;
+  }
+  .s-drawer-close {
+    position: absolute;
+    top: calc(14px + env(safe-area-inset-top, 0px));
+    inset-inline-end: 14px;
+    z-index: 2;
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: var(--color-sunken);
+    color: var(--color-text-muted);
+    cursor: pointer;
+  }
+  .s-drawer-close svg {
+    width: 17px;
+    height: 17px;
+  }
+  .s-rail-brand,
+  .rail-btn.s-rail-btn {
+    width: 100%;
+    height: 50px;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 14px;
+    padding: 0 14px;
+    border-radius: 14px;
+    color: var(--color-text);
+  }
+  .s-rail-brand {
+    margin-bottom: 4px;
   }
   .s-rail-brand img {
-    width: 26px;
-    height: 26px;
+    width: 28px;
+    height: 28px;
+  }
+  .s-rail-nav {
+    flex: none;
+    width: 100%;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 4px;
+  }
+  .rail-btn.s-rail-btn svg {
+    width: 22px;
+    height: 22px;
+  }
+  .rail-btn.s-rail-btn.active {
+    color: #fff;
   }
   .s-rail-label {
     display: block;
-    font-size: 10.5px;
+    font-size: 15px;
     font-weight: 700;
-    line-height: 1.1;
+    line-height: 1.2;
   }
-  .s-rail .student-user img,
-  .s-rail .student-initial {
-    width: 38px;
-    height: 38px;
+  .s-rail-user {
+    width: 100%;
+    margin-top: auto;
+  }
+  .s-rail-user .student-user {
+    display: none; /* the account items are listed right in the drawer */
   }
   .student-menu {
-    bottom: calc(100% + 12px);
-    inset-inline-start: auto;
-    inset-inline-end: 0;
+    position: static;
+    min-width: 0;
+    width: 100%;
+    padding: 10px 0 0;
+    border: 0;
+    border-top: 1px solid var(--color-border);
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
   }
 }
+
+/* back arrow must not float above the open drawer */
+html.s-drawer-open .ch-back.ch-back-float { opacity: 0; pointer-events: none; visibility: hidden; }

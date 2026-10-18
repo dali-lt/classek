@@ -3,7 +3,7 @@
    The profile card ("My account") reuses the teacher app's modal look (style.css)
    and saves to users/{uid}/meta/profile. */
 
-import { Chapters } from "./chapters.js?v=28";
+import { Chapters } from "./chapters.js?v=29";
 import {
   MAX_SHOWN,
   parseDevice,
@@ -1604,6 +1604,40 @@ function menuIsOpen() {
 function closeMenu() {
   $("sMenu").hidden = true;
   $("sUser").setAttribute("aria-expanded", "false");
+  if (drawerIsOpen()) closeDrawer();
+}
+
+/* ---------------- phone drawer: the rail slides in from the side behind the menu button ---------------- */
+var drawerMQ = window.matchMedia("(max-width: 800px)");
+function drawerIsOpen() {
+  return document.documentElement.classList.contains("s-drawer-open");
+}
+function openDrawer() {
+  if (!drawerMQ.matches) return;
+  renderMenu();
+  $("sMenu").hidden = false; // on phones the account items are listed inside the drawer
+  $("sRail").removeAttribute("inert");
+  document.documentElement.classList.add("s-drawer-open");
+  $("sMenuBtn").setAttribute("aria-expanded", "true");
+  $("sDrawerClose").focus({ preventScroll: true });
+}
+function closeDrawer() {
+  document.documentElement.classList.remove("s-drawer-open");
+  $("sMenuBtn").setAttribute("aria-expanded", "false");
+  if (drawerMQ.matches) {
+    $("sMenu").hidden = true;
+    $("sRail").setAttribute("inert", ""); // a closed drawer is out of the tab order
+  }
+}
+function syncDrawerMode() {
+  if (drawerMQ.matches) {
+    if (!drawerIsOpen()) $("sRail").setAttribute("inert", "");
+  } else {
+    document.documentElement.classList.remove("s-drawer-open");
+    $("sRail").removeAttribute("inert");
+    $("sMenu").hidden = true;
+    $("sMenuBtn").setAttribute("aria-expanded", "false");
+  }
 }
 function menuItem(label, icon, onClick) {
   var b = el("button");
@@ -2161,8 +2195,19 @@ async function main() {
     if (e.target === $("setOverlay")) closeSettings();
   });
   document.addEventListener("click", function (e) {
-    if (menuIsOpen() && !e.target.closest(".student-user-wrap")) closeMenu();
+    if (!drawerMQ.matches && menuIsOpen() && !e.target.closest(".student-user-wrap")) closeMenu();
   });
+  $("sMenuBtn").addEventListener("click", function () {
+    if (drawerIsOpen()) closeDrawer();
+    else openDrawer();
+  });
+  $("sDrawerClose").addEventListener("click", closeDrawer);
+  $("sScrim").addEventListener("click", closeDrawer);
+  $("rNav").addEventListener("click", closeDrawer); // choosing Course / Exercises / Notes closes the drawer
+  window.addEventListener("hashchange", closeDrawer);
+  if (drawerMQ.addEventListener) drawerMQ.addEventListener("change", syncDrawerMode);
+  else if (drawerMQ.addListener) drawerMQ.addListener(syncDrawerMode);
+  syncDrawerMode();
   $("pOverlay").addEventListener("click", function (e) {
     if (e.target === $("pOverlay")) closeModal();
   });
@@ -2171,6 +2216,7 @@ async function main() {
     if (settingsIsOpen()) closeSettings();
     else if (testIsOpen()) $("tClose").click();
     else if (modalIsOpen()) closeModal();
+    else if (drawerIsOpen()) closeDrawer();
     else if (menuIsOpen()) closeMenu();
   });
   renderPage();
