@@ -20,7 +20,7 @@
   align-items: start;
 }
 #sChapterView.ch-grid.has-side {
-  grid-template-columns: minmax(0, 1fr) 316px;
+  grid-template-columns: minmax(0, 1fr) 296px;
 }
 .ch-main {
   display: flex;
@@ -38,7 +38,7 @@
   top: 14px;
   max-height: calc(100vh - 28px);
   overflow-y: auto;
-  padding: 12px 12px 14px; /* room for the tape on the first note and for the cards' shadows (overflow clips them) */
+  padding: 14px 14px 16px; /* room for the tape on the first note and for the cards' shadows (overflow clips them) */
   scrollbar-width: thin;
 }
 
@@ -962,7 +962,7 @@ html[dir="rtl"] .ex-path.is-b svg {
   font-weight: 800;
 }
 
-@media all {
+@media (max-width: 800px) {
   .ex-card {
     width: 100%;
   }
@@ -1050,12 +1050,6 @@ html[dir="rtl"] .ex-path.is-b svg {
   background: color-mix(in srgb, var(--tape, var(--color-accent)) 80%, transparent);
   transform: rotate(-4deg);
   clip-path: polygon(0 10%, 5% 0, 10% 12%, 15% 0, 100% 0, 95% 50%, 100% 100%, 15% 100%, 10% 88%, 5% 100%, 0 90%, 4% 50%);
-}
-.note-card:nth-child(3n + 2)::before {
-  --tape: #e64d6b;
-}
-.note-card:nth-child(3n + 3)::before {
-  --tape: var(--color-primary);
 }
 .note-new,
 .note-card {
@@ -1559,14 +1553,16 @@ input.note-input {
   width: 12px;
   height: 12px;
 }
-.ex-path {
-  height: 28px;
-}
-.ex-path::before {
-  top: -14px;
-  bottom: -14px;
-  width: 8px;
-  margin-inline-start: -4px;
+@media (max-width: 800px) {
+  .ex-path {
+    height: 28px;
+  }
+  .ex-path::before {
+    top: -14px;
+    bottom: -14px;
+    width: 8px;
+    margin-inline-start: -4px;
+  }
 }
 .ex-answer {
   min-height: 64px;
@@ -1593,4 +1589,164 @@ input.note-input {
   .ex-actions .pc-btn {
     min-height: 40px;
   }
+}
+
+
+/* ================= v28 ================= */
+/* back button: only its arrow once the page has scrolled (wide screens) */
+@media (min-width: 801px) {
+  .ch-back-slot,
+  .ch-tabs {
+    min-height: 42px;
+  }
+  .ch-back.is-compact {
+    width: 42px;
+    height: 42px;
+    min-height: 0;
+    padding: 0;
+    justify-content: center;
+    gap: 0;
+  }
+  .ch-back.is-compact > span:not(.ch-back-ico) {
+    display: none;
+  }
+}
+
+/* the line between two exercises: the old curve, from a card on one side to the next on the other side */
+@media (min-width: 801px) {
+  .ex-list {
+    --cw: 80%;
+  }
+  .ex-card {
+    width: var(--cw);
+  }
+  .ex-card.is-a,
+  .ex-card.is-b,
+  .ex-card.is-a:hover,
+  .ex-card.is-b:hover {
+    transform: none; /* straight cards: the text stays sharp */
+  }
+  .ex-card.is-a {
+    align-self: flex-start;
+  }
+  .ex-card.is-b {
+    align-self: flex-end;
+  }
+  .ex-path {
+    height: 84px;
+  }
+  .ex-path svg {
+    display: block;
+    inset-inline-start: calc(var(--cw) / 2);
+    width: calc(100% - var(--cw));
+  }
+  .ex-path::before {
+    display: none;
+  }
+}
+
+/* notes: each note has one colour of the site palette (--nc); the editor is a box in the middle of the screen */
+.note-card {
+  background: color-mix(in srgb, var(--nc, var(--color-accent)) 18%, var(--color-surface));
+}
+.note-card:hover,
+.note-card:focus-visible {
+  background: color-mix(in srgb, var(--nc, var(--color-accent)) 26%, var(--color-surface));
+}
+.note-overlay {
+  z-index: 70;
+}
+.modal.note-modal {
+  max-width: 480px;
+}
+.note-band {
+  padding: 20px 64px 16px 26px;
+  background: var(--nc, var(--color-accent));
+  color: var(--nc-ink, var(--color-navy));
+  transition: background 0.2s ease, color 0.2s ease;
+}
+html[dir="rtl"] .note-band {
+  padding: 20px 26px 16px 64px;
+}
+.note-band-title {
+  font-size: 19px;
+  font-weight: 800;
+}
+.note-modal .modal-x {
+  top: 14px;
+  background: rgba(255, 255, 255, 0.22);
+  color: var(--nc-ink, var(--color-navy));
+}
+.note-modal .modal-x:hover {
+  background: rgba(255, 255, 255, 0.38);
+  color: var(--nc-ink, var(--color-navy));
+}
+.note-form {
+  display: grid;
+  gap: 12px;
+  padding: 20px 26px 24px;
+}
+.note-modal .note-textarea {
+  min-height: 170px;
+}
+.note-colors {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.note-colors-label {
+  margin-inline-end: 4px;
+  color: var(--color-text-muted);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.note-swatch {
+  position: relative;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--sw);
+  box-shadow: inset 0 0 0 1px rgba(1, 9, 45, 0.14);
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+.note-swatch:hover {
+  transform: scale(1.1);
+}
+.note-swatch[aria-checked="true"] {
+  box-shadow:
+    0 0 0 3px var(--color-surface),
+    0 0 0 5px var(--sw);
+}
+.note-swatch[aria-checked="true"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 11px;
+  height: 6px;
+  margin: auto;
+  border-inline-start: 2.5px solid var(--sw-ink);
+  border-bottom: 2.5px solid var(--sw-ink);
+  transform: translateY(-1px) rotate(-45deg);
+}
+.note-actions {
+  align-items: center;
+  margin-top: 4px;
+}
+@media (max-width: 520px) {
+  .note-form {
+    padding: 18px 18px 20px;
+  }
+}
+
+/* in the notes column a big soft shadow would be cut off by the column's edges */
+.is-col .note-card,
+.is-col .note-card:hover,
+.is-col .note-card:focus-visible {
+  box-shadow:
+    0 1px 2px rgba(1, 9, 45, 0.07),
+    0 4px 10px rgba(1, 9, 45, 0.08);
 }

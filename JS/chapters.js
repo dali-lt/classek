@@ -61,6 +61,12 @@ var STR = {
     notes: "My notes",
     notesHint: "Write what matters to you from this lesson.",
     newNote: "New note",
+    noteEdit: "Edit note",
+    noteColor: "Colour",
+    nc_lime: "Green",
+    nc_blue: "Blue",
+    nc_pink: "Pink",
+    nc_azure: "Navy",
     noteTitle: "Title",
     noteBody: "Write your note here…",
     save: "Save",
@@ -128,6 +134,12 @@ var STR = {
     notes: "ملاحظاتي",
     notesHint: "اكتب اللي يهمك من الدرس.",
     newNote: "ملاحظة جديدة",
+    noteEdit: "تعديل الملاحظة",
+    noteColor: "اللون",
+    nc_lime: "أخضر",
+    nc_blue: "أزرق",
+    nc_pink: "وردي",
+    nc_azure: "كحلي",
     noteTitle: "العنوان",
     noteBody: "اكتب ملاحظتك هنا…",
     save: "حفظ",
@@ -185,6 +197,10 @@ var rowError = {};
 var editing = null; // note id, "new", or null
 var noteDraft = { title: "", body: "" };
 var noteError = "";
+var NOTE_COLORS = { lime: "#aee37b", blue: "#0464de", pink: "#e64d6b", azure: "#032c7b" }; // the site palette
+var NOTE_ORDER = ["lime", "blue", "pink", "azure"];
+var NOTE_INK = { lime: "#1f4a0c", blue: "#ffffff", pink: "#ffffff", azure: "#ffffff" }; // text on top of each colour
+var NOTE_COLOR_KEY = "classledger:noteColors";
 var NOTE_TITLE_MAX = 100;
 var NOTE_BODY_MAX = 4000;
 var ANSWER_MAX = 4000; // characters per answer box
@@ -424,19 +440,47 @@ function notesOf(chId) {
 function notesLabel(n) {
   return n === 1 ? t("noteOne") : tf("notesCount", { n: n });
 }
+function localNoteColors() {
+  try {
+    return JSON.parse(localStorage.getItem(NOTE_COLOR_KEY) || "{}") || {};
+  } catch (e) {
+    return {};
+  }
+}
+function rememberNoteColor(id, color) {
+  try {
+    var m = localNoteColors();
+    m[id] = color;
+    localStorage.setItem(NOTE_COLOR_KEY, JSON.stringify(m));
+  } catch (e) {}
+}
+function noteColorOf(n, i) {
+  var c = n.color || localNoteColors()[n.id];
+  return NOTE_COLORS[c] ? c : NOTE_ORDER[i % NOTE_ORDER.length];
+}
 async function saveNote(chId, id) {
   var sdk = ctx.sdk;
+  var color = NOTE_COLORS[noteDraft.color] ? noteDraft.color : NOTE_ORDER[0];
   var data = {
     chapterId: chId,
     title: noteDraft.title.trim().slice(0, NOTE_TITLE_MAX),
     body: noteDraft.body.slice(0, NOTE_BODY_MAX),
+    color: color,
     updatedAt: Date.now(),
   };
   var ref = id
     ? sdk.doc(ctx.db, "users", ctx.uid, "notes", id)
     : sdk.doc(sdk.collection(ctx.db, "users", ctx.uid, "notes"));
   try {
-    await sdk.setDoc(ref, data);
+    try {
+      await sdk.setDoc(ref, data);
+    } catch (e1) {
+      // the Firestore rules may not know the "color" field yet: save the note without it and keep the colour on this device
+      var plain = Object.assign({}, data);
+      delete plain.color;
+      await sdk.setDoc(ref, plain);
+      rememberNoteColor(ref.id, color);
+    }
     var saved = Object.assign({ id: ref.id }, data);
     S.notes = [saved].concat(
       S.notes.filter(function (n) {
@@ -1115,13 +1159,31 @@ function answerBox(ch, ex, boxId, placeholder, onInput, rows) {
   return { wrap: wrap, ta: ta };
 }
 
+// the exercise the student has reached: the first one that is neither finished nor marked "to review"
+function currentExerciseId(ch) {
+  var list = S.cur && S.cur.id === ch.id && S.cur.exercises ? S.cur.exercises : [];
+  var st = statusOf(ch.id);
+  for (var i = 0; i < list.length; i++) {
+    if (!st[list[i].id]) return list[i].id;
+  }
+  return null;
+}
+
 function exerciseCard(ch, ex, index) {
   var key = ch.id + "/" + ex.id;
   var st = statusOf(ch.id)[ex.id];
   var diff = ex.difficulty === "bac" || ex.difficulty === "medium" ? ex.difficulty : "easy";
   var wide = !!(window.matchMedia && window.matchMedia("(min-width: 801px)").matches);
-  // phones: one exercise open at a time. Wide screens: every exercise is open except the finished ones (a row you can open)
-  var isOpenCard = wide ? (deskOpen[key] !== undefined ? deskOpen[key] : st !== "done") : openEx[ch.id] === ex.id;
+  // only the exercise the student has reached is open; every other one is a row that opens on a click (answers included).
+  // Wide screens: any number can be open. Phones: one at a time (null = the student closed them all)
+  var reached = currentExerciseId(ch) === ex.id;
+  var isOpenCard = wide
+    ? deskOpen[key] !== undefined
+      ? deskOpen[key]
+      : reached
+    : openEx[ch.id] !== undefined
+      ? openEx[ch.id] === ex.id
+      : reached;
   var card = el(
     "article",
     "ex-card d-" + diff + (index % 2 ? " is-b" : " is-a") + (st ? " is-" + st : "") + (isOpenCard ? "" : " is-collapsed")
@@ -1263,9 +1325,16 @@ function exerciseCard(ch, ex, index) {
     function choose(value) {
       return async function () {
         await setStatus(ch.id, ex.id, value);
-        delete deskOpen[key]; // wide screens: a finished exercise closes, "to review" stays open
-        openEx[ch.id] = null; // back to the list of rows
+        delete deskOpen[key]; // back to the default: the exercise the student has reached is the open one
+        openEx[ch.id] = undefined;
         render();
+        var nextId = currentExerciseId(ch);
+        if (nextId) {
+          setTimeout(function () {
+            var nx = document.getElementById("ex-" + nextId);
+            if (nx) nx.scrollIntoView({ behavior: "smooth", block: "start" });
+          }, 0);
+        }
       };
     }
     var ok = el("button", "pc-btn", t("gotIt"));
@@ -1282,9 +1351,24 @@ function exerciseCard(ch, ex, index) {
   return card;
 }
 
-function noteCard(ch, n) {
+var ICON_X =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>';
+
+function openNoteEditor(id, n) {
+  editing = id;
+  noteDraft = n
+    ? { title: n.title || "", body: n.body || "", color: noteColorOf(n, 0) }
+    : { title: "", body: "", color: NOTE_ORDER[S.notes.length % NOTE_ORDER.length] }; // a new note starts with the next colour in the cycle
+  noteError = "";
+  render();
+}
+
+function noteCard(ch, n, i) {
   var card = el("button", "note-card");
   card.type = "button";
+  var color = noteColorOf(n, i);
+  card.style.setProperty("--nc", NOTE_COLORS[color]);
+  card.style.setProperty("--tape", NOTE_COLORS[color]);
   var title = el("b", "note-title", n.title || t("untitled"));
   title.setAttribute("dir", "auto");
   var body = el("span", "note-body", n.body || "");
@@ -1293,25 +1377,41 @@ function noteCard(ch, n) {
   foot.append(el("small", "note-date", dateLabel(n.updatedAt)), el("i", "note-dots"));
   card.append(title, body, foot);
   card.addEventListener("click", function () {
-    editing = n.id;
-    noteDraft = { title: n.title || "", body: n.body || "" };
-    noteError = "";
-    render();
-    focusNote();
+    openNoteEditor(n.id, n);
   });
   return card;
 }
 
-function focusNote() {
-  setTimeout(function () {
-    var ta = document.querySelector(".note-editor textarea");
-    if (ta) ta.focus();
-  }, 0);
+/* The note editor is a box in the middle of the screen (like the profile card), not a form inside the page */
+var noteOverlay = null;
+var noteKey = "";
+var noteDownOnBackdrop = false;
+function closeNote() {
+  editing = null;
+  noteError = "";
+  render();
 }
-
-function noteEditor(ch) {
+function noteModalBox(ch) {
   var isNew = editing === "new";
-  var box = el("div", "note-editor");
+  var box = el("div", "modal modal-fixed note-modal");
+  box.setAttribute("role", "dialog");
+  box.setAttribute("aria-modal", "true");
+  box.setAttribute("aria-label", isNew ? t("newNote") : t("noteEdit"));
+  function paint() {
+    box.style.setProperty("--nc", NOTE_COLORS[noteDraft.color]);
+    box.style.setProperty("--nc-ink", NOTE_INK[noteDraft.color]);
+  }
+  paint();
+
+  var x = el("button", "modal-x");
+  x.type = "button";
+  x.setAttribute("aria-label", t("cancel"));
+  x.innerHTML = ICON_X; // static, trusted SVG
+  x.addEventListener("click", closeNote);
+  var band = el("div", "note-band");
+  band.append(el("span", "note-band-title", isNew ? t("newNote") : t("noteEdit")));
+
+  var form = el("div", "modal-scroll note-form");
   var title = el("input", "note-input");
   title.type = "text";
   title.maxLength = NOTE_TITLE_MAX;
@@ -1323,20 +1423,48 @@ function noteEditor(ch) {
   });
   var body = el("textarea", "note-input note-textarea");
   body.maxLength = NOTE_BODY_MAX;
-  body.rows = 7;
+  body.rows = 8;
   body.placeholder = t("noteBody");
   body.value = noteDraft.body;
   body.setAttribute("dir", "auto");
   body.addEventListener("input", function () {
     noteDraft.body = body.value;
   });
-  var actions = el("div", "ex-actions");
+
+  var colors = el("div", "note-colors");
+  colors.setAttribute("role", "radiogroup");
+  colors.setAttribute("aria-label", t("noteColor"));
+  colors.append(el("span", "note-colors-label", t("noteColor")));
+  var swatches = [];
+  NOTE_ORDER.forEach(function (key) {
+    var sw = el("button", "note-swatch");
+    sw.type = "button";
+    sw.setAttribute("role", "radio");
+    sw.setAttribute("aria-label", t("nc_" + key));
+    sw.title = t("nc_" + key);
+    sw.style.setProperty("--sw", NOTE_COLORS[key]);
+    sw.style.setProperty("--sw-ink", NOTE_INK[key]);
+    sw.dataset.color = key;
+    sw.addEventListener("click", function () {
+      noteDraft.color = key;
+      paint();
+      swatches.forEach(function (o) {
+        o.setAttribute("aria-checked", o.dataset.color === key ? "true" : "false");
+      });
+    });
+    swatches.push(sw);
+    colors.append(sw);
+  });
+  swatches.forEach(function (o) {
+    o.setAttribute("aria-checked", o.dataset.color === noteDraft.color ? "true" : "false");
+  });
+
+  var actions = el("div", "ex-actions note-actions");
   var save = el("button", "pc-btn", t("save"));
   save.type = "button";
   save.addEventListener("click", async function () {
     if (!noteDraft.title.trim() && !noteDraft.body.trim()) {
-      editing = null;
-      render();
+      closeNote();
       return;
     }
     save.disabled = true;
@@ -1345,11 +1473,7 @@ function noteEditor(ch) {
   });
   var cancel = el("button", "pc-btn is-ghost", t("cancel"));
   cancel.type = "button";
-  cancel.addEventListener("click", function () {
-    editing = null;
-    noteError = "";
-    render();
-  });
+  cancel.addEventListener("click", closeNote);
   actions.append(save, cancel);
   if (!isNew) {
     var del = el("button", "ex-link is-danger", t("del"));
@@ -1361,9 +1485,39 @@ function noteEditor(ch) {
     });
     actions.append(del);
   }
-  box.append(title, body, actions);
-  if (noteError) box.append(el("p", "set-msg", noteError));
+  form.append(title, body, colors, actions);
+  if (noteError) form.append(el("p", "set-msg", noteError));
+  box.append(x, band, form);
   return box;
+}
+function syncNoteModal(ch) {
+  if (!noteOverlay) {
+    noteOverlay = el("div", "modal-overlay note-overlay");
+    noteOverlay.addEventListener("mousedown", function (e) {
+      noteDownOnBackdrop = e.target === noteOverlay;
+    });
+    noteOverlay.addEventListener("click", function (e) {
+      if (e.target === noteOverlay && noteDownOnBackdrop) closeNote(); // a drag that started inside the box must not close it
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && editing) closeNote();
+    });
+    document.body.append(noteOverlay);
+  }
+  if (!ch || !editing) {
+    noteOverlay.classList.remove("open");
+    noteOverlay.textContent = "";
+    noteKey = "";
+    return;
+  }
+  var key = [editing, ctx.getLang(), noteError, ch.id].join("|");
+  if (key === noteKey && noteOverlay.classList.contains("open")) return; // already showing: keep what is being typed
+  noteKey = key;
+  noteOverlay.textContent = "";
+  noteOverlay.append(noteModalBox(ch));
+  noteOverlay.classList.add("open");
+  var first = noteOverlay.querySelector(".note-input");
+  if (first && !noteDraft.title && !noteDraft.body) setTimeout(function () { first.focus(); }, 0);
 }
 
 function notesSection(ch, col) {
@@ -1378,11 +1532,7 @@ function notesSection(ch, col) {
   add.title = t("newNote");
   add.disabled = !S.notesOk;
   add.addEventListener("click", function () {
-    editing = "new";
-    noteDraft = { title: "", body: "" };
-    noteError = "";
-    render();
-    focusNote();
+    openNoteEditor("new", null);
   });
   head.append(h, add);
   sec.append(head);
@@ -1391,11 +1541,10 @@ function notesSection(ch, col) {
     return sec;
   }
   var grid = el("div", "note-grid" + (col ? " is-col" : ""));
-  if (editing === "new") grid.append(noteEditor(ch));
-  list.forEach(function (n) {
-    grid.append(editing === n.id ? noteEditor(ch) : noteCard(ch, n));
+  list.forEach(function (n, i) {
+    grid.append(noteCard(ch, n, i));
   });
-  if (!list.length && editing !== "new") grid.append(el("p", "note-empty", t("notesHint")));
+  if (!list.length) grid.append(el("p", "note-empty", t("notesHint")));
   sec.append(grid);
   return sec;
 }
@@ -1439,6 +1588,11 @@ function syncBackButton() {
   }
   fb.classList.toggle("is-on", on);
   fb.tabIndex = on ? 0 : -1;
+  // wide screens: the back button stays at the top while scrolling and shrinks to its arrow
+  var compact = window.scrollY > 24;
+  document.querySelectorAll(".ch-back:not(.ch-back-float)").forEach(function (b) {
+    b.classList.toggle("is-compact", compact);
+  });
 }
 
 /* What the middle of the chapter page shows. Exercises first: that is why a student comes. */
@@ -1598,14 +1752,13 @@ function render() {
   var inSubject = !opening && subs.length > 1 && subs.indexOf(route.s) >= 0;
   var onHome = !opening && !inSubject;
   var week = $("sWeek");
-  var shell = $("sMain");
   if (hero) hero.hidden = !onHome;
   if (placement) placement.hidden = !onHome;
   if (week) week.hidden = !onHome;
   if (section) section.hidden = !!opening;
-  if (shell) shell.classList.toggle("is-wide", !!opening);
   view.hidden = !opening;
   syncRail(opening && ch ? ch : null);
+  syncNoteModal(opening && ch ? ch : null);
 
   if (!opening) {
     if (id) {

@@ -1049,9 +1049,6 @@ html[dir="rtl"] .welcome-link .welcome-ico:first-child svg {
 .student-shell[hidden] {
   display: none;
 }
-.student-wrap.is-wide {
-  max-width: 1240px;
-}
 .s-rail {
   position: sticky;
   top: 14px;
