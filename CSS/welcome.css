@@ -1083,6 +1083,9 @@ html[dir="rtl"] .welcome-link .welcome-ico:first-child svg {
   height: 32px;
   object-fit: contain;
 }
+.s-brand-full {
+  display: none;
+}
 .s-rail-nav {
   display: flex;
   flex-direction: column;
@@ -1281,9 +1284,20 @@ html[dir="rtl"] .welcome-link .welcome-ico:first-child svg {
   .s-rail-brand {
     margin-bottom: 4px;
   }
-  .s-rail-brand img {
-    width: 28px;
-    height: 28px;
+  .s-rail-brand {
+    height: 44px;
+    padding: 0 4px;
+    justify-content: flex-start;
+  }
+  .s-rail-brand .s-brand-icon,
+  .s-rail-brand .s-rail-label {
+    display: none;
+  }
+  .s-rail-brand .s-brand-full {
+    display: block;
+    width: auto;
+    height: 24px;
+    max-width: 190px;
   }
   .s-rail-nav {
     flex: none;
