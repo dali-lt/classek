@@ -3,7 +3,7 @@
    The profile card ("My account") reuses the teacher app's modal look (style.css)
    and saves to users/{uid}/meta/profile. */
 
-import { Chapters } from "./chapters.js?v=35";
+import { Chapters } from "./chapters.js?v=37";
 import {
   MAX_SHOWN,
   parseDevice,
@@ -22,119 +22,118 @@ var SDK_BASE = "https://www.gstatic.com/firebasejs/" + SDK_VERSION + "/";
 var LANG_KEY = "classledger:lang";
 
 var STR = {
-  en: {
-    hello: "Hello",
-    sub: "Pick a chapter, practice, and track your progress.",
-    chapters: "Chapters",
-    emptyTitle: "Your first chapters are on their way",
-    emptyText: "Come back soon: new exercises are being added.",
-    signOut: "Sign out",
-    home: "Home",
-    language: "Language",
-    account: "My account",
-    settings: "Settings",
-    retakeTest: "Retake the level test",
-    dangerTitle: "Delete account",
+  fr: {
+    hello: "Bonjour",
+    sub: "Choisis un chapitre, entraîne-toi et suis ta progression.",
+    chapters: "Chapitres",
+    emptyTitle: "Tes premiers chapitres arrivent",
+    emptyText: "Reviens bientôt : de nouveaux exercices sont ajoutés.",
+    signOut: "Se déconnecter",
+    home: "Accueil",
+    language: "Langue",
+    account: "Mon compte",
+    settings: "Paramètres",
+    retakeTest: "Refaire le test de niveau",
+    dangerTitle: "Supprimer le compte",
     dangerText:
-      "This permanently deletes your account and your data (details, progress). It cannot be undone.",
-    typeToConfirm: "Type DELETE to confirm",
-    deleteBtn: "Delete my account",
-    deleting: "Deleting…",
-    deleteFail: "Couldn’t delete the account.",
-    devTitle: "Where you’re signed in",
-    devHint: "Devices where your account is open. If you don’t recognise one, sign it out.",
-    devThis: "This device",
-    devNow: "Active now",
-    devOutBtn: "Sign out",
-    devOutAll: "Sign out all other devices",
-    devSure: "Tap again to confirm",
-    devPending: "Signing out…",
-    devPendingWait: "It will sign out the next time that device is online.",
-    devNone: "No other device is signed in.",
-    devLoading: "Loading your devices…",
-    devFail: "Couldn’t load your devices.",
-    devOutFail: "Couldn’t sign that device out. Try again.",
-    devWhereUnknown: "Location unavailable",
-    devGeoNote: "The place is approximate, based on the network. We don’t store your IP address.",
-    devPhone: "Phone",
-    devTablet: "Tablet",
-    devComputer: "Computer",
-    devBrowserOn: "{browser} on {os}",
-    close: "Close",
-    profileEdit: "Edit",
-    profileSave: "Save",
-    profileFirstName: "First name",
-    profileLastName: "Last name",
-    profileGender: "Gender",
-    profilePhone: "Phone",
-    profilePhoto: "Profile photo",
-    avUpload: "Upload photo",
-    avChoose: "Choose an avatar",
-    avGoogle: "Use my Google photo",
-    avPickGender: "Choose your gender first to see the avatars.",
-    avFail: "Couldn’t use this image. Try another one.",
-    avPicked: "Selected",
-    avBg: "Background colour",
-    profileLevel: "Level / section",
-    profileLevelHint: "e.g. Bac Informatique",
-    profileEmail: "Email",
-    profileNoName: "Add your name",
-    profileNotSet: "Not set",
-    profileSaved: "Your profile was saved.",
-    profileSyncing: "Loading your details…",
-    saveFail: "Couldn’t save. Try again.",
-    genderMale: "Male",
-    genderFemale: "Female",
-    pTitle: "Placement test",
-    pIntroTitle: "Let’s see where you stand",
+      "Cette action supprime définitivement ton compte et tes données (informations, progression). Elle est irréversible.",
+    typeToConfirm: "Écris DELETE pour confirmer",
+    deleteBtn: "Supprimer mon compte",
+    deleting: "Suppression…",
+    deleteFail: "Impossible de supprimer le compte.",
+    devTitle: "Où tu es connecté",
+    devHint: "Appareils où ton compte est ouvert. Si tu ne reconnais pas l’un d’eux, déconnecte-le.",
+    devThis: "Cet appareil",
+    devNow: "Actif maintenant",
+    devOutBtn: "Déconnecter",
+    devOutAll: "Déconnecter tous les autres appareils",
+    devSure: "Appuie encore pour confirmer",
+    devPending: "Déconnexion…",
+    devPendingWait: "L’appareil sera déconnecté dès qu’il sera de nouveau en ligne.",
+    devNone: "Aucun autre appareil n’est connecté.",
+    devLoading: "Chargement de tes appareils…",
+    devFail: "Impossible de charger tes appareils.",
+    devOutFail: "Impossible de déconnecter cet appareil. Réessaie.",
+    devWhereUnknown: "Lieu indisponible",
+    devGeoNote: "Le lieu est approximatif, d’après le réseau. Nous ne gardons pas ton adresse IP.",
+    devPhone: "Téléphone",
+    devTablet: "Tablette",
+    devComputer: "Ordinateur",
+    devBrowserOn: "{browser} sur {os}",
+    close: "Fermer",
+    profileEdit: "Modifier",
+    profileSave: "Enregistrer",
+    profileFirstName: "Prénom",
+    profileLastName: "Nom",
+    profileGender: "Genre",
+    profilePhone: "Téléphone",
+    profilePhoto: "Photo de profil",
+    avUpload: "Importer une photo",
+    avChoose: "Choisir un avatar",
+    avGoogle: "Utiliser ma photo Google",
+    avPickGender: "Choisis d’abord ton genre pour voir les avatars.",
+    avFail: "Impossible d’utiliser cette image. Essaie-en une autre.",
+    avPicked: "Sélectionné",
+    avBg: "Couleur de fond",
+    profileLevel: "Niveau / section",
+    profileLevelHint: "ex. Bac Informatique",
+    profileEmail: "E-mail",
+    profileNoName: "Ajoute ton nom",
+    profileNotSet: "Non renseigné",
+    profileSaved: "Ton profil a été enregistré.",
+    profileSyncing: "Chargement de tes informations…",
+    saveFail: "Enregistrement impossible. Réessaie.",
+    genderMale: "Garçon",
+    genderFemale: "Fille",
+    pTitle: "Test de niveau",
+    pIntroTitle: "Voyons où tu en es",
     pIntro:
-      "10 questions picked for your level and your point in the school year. About 5 minutes, no grade, no pressure. It helps us suggest where to start.",
-    pLevelPick: "Your level",
-    pChipStage: "Term {n}",
-    pRecoOneHigh: "Solid start. Pick any chapter.",
-    pRecoOneLow: "Start with the basics.",
-    pStart: "Start the test",
-    pSkip: "Skip for now",
-    pNext: "Next",
-    pFinish: "Finish",
-    pDontKnow: "I don’t know",
-    pQuestion: "Question {n} of {total}",
-    pResult: "Your result",
-    pOverall: "Overall: {n} / {total}",
-    pRecoWeak: "Start with {domain}.",
-    pRecoBoth: "You’re solid on both sides. Pick any chapter.",
-    pRecoLow: "Start with the basics of both sides.",
-    pReview: "Review your answers",
-    pCorrect: "Correct answer",
-    pYours: "Your answer",
-    pRetake: "Retake the test",
-    pViewResults: "View my results",
-    pLevelTest: "Level test",
-    pOverall: "Overall",
-    pNewBadge: "Start here",
-    pCardTodoBtn: "Take the test",
-    pCardDoneSub: "Based on your placement test",
-    pRight: "Correct!",
-    pWrong: "Not quite",
-    pNoIdea: "No worries",
-    pTimeUp: "Time’s up!",
-    pChipTimed: "Timed questions",
-    pPerfect: "Perfect score!",
-    pGreat: "Great job!",
-    pGood: "Good start!",
-    pKeep: "Keep going, you’ll get there!",
+      "10 questions choisies selon ton niveau et ton moment de l’année scolaire. Environ 5 minutes, sans note, sans pression. Cela nous aide à te proposer par où commencer.",
+    pLevelPick: "Ton niveau",
+    pChipStage: "Trimestre {n}",
+    pRecoOneHigh: "Bon départ. Choisis n’importe quel chapitre.",
+    pRecoOneLow: "Commence par les bases.",
+    pStart: "Commencer le test",
+    pSkip: "Passer pour l’instant",
+    pNext: "Suivant",
+    pFinish: "Terminer",
+    pDontKnow: "Je ne sais pas",
+    pQuestion: "Question {n} sur {total}",
+    pResult: "Ton résultat",
+    pRecoWeak: "Commence par {domain}.",
+    pRecoBoth: "Tu es solide des deux côtés. Choisis n’importe quel chapitre.",
+    pRecoLow: "Commence par les bases des deux côtés.",
+    pReview: "Revoir tes réponses",
+    pCorrect: "Bonne réponse",
+    pYours: "Ta réponse",
+    pRetake: "Refaire le test",
+    pViewResults: "Voir mes résultats",
+    pLevelTest: "Test de niveau",
+    pOverall: "Global",
+    pNewBadge: "Commence ici",
+    pCardTodoBtn: "Passer le test",
+    pCardDoneSub: "D’après ton test de niveau",
+    pRight: "Correct !",
+    pWrong: "Pas tout à fait",
+    pNoIdea: "Pas de souci",
+    pTimeUp: "Temps écoulé !",
+    pChipTimed: "Questions chronométrées",
+    pPerfect: "Score parfait !",
+    pGreat: "Bravo !",
+    pGood: "Bon début !",
+    pKeep: "Continue, tu vas y arriver !",
     pChipQ: "{n} questions",
-    pChipTime: "About 5 min",
-    pChipNoGrade: "No grade",
-    pDone: "Done",
-    pLoadFail: "Couldn’t load the questions. Try again.",
-    pSaveFail: "Your result couldn’t be saved, but here it is.",
-    pCardTodoTitle: "Take the placement test",
-    pCardTodoText: "10 questions, about 5 minutes. We’ll suggest where to start.",
-    pCardDoneTitle: "Your level",
+    pChipTime: "Environ 5 min",
+    pChipNoGrade: "Sans note",
+    pDone: "Terminé",
+    pLoadFail: "Impossible de charger les questions. Réessaie.",
+    pSaveFail: "Ton résultat n’a pas pu être enregistré, mais le voici.",
+    pCardTodoTitle: "Passe le test de niveau",
+    pCardTodoText: "10 questions, environ 5 minutes. Nous te proposerons par où commencer.",
+    pCardDoneTitle: "Ton niveau",
     pLevelHigh: "Excellent",
-    pLevelMid: "Average",
-    pLevelLow: "Weak",
+    pLevelMid: "Moyen",
+    pLevelLow: "Faible",
   },
   ar: {
     hello: "مرحبا",
@@ -262,9 +261,9 @@ var ICON_EDIT =
 var ICON_CHECK =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
 
-var lang = "en";
+var lang = "fr";
 try {
-  lang = localStorage.getItem(LANG_KEY) === "ar" ? "ar" : "en";
+  lang = localStorage.getItem(LANG_KEY) === "ar" ? "ar" : "fr";
 } catch (e) {}
 
 function t(key) {
@@ -412,7 +411,7 @@ function genderText(v) {
 function paintWeek() {
   var host = $("sWeek");
   if (!host) return;
-  var loc = lang === "ar" ? "ar-TN-u-nu-latn" : "en-GB";
+  var loc = lang === "ar" ? "ar-TN-u-nu-latn" : "fr-FR";
   var now = new Date();
   var mon = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   mon.setDate(mon.getDate() - 3); // today always sits in the middle: 3 days before, 3 after
@@ -435,6 +434,23 @@ document.addEventListener("visibilitychange", function () {
   if (!document.hidden) paintWeek();
 });
 
+
+// the profile picture (or the first letter of the name) as a node; used in the top bar and in the home box
+function buildAvatarNode() {
+  var first = shownNames().first;
+  var hSrc = avatarSrc();
+  if (hSrc) {
+    var img = el("img", hSrc.indexOf("Images/") === 0 ? "is-preset" : "");
+    img.alt = "";
+    img.referrerPolicy = "no-referrer";
+    img.src = hSrc;
+    var hBg = avatarBgFor(hSrc, profile.avatarBg);
+    if (hBg) img.style.background = AVATAR_BGS[hBg];
+    return img;
+  }
+  return el("span", "student-initial", (first || (currentUser && currentUser.email) || "?").charAt(0).toUpperCase());
+}
+
 /* ---------------- page ---------------- */
 function renderPage() {
   document.documentElement.lang = lang;
@@ -447,8 +463,6 @@ function renderPage() {
   if (!currentUser) return;
 
   var first = shownNames().first;
-  $("sGreeting").textContent = first ? t("hello") + (lang === "ar" ? " " : ", ") + first : t("hello");
-  $("sSub").textContent = t("sub");
   paintWeek();
   $("sChaptersTitle").textContent = t("chapters");
   $("rBrandLabel").textContent = t("home");
@@ -459,19 +473,8 @@ function renderPage() {
   user.setAttribute("aria-label", t("account"));
   user.title = t("account");
   user.textContent = "";
-  var hSrc = avatarSrc();
-  if (hSrc) {
-    var img = el("img", hSrc.indexOf("Images/") === 0 ? "is-preset" : "");
-    img.alt = "";
-    img.referrerPolicy = "no-referrer";
-    img.src = hSrc;
-    var hBg = avatarBgFor(hSrc, profile.avatarBg);
-    if (hBg) img.style.background = AVATAR_BGS[hBg];
-    user.append(img);
-  } else {
-    var ini = el("span", "student-initial", (first || currentUser.email || "?").charAt(0).toUpperCase());
-    user.append(ini);
-  }
+  user.append(buildAvatarNode());
+  paintTopLang();
 
   Chapters.render();
 
@@ -1653,18 +1656,34 @@ function menuItem(label, icon, onClick) {
   return b;
 }
 function setLang(code) {
-  lang = code === "ar" ? "ar" : "en";
+  lang = code === "ar" ? "ar" : "fr";
   try {
     localStorage.setItem(LANG_KEY, lang);
   } catch (e) {}
   renderPage();
+}
+function paintTopLang() {
+  var host = $("sTopLang");
+  if (!host) return;
+  host.textContent = "";
+  var sw = el("div", "lang-switch");
+  ["fr", "ar"].forEach(function (code) {
+    var b = el("button", "lang-btn" + (lang === code ? " active" : ""), code.toUpperCase());
+    b.type = "button";
+    b.dataset.lang = code;
+    b.addEventListener("click", function () {
+      setLang(code);
+    });
+    sw.append(b);
+  });
+  host.append(sw);
 }
 function langRow() {
   var row = el("div", "menu-lang");
   row.append(el("span", "menu-lang-label", t("language")));
   var sw = el("div", "lang-switch");
   sw.id = "langSwitch";
-  ["en", "ar"].forEach(function (code) {
+  ["fr", "ar"].forEach(function (code) {
     var b = el("button", "lang-btn" + (lang === code ? " active" : ""), code.toUpperCase());
     b.type = "button";
     b.dataset.lang = code;
@@ -2013,7 +2032,7 @@ function confirmButton(label, cls, run) {
 
 function deviceRow(s, now) {
   var mine = s.id === sess.sid;
-  var loc = lang === "ar" ? "ar-TN" : "en-GB";
+  var loc = lang === "ar" ? "ar-TN" : "fr-FR";
   var kind = s.type === "phone" ? "devPhone" : s.type === "tablet" ? "devTablet" : "devComputer";
   var li = el("li", "dev-row" + (mine ? " is-mine" : "") + (s.revoked ? " is-pending" : ""));
   var icon = ico(s.type === "phone" ? I_PHONE : s.type === "tablet" ? I_TABLET : I_LAPTOP, "dev-ico");
@@ -2184,6 +2203,9 @@ async function main() {
     closeMenu();
     Chapters.home();
   });
+  $("sPhoneLogo").addEventListener("click", function () {
+    Chapters.home();
+  });
   $("pClose").addEventListener("click", closeModal);
   $("pGear").addEventListener("click", openSettings);
   $("setClose").addEventListener("click", closeSettings);
@@ -2278,6 +2300,9 @@ async function main() {
         return profileLoaded;
       },
       topicOf: topicOf,
+      me: function () {
+        return { first: shownNames().first, avatar: buildAvatarNode(), level: levelOption(profile.level) };
+      },
       subjectIcon: function (sub) {
         return sub === "sti" ? I_GLOBE : I_TERM;
       },

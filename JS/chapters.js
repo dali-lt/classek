@@ -10,82 +10,97 @@
    The page chrome is in the student's language (EN / AR); the course content is French. */
 
 var STR = {
-  en: {
-    loading: "Loading…",
-    loadFail: "Couldn’t load the chapters. Check your connection.",
-    retry: "Try again",
-    emptyTitle: "Your first chapters are on their way",
-    emptyText: "Come back soon: new exercises are being added.",
-    back: "Back to {name}",
-    allSubjects: "All subjects",
-    subjects: "Subjects",
-    exercises: "Exercises",
-    exercisesCount: "{n} exercises",
-    weightCore: "Essential",
+  fr: {
+    loading: "Chargement…",
+    loadFail: "Impossible de charger les chapitres. Vérifie ta connexion.",
+    retry: "Réessayer",
+    emptyTitle: "Tes premiers chapitres arrivent",
+    emptyText: "Reviens bientôt : de nouveaux exercices sont ajoutés.",
+    back: "Retour à {name}",
+    allSubjects: "Toutes les matières",
+    subjects: "Matières",
+    exercises: "Exercices",
+    exercisesCount: "{n} exercices",
+    navHome: "Accueil",
+    hello: "Bonjour",
+    meSub: "Voici où tu en es.",
+    mePct: "de progression totale",
+    stDone: "Terminés",
+    stReview: "À revoir",
+    stLeft: "Restants",
+    resumeCap: "Reprendre où tu t’es arrêté",
+    resumeStartCap: "Commence ici",
+    resumeBtn: "Continuer",
+    resumeStartBtn: "Commencer",
+    resumeAllDone: "Tout est terminé !",
+    resumeAllDoneSub: "Tu as fini tous les exercices disponibles. D’autres arrivent bientôt.",
+    resumeNone: "Les premiers exercices arrivent bientôt.",
+    partN: "Partie {n}",
+    weightCore: "Essentiel",
     weightMajor: "Important",
-    weightMinor: "Extra",
-    weightTip: "Folder colour = how much the topic matters for the exam",
-    progress: "{done} / {total} done",
-    rappel: "Reminder",
-    hint: "Show a hint",
-    hideHint: "Hide the hint",
-    hintNext: "Next hint ({n}/{total})",
-    hintLabel: "Hint {n}/{total}",
-    hintLabelOne: "Hint",
-    lesson: "Lesson",
-    tabCourse: "Course",
+    weightMinor: "Complémentaire",
+    weightTip: "Couleur du dossier = importance du chapitre pour l’examen",
+    progress: "{done} / {total} terminés",
+    rappel: "Rappel",
+    hint: "Afficher un indice",
+    hideHint: "Masquer l’indice",
+    hintNext: "Indice suivant ({n}/{total})",
+    hintLabel: "Indice {n}/{total}",
+    hintLabelOne: "Indice",
+    lesson: "Cours",
+    tabCourse: "Cours",
     tabNotes: "Notes",
-    lessonOpen: "Open the lesson",
-    lessonClose: "Hide the lesson",
+    lessonOpen: "Ouvrir le cours",
+    lessonClose: "Masquer le cours",
     lessonSections: "{n} sections",
-    answerLabel: "Your answer",
-    answerPlaceholder: "Try it first: write your answer here to unlock the solution.",
-    qPlaceholder: "Your answer to question {n}…",
-    saving: "Saving…",
-    savedAns: "Saved",
-    saveAnsFail: "Couldn’t save your answer. We’ll try again.",
-    hintsUsed: "Hints {n}/{total}",
-    indent: "Indent",
-    outdent: "Outdent",
-    showSolution: "Show the solution",
+    answerLabel: "Ta réponse",
+    answerPlaceholder: "Essaie d’abord : écris ta réponse ici pour débloquer la solution.",
+    qPlaceholder: "Ta réponse à la question {n}…",
+    saving: "Enregistrement…",
+    savedAns: "Enregistré",
+    saveAnsFail: "Impossible d’enregistrer ta réponse. Nouvel essai en cours.",
+    hintsUsed: "Indices {n}/{total}",
+    indent: "Indenter",
+    outdent: "Désindenter",
+    showSolution: "Afficher la solution",
     solution: "Solution",
-    gotIt: "I got it",
-    reviewLater: "Review later",
-    done: "Done",
-    review: "To review",
-    d_easy: "Easy",
-    d_medium: "Medium",
-    d_bac: "Bac level",
-    s_prog: "Programming",
+    gotIt: "J’ai compris",
+    reviewLater: "À revoir",
+    done: "Terminé",
+    review: "À revoir",
+    d_easy: "Facile",
+    d_medium: "Moyen",
+    d_bac: "Niveau Bac",
+    s_prog: "Programmation",
     s_sti: "STI (Web)",
-    s_info: "Computer science",
-    chaptersCount: "{n} chapters",
-    chaptersOne: "1 chapter",
-    soon: "Coming soon",
-    notes: "My notes",
-    notesHint: "Write what matters to you from this lesson.",
-    newNote: "New note",
-    noteEdit: "Edit note",
-    noteColor: "Colour",
-    nc_lime: "Green",
-    nc_blue: "Blue",
-    nc_pink: "Pink",
-    nc_azure: "Navy",
-    noteTitle: "Title",
-    noteBody: "Write your note here…",
-    save: "Save",
-    cancel: "Cancel",
-    del: "Delete",
-    confirmDelete: "Delete this note?",
-    untitled: "Untitled",
+    s_info: "Informatique",
+    chaptersCount: "{n} chapitres",
+    chaptersOne: "1 chapitre",
+    soon: "Bientôt disponible",
+    notes: "Mes notes",
+    notesHint: "Écris ce qui compte pour toi dans ce cours.",
+    newNote: "Nouvelle note",
+    noteEdit: "Modifier la note",
+    noteColor: "Couleur",
+    nc_lime: "Vert",
+    nc_blue: "Bleu",
+    nc_pink: "Rose",
+    nc_azure: "Marine",
+    noteTitle: "Titre",
+    noteBody: "Écris ta note ici…",
+    save: "Enregistrer",
+    cancel: "Annuler",
+    del: "Supprimer",
+    confirmDelete: "Supprimer cette note ?",
+    untitled: "Sans titre",
     notesCount: "{n} notes",
     noteOne: "1 note",
-    notesFail: "Notes are unavailable right now.",
-    desc_prog: "Algorithms, Python and Bac-style exercises",
-    desc_sti: "Web, HTML, CSS and more",
-    desc_info: "Lessons and exercises, step by step",
-    saveFail: "Couldn’t save your progress. Try again.",
-    solFail: "Couldn’t load the solution. Try again.",
+    notesFail: "Les notes sont indisponibles pour le moment.",
+    desc_prog: "Algorithmique, Python et exercices type Bac",
+    desc_sti: "Web, HTML, CSS et plus encore",
+    desc_info: "Cours et exercices, pas à pas",
+    saveFail: "Impossible d’enregistrer ta progression. Réessaie.",
+    solFail: "Impossible de charger la solution. Réessaie.",
   },
   ar: {
     loading: "لحظة…",
@@ -98,6 +113,21 @@ var STR = {
     subjects: "المواد",
     exercises: "التمارين",
     exercisesCount: "{n} تمارين",
+    navHome: "الرئيسية",
+    hello: "مرحبا",
+    meSub: "هذا وين وصلت.",
+    mePct: "من التقدّم الكلي",
+    stDone: "منجزة",
+    stReview: "للمراجعة",
+    stLeft: "المتبقية",
+    resumeCap: "كمّل من وين وقفت",
+    resumeStartCap: "ابدأ من هنا",
+    resumeBtn: "كمّل",
+    resumeStartBtn: "ابدأ",
+    resumeAllDone: "كلشي مكتمل!",
+    resumeAllDoneSub: "كمّلت كل التمارين المتوفرة. جاية أخرى قريب.",
+    resumeNone: "أول التمارين جاية قريب.",
+    partN: "الجزء {n}",
     weightCore: "أساسي",
     weightMajor: "مهم",
     weightMinor: "تكميلي",
@@ -215,7 +245,7 @@ var ANSWER_MAX = 4000; // characters per answer box
 var MIN_Q = 5; // characters typed in each question box before the solution unlocks
 
 function t(key) {
-  return STR[ctx && ctx.getLang() === "ar" ? "ar" : "en"][key];
+  return STR[ctx && ctx.getLang() === "ar" ? "ar" : "fr"][key];
 }
 function tf(key, vars) {
   var out = t(key);
@@ -517,7 +547,7 @@ async function removeNote(id) {
 }
 function dateLabel(ms) {
   try {
-    return new Date(ms).toLocaleDateString(ctx.getLang() === "ar" ? "ar-TN" : "en-GB", {
+    return new Date(ms).toLocaleDateString(ctx.getLang() === "ar" ? "ar-TN" : "fr-FR", {
       weekday: "short",
       day: "numeric",
       month: "short",
@@ -1654,12 +1684,29 @@ var RAIL_BTNS = [
   ["rEx", "ex", "exercises"],
   ["rNotes", "notes", "tabNotes"],
 ];
-function syncRail(ch) {
+var HOME_BTNS = [
+  ["rHome", "home", "navHome"],
+  ["rSubjects", "subjects", "subjects"],
+];
+/* where: "home" | "subject" | "chapter". Home / Subjects buttons outside a chapter, Course / Exercises / Notes inside one. */
+function syncRail(ch, where) {
   var nav = $("rNav");
   if (!nav) return;
-  nav.hidden = !ch;
-  if (!ch) return;
-  var tab = curTab(ch);
+  var inCh = !!ch;
+  nav.hidden = false;
+  var tab = ch ? curTab(ch) : "";
+  HOME_BTNS.forEach(function (b) {
+    var btn = $(b[0]);
+    if (!btn) return;
+    var label = t(b[2]);
+    btn.querySelector(".s-rail-label").textContent = label;
+    btn.setAttribute("aria-label", label);
+    btn.title = label;
+    btn.hidden = inCh;
+    var on = !inCh && (b[1] === "home" ? where !== "subject" : where === "subject");
+    btn.classList.toggle("active", on);
+    btn.setAttribute("aria-pressed", on ? "true" : "false");
+  });
   RAIL_BTNS.forEach(function (b) {
     var btn = $(b[0]);
     if (!btn) return;
@@ -1667,10 +1714,11 @@ function syncRail(ch) {
     btn.querySelector(".s-rail-label").textContent = label;
     btn.setAttribute("aria-label", label);
     btn.title = label;
-    var on = tab === b[1];
+    btn.hidden = !inCh;
+    var on = inCh && tab === b[1];
     btn.classList.toggle("active", on);
     btn.setAttribute("aria-pressed", on ? "true" : "false");
-    btn.disabled = b[1] === "course" && !ch.rappel;
+    btn.disabled = inCh && b[1] === "course" && !ch.rappel;
   });
 }
 function currentChapter() {
@@ -1724,7 +1772,7 @@ function renderView(view, ch) {
   var side = notesWide.matches;
   view.className = "ch-grid" + (side ? " has-side" : "");
   var tab = curTab(ch);
-  syncRail(ch);
+  syncRail(ch, "chapter");
 
   var main = el("div", "ch-main");
   var back = el("button", "ch-back");
@@ -1770,13 +1818,169 @@ function renderView(view, ch) {
 }
 
 /* ---------------- entry points ---------------- */
+/* ---------------- home boxes: progress (left) and "pick up where you stopped" (blue) ---------------- */
+function summary() {
+  var total = 0;
+  var done = 0;
+  var review = 0;
+  var resume = null;
+  var started = null;
+  var firstOpen = null;
+  S.chapters.forEach(function (c) {
+    var n = Number(c.exerciseCount) || 0;
+    if (!n) return;
+    var st = statusOf(c.id);
+    var keys = Object.keys(st);
+    var d = keys.filter(function (k) {
+      return st[k] === "done";
+    }).length;
+    var r = keys.filter(function (k) {
+      return st[k] === "review";
+    }).length;
+    total += n;
+    done += d;
+    review += r;
+    if (d + r < n) {
+      if (!firstOpen) firstOpen = c;
+      if (!started && d + r > 0) started = c;
+    }
+  });
+  resume = started || firstOpen;
+  return {
+    total: total,
+    done: done,
+    review: review,
+    left: Math.max(0, total - done - review),
+    chapter: resume,
+    started: !!started,
+  };
+}
+
+function chapterTitle(ch) {
+  return ctx.getLang() === "ar" && ch.title_ar ? ch.title_ar : ch.title;
+}
+
+function paintMe() {
+  var box = $("sMe");
+  if (!box || !ctx || !ctx.me) return;
+  var m = ctx.me();
+  var sum = summary();
+  var pct = sum.total ? Math.round((sum.done / sum.total) * 100) : 0;
+  box.textContent = "";
+
+  var ring = el("div", "me-ring");
+  var R = 60;
+  var C = 2 * Math.PI * R;
+  var svgNS = "http://www.w3.org/2000/svg";
+  var svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("viewBox", "0 0 132 132");
+  svg.setAttribute("aria-hidden", "true");
+  function circle(cls) {
+    var c = document.createElementNS(svgNS, "circle");
+    c.setAttribute("cx", "66");
+    c.setAttribute("cy", "66");
+    c.setAttribute("r", String(R));
+    c.setAttribute("class", cls);
+    return c;
+  }
+  svg.append(circle("me-ring-bg"));
+  if (pct > 0) {
+    var arc = circle("me-ring-fg"); // round ends (half circles) on the progress arc
+    arc.setAttribute("stroke-linecap", "round");
+    arc.setAttribute("stroke-dasharray", (C * pct) / 100 + " " + C);
+    svg.append(arc);
+  }
+  var face = el("div", "me-avatar");
+  face.append(m.avatar);
+  ring.append(svg, face);
+  if (m.level) ring.append(el("span", "me-lvl", m.level));
+
+  var hello = t("hello") + (m.first ? (ctx.getLang() === "ar" ? " " : ", ") + m.first : "");
+  var pctRow = el("div", "me-pct");
+  pctRow.append(el("b", "", pct + "%"), el("span", "", t("mePct")));
+  var bar = el("span", "me-bar");
+  var fill = el("i");
+  fill.style.width = pct + "%";
+  bar.append(fill);
+  var stats = el("div", "me-stats");
+  [
+    [sum.done, "stDone"],
+    [sum.review, "stReview"],
+    [sum.left, "stLeft"],
+  ].forEach(function (x) {
+    var cell = el("div", "me-st");
+    cell.append(el("b", "", String(x[0])), el("span", "", t(x[1])));
+    stats.append(cell);
+  });
+  box.append(ring, el("h2", "me-hello", hello), el("p", "me-sub", t("meSub")), pctRow, bar, stats);
+}
+
+function paintResume() {
+  var box = $("sResume");
+  if (!box) return;
+  box.textContent = "";
+  box.className = "s-resume";
+  var mark = el("img", "rs-mark");
+  mark.src = "Images/logo-icon.svg";
+  mark.alt = "";
+  box.append(mark);
+  if (S.loading || !ctx || !ctx.ready()) {
+    box.append(el("span", "rs-cap", t("loading")));
+    return;
+  }
+  var sum = summary();
+  var ch = sum.chapter;
+  if (!ch) {
+    box.classList.add("is-quiet");
+    box.append(
+      el("span", "rs-cap", t(sum.total ? "resumeAllDone" : "resumeNone")),
+      el("p", "rs-sub", sum.total ? t("resumeAllDoneSub") : ""),
+    );
+    return;
+  }
+  var n = Number(ch.exerciseCount) || 0;
+  var d = doneCount(ch);
+  box.append(el("span", "rs-cap", t(sum.started ? "resumeCap" : "resumeStartCap")));
+  var h = el("h2", "rs-title", chapterTitle(ch) || "");
+  h.setAttribute("dir", "auto");
+  box.append(h);
+  var chips = el("div", "rs-chips");
+  chips.append(el("span", "rs-chip", t("s_" + ch.subject)));
+  if (ch.part) chips.append(el("span", "rs-chip is-lime", tf("partN", { n: ch.part })));
+  box.append(chips);
+  var bottom = el("div", "rs-bottom");
+  var meter = el("div", "rs-meter");
+  meter.append(el("span", "rs-meta", tf("progress", { done: d, total: n })));
+  var bar = el("span", "rs-bar");
+  var fill = el("i");
+  fill.style.width = Math.min(100, Math.round((d / n) * 100)) + "%";
+  bar.append(fill);
+  meter.append(bar);
+  var btn = el("button", "rs-btn", t(sum.started ? "resumeBtn" : "resumeStartBtn") + " →");
+  btn.type = "button";
+  btn.addEventListener("click", function () {
+    openChapter(ch.id);
+  });
+  bottom.append(meter, btn);
+  box.append(bottom);
+}
+
+function goSubjects() {
+  var r = readRoute();
+  if (r.c || r.s) closeToHome();
+  var sec = $("sChaptersSection");
+  if (sec && sec.scrollIntoView) sec.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
 function render() {
   if (!ctx) return;
   if (ctx.ready() && S.loadedKey !== ctx.getLevel() && !S.loading) {
     load();
     return;
   }
-  var hero = $("sHero");
+  var homeGrid = $("sHomeGrid");
+  var meBox = $("sMe");
+  var resumeBox = $("sResume");
   var placement = $("sPlacement");
   var section = $("sChaptersSection");
   var view = $("sChapterView");
@@ -1797,12 +2001,21 @@ function render() {
   var inSubject = !opening && subs.length > 1 && subs.indexOf(route.s) >= 0;
   var onHome = !opening && !inSubject;
   var week = $("sWeek");
-  if (hero) hero.hidden = !onHome;
+  if (homeGrid) {
+    homeGrid.hidden = !!opening;
+    homeGrid.classList.toggle("is-solo", !onHome);
+  }
+  if (meBox) meBox.hidden = !onHome;
+  if (resumeBox) resumeBox.hidden = !onHome;
+  if (onHome) {
+    paintMe();
+    paintResume();
+  }
   if (placement) placement.hidden = !onHome;
   if (week) week.hidden = !onHome;
   if (section) section.hidden = !!opening;
   view.hidden = !opening;
-  syncRail(opening && ch ? ch : null);
+  syncRail(opening && ch ? ch : null, inSubject ? "subject" : "home");
   syncNoteModal(opening && ch ? ch : null);
 
   if (!opening) {
@@ -1844,6 +2057,10 @@ export var Chapters = {
         });
       }
     });
+    var rh = $("rHome");
+    if (rh) rh.addEventListener("click", closeToHome);
+    var rs = $("rSubjects");
+    if (rs) rs.addEventListener("click", goSubjects);
     var onResize = function () {
       if (readRoute().c) render(); // the notes move between their column and the tab bar when the width crosses the breakpoint
     };
