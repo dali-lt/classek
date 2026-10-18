@@ -3,7 +3,7 @@
    The profile card ("My account") reuses the teacher app's modal look (style.css)
    and saves to users/{uid}/meta/profile. */
 
-import { Chapters } from "./chapters.js?v=29";
+import { Chapters } from "./chapters.js?v=34";
 import {
   MAX_SHOWN,
   parseDevice,
@@ -415,7 +415,7 @@ function paintWeek() {
   var loc = lang === "ar" ? "ar-TN-u-nu-latn" : "en-GB";
   var now = new Date();
   var mon = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  mon.setDate(mon.getDate() - ((mon.getDay() + 6) % 7)); // week starts on Monday
+  mon.setDate(mon.getDate() - 3); // today always sits in the middle: 3 days before, 3 after
   var wd = new Intl.DateTimeFormat(loc, { weekday: "short" });
   host.textContent = "";
   var cap = el("div", "week-cap");

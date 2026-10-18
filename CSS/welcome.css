@@ -989,12 +989,15 @@ html[dir="rtl"] .welcome-link .welcome-ico:first-child svg {
   grid-template-columns: repeat(7, 1fr);
   gap: 4px;
 }
+.week-day:not(.is-today) .week-num {
+  color: var(--color-text);
+}
 .week-day {
   display: grid;
   justify-items: center;
   gap: 2px;
   padding: 8px 0;
-  border-radius: 14px;
+  border-radius: 999px;
   color: var(--color-text-muted);
 }
 .week-name {
@@ -1005,11 +1008,13 @@ html[dir="rtl"] .welcome-link .welcome-ico:first-child svg {
   font-weight: 600;
 }
 .week-day.is-today {
-  background: var(--color-navy);
+  background: var(--color-primary);
   color: #fff;
+  padding: 11px 0;
+  box-shadow: 0 10px 20px -10px color-mix(in srgb, var(--color-primary) 70%, transparent);
 }
 .week-day.is-today .week-name {
-  opacity: 0.8;
+  opacity: 0.85;
 }
 .week-day.is-today .week-num {
   font-weight: 700;
@@ -1083,7 +1088,8 @@ html[dir="rtl"] .welcome-link .welcome-ico:first-child svg {
   height: 32px;
   object-fit: contain;
 }
-.s-brand-full {
+.s-brand-full,
+.s-brand-full[hidden] {
   display: none;
 }
 .s-rail-nav {
@@ -1293,7 +1299,8 @@ html[dir="rtl"] .welcome-link .welcome-ico:first-child svg {
   .s-rail-brand .s-rail-label {
     display: none;
   }
-  .s-rail-brand .s-brand-full {
+  .s-rail-brand .s-brand-full,
+  .s-rail-brand .s-brand-full[hidden] {
     display: block;
     width: auto;
     height: 24px;
