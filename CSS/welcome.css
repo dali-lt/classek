@@ -1505,3 +1505,48 @@ html[dir="rtl"] .rs-mark { transform: translateY(-50%) scaleX(-1); }
   .rs-mark { width: 170px; }
 }
 .week-cap::first-letter { text-transform: uppercase; }
+
+
+/* v38: progress bars and the ring: two round-ended pills that meet with a small gap */
+.seg { display: flex; gap: 4px; overflow: visible !important; background: none !important; }
+.seg > i { display: block; flex: 0 0 auto; min-width: 8px; height: 100%; border-radius: 999px; }
+.seg > .seg-rest { display: block; flex: 1 1 0; min-width: 8px; height: 100%; border-radius: 999px; background: var(--seg-track, var(--color-light-blue)); }
+.me-bar { --seg-track: var(--color-light-blue); height: 8px; }
+.rs-bar { --seg-track: rgba(255, 255, 255, 0.28); }
+.me-ring-bg.is-cap { stroke: var(--color-light-blue); }
+.home-side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.home-side[hidden] { display: none; }
+.home-side #sPlacement:empty { display: none; }
+/* the level card sits under the profile box: stacked, button full width */
+.home-side .placement-card,
+.home-side .placement-card.is-done,
+.home-side .placement-card.is-todo {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  padding: 18px;
+  border-radius: 24px;
+}
+.home-side .placement-card .pc-actions { width: 100%; }
+.home-side .placement-card .pc-actions button { width: 100%; justify-content: center; }
+.home-side #sPlacement .placement-card.is-done,
+.home-side #sPlacement .placement-card.is-todo {
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 12px !important;
+}
+.home-side #sPlacement .placement-card .pc-text { width: 100%; }
+.home-side #sPlacement .placement-card .pc-actions button { width: 100%; justify-content: center; }
+.home-side #sPlacement .placement-card.is-done,
+.home-side #sPlacement .placement-card.is-todo {
+  display: flex !important;
+  grid-template-columns: none !important;
+  padding: 18px !important;
+}
+.home-side #sPlacement .placement-card.is-done .pc-text { display: block !important; }
+.home-side #sPlacement .placement-card .pc-btn-label { display: inline !important; }
+.home-side #sPlacement .placement-card .pc-actions { grid-column: auto; grid-row: auto; }
+.home-side #sPlacement .placement-card .pc-actions button {
+  display: inline-flex; align-items: center; gap: 8px; width: 100%; height: auto; min-height: 42px;
+  padding: 10px 16px; border-radius: 999px; aspect-ratio: auto;
+}

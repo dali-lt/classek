@@ -728,6 +728,19 @@ function subjectList() {
   return list;
 }
 
+/* A progress bar made of two pills (done / remaining) that meet with round ends, instead of a fill sliding under the track. */
+function segBar(bar, pct) {
+  pct = Math.max(0, Math.min(100, Math.round(pct)));
+  bar.classList.add("seg");
+  bar.textContent = "";
+  if (pct > 0) {
+    var fill = el("i");
+    fill.style.width = pct + "%";
+    bar.append(fill);
+  }
+  if (pct < 100) bar.append(el("b", "seg-rest"));
+}
+
 function subjectCard(sub) {
   var chs = S.chapters.filter(function (c) {
     return c.subject === sub;
@@ -752,9 +765,7 @@ function subjectCard(sub) {
   card.append(el("span", "sc-pill" + (chs.length ? "" : " is-soon"), label));
   if (total) {
     var bar = el("span", "domain-bar sc-bar");
-    var fill = el("i");
-    fill.style.width = Math.min(100, Math.round((done / total) * 100)) + "%";
-    bar.append(fill);
+    segBar(bar, (done / total) * 100);
     card.append(bar, el("small", "sc-meta", tf("progress", { done: done, total: total })));
   }
   card.addEventListener("click", function () {
@@ -822,9 +833,7 @@ function chapterCard(ch) {
   front.append(el("small", "fd-meta", meta));
   if (total) {
     var bar = el("span", "fd-bar");
-    var fill = el("i");
-    fill.style.width = Math.min(100, Math.round((done / total) * 100)) + "%";
-    bar.append(fill);
+    segBar(bar, (done / total) * 100);
     front.append(bar);
   }
   card.append(front);
@@ -1883,12 +1892,26 @@ function paintMe() {
     c.setAttribute("class", cls);
     return c;
   }
-  svg.append(circle("me-ring-bg"));
-  if (pct > 0) {
-    var arc = circle("me-ring-fg"); // round ends (half circles) on the progress arc
+  if (pct <= 0) {
+    svg.append(circle("me-ring-bg")); // nothing done yet: the whole track
+  } else if (pct >= 100) {
+    svg.append(circle("me-ring-fg"));
+  } else {
+    // two arcs with round ends that meet with a small gap (not a fill sliding under the track)
+    var GAP = 13;
+    var L1 = (C * pct) / 100;
+    var rest = C - L1 - 2 * GAP;
+    var arc = circle("me-ring-fg");
     arc.setAttribute("stroke-linecap", "round");
-    arc.setAttribute("stroke-dasharray", (C * pct) / 100 + " " + C);
+    arc.setAttribute("stroke-dasharray", Math.max(0.1, L1 - 0) + " " + C);
     svg.append(arc);
+    if (rest > 1) {
+      var tr = circle("me-ring-bg is-cap");
+      tr.setAttribute("stroke-linecap", "round");
+      tr.setAttribute("stroke-dasharray", rest + " " + C);
+      tr.setAttribute("stroke-dashoffset", String(-(L1 + GAP)));
+      svg.append(tr);
+    }
   }
   var face = el("div", "me-avatar");
   face.append(m.avatar);
@@ -1899,9 +1922,7 @@ function paintMe() {
   var pctRow = el("div", "me-pct");
   pctRow.append(el("b", "", pct + "%"), el("span", "", t("mePct")));
   var bar = el("span", "me-bar");
-  var fill = el("i");
-  fill.style.width = pct + "%";
-  bar.append(fill);
+  segBar(bar, pct);
   var stats = el("div", "me-stats");
   [
     [sum.done, "stDone"],
@@ -1952,9 +1973,7 @@ function paintResume() {
   var meter = el("div", "rs-meter");
   meter.append(el("span", "rs-meta", tf("progress", { done: d, total: n })));
   var bar = el("span", "rs-bar");
-  var fill = el("i");
-  fill.style.width = Math.min(100, Math.round((d / n) * 100)) + "%";
-  bar.append(fill);
+  segBar(bar, (d / n) * 100);
   meter.append(bar);
   var btn = el("button", "rs-btn", t(sum.started ? "resumeBtn" : "resumeStartBtn") + " →");
   btn.type = "button";
@@ -2005,6 +2024,8 @@ function render() {
     homeGrid.hidden = !!opening;
     homeGrid.classList.toggle("is-solo", !onHome);
   }
+  var sideBox = $("sHomeSide");
+  if (sideBox) sideBox.hidden = !onHome;
   if (meBox) meBox.hidden = !onHome;
   if (resumeBox) resumeBox.hidden = !onHome;
   if (onHome) {

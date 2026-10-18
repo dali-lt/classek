@@ -1849,3 +1849,11 @@ html[dir="rtl"] .note-band {
   .subject-card .sc-title, .subject-card .sc-desc { max-width: calc(100% - 90px); }
   .subject-card { min-height: 0; padding: 18px; }
 }
+
+
+/* v38: segmented bars on the cards */
+.fd-bar.seg { --seg-track: rgba(255, 255, 255, 0.4); }
+.is-sti .fd-bar.seg, .folder.w-major .fd-bar.seg, .folder.w-minor .fd-bar.seg { --seg-track: rgba(1, 9, 45, 0.16); }
+.fd-bar.seg i { background: var(--fd-ink); }
+.sc-bar.seg { --seg-track: var(--color-light-blue); }
+.sc-bar.seg i { background: var(--color-primary); }
