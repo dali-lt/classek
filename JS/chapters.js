@@ -21,6 +21,10 @@ var STR = {
     subjects: "Subjects",
     exercises: "Exercises",
     exercisesCount: "{n} exercises",
+    weightCore: "Essential",
+    weightMajor: "Important",
+    weightMinor: "Extra",
+    weightTip: "Folder colour = how much the topic matters for the exam",
     progress: "{done} / {total} done",
     rappel: "Reminder",
     hint: "Show a hint",
@@ -94,6 +98,10 @@ var STR = {
     subjects: "المواد",
     exercises: "التمارين",
     exercisesCount: "{n} تمارين",
+    weightCore: "أساسي",
+    weightMajor: "مهم",
+    weightMinor: "تكميلي",
+    weightTip: "لون الملف = أهمية الدرس في الامتحان",
     progress: "{done} / {total} مكتملة",
     rappel: "تذكير",
     hint: "شوف تلميح",
@@ -725,6 +733,29 @@ function subjectCard(sub) {
   return card;
 }
 
+/* How much a chapter matters for the exam: core / major / minor.
+   The chapter's own `weight` field (set in its json) wins; this table is only the fallback. */
+var WEIGHT_DEFAULT = {
+  "bac-prog-tableaux": "core",
+  "bac-prog-matrices": "core",
+  "bac-prog-enregistrements": "core",
+  "bac-prog-fichiers-types": "core",
+  "bac-prog-fichiers-textes": "core",
+  "bac-prog-tris-simples": "major",
+  recursivite: "major",
+  "bac-prog-iteratif-recursif": "major",
+  "bac-prog-suites": "major",
+  "bac-prog-python": "major",
+  "bac-prog-tri-shell": "minor",
+  "bac-prog-pgcd-bases": "minor",
+  "bac-prog-approximation": "minor",
+  "bac-prog-qt": "minor",
+};
+function weightOf(ch) {
+  var w = String(ch.weight || WEIGHT_DEFAULT[ch.id] || "");
+  return w === "core" || w === "major" || w === "minor" ? w : "";
+}
+
 /* A chapter is a folder; its notes are the sheets peeking out of it. */
 function chapterCard(ch) {
   var total = Number(ch.exerciseCount) || 0;
@@ -732,7 +763,11 @@ function chapterCard(ch) {
   var nNotes = notesOf(ch.id).length;
   var title = ctx.getLang() === "ar" && ch.title_ar ? ch.title_ar : ch.title;
   var soon = total === 0; // listed in the programme, exercises not written yet
-  var card = el("button", "folder is-" + (ch.subject === "sti" ? "sti" : "prog") + (soon ? " is-soon" : ""));
+  var wt = weightOf(ch);
+  var card = el(
+    "button",
+    "folder is-" + (ch.subject === "sti" ? "sti" : "prog") + (wt ? " w-" + wt : "") + (soon ? " is-soon" : ""),
+  );
   card.type = "button";
   card.disabled = soon;
   card.append(el("span", "fd-tab"));
@@ -841,6 +876,16 @@ function renderList(host, route) {
   if (!shown.length) {
     message(host, "emptyTitle", "emptyText", false);
     return;
+  }
+  if (shown.some(weightOf)) {
+    var legend = el("div", "weight-legend");
+    legend.title = t("weightTip");
+    ["core", "major", "minor"].forEach(function (k) {
+      var chip = el("span", "wl-chip w-" + k);
+      chip.append(el("i", "wl-dot"), document.createTextNode(t("weight" + k.charAt(0).toUpperCase() + k.slice(1))));
+      legend.append(chip);
+    });
+    host.append(legend);
   }
   var lastPart = null;
   shown.forEach(function (c) {

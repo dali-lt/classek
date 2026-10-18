@@ -206,6 +206,57 @@
   --fd-bottom: #9fd868;
   --fd-ink: #01092d;
 }
+/* colour = importance for the exam (brand colours): core = royal blue, major = lime, minor = soft blue */
+.folder.w-core {
+  --fd-top: #3b8bf5;
+  --fd-bottom: #0464de;
+  --fd-ink: #fff;
+}
+.folder.w-major {
+  --fd-top: #c3ec9a;
+  --fd-bottom: #9fd868;
+  --fd-ink: #01092d;
+}
+.folder.w-minor {
+  --fd-top: #eef4fd;
+  --fd-bottom: #cfe0f7;
+  --fd-ink: #032c7b;
+}
+.folder.w-major .fd-bar,
+.folder.w-minor .fd-bar {
+  background: rgba(1, 9, 45, 0.15);
+}
+.folder.w-minor .fd-back {
+  box-shadow: 0 12px 26px rgba(1, 9, 45, 0.1), inset 0 0 0 1px rgba(3, 44, 123, 0.1);
+}
+.folder.w-minor .fd-front {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.35), rgba(3, 44, 123, 0.06)), var(--fd-bottom);
+}
+.weight-legend {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: -6px 2px 0;
+  color: var(--color-text-muted);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.wl-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.wl-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--wl, #0464de);
+}
+.wl-chip.w-core { --wl: #0464de; }
+.wl-chip.w-major { --wl: #9fd868; }
+.wl-chip.w-minor { --wl: #cfe0f7; }
+.wl-chip.w-minor .wl-dot { box-shadow: inset 0 0 0 1px rgba(3, 44, 123, 0.25); }
 .fd-tab {
   position: absolute;
   top: 0;
