@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="CSS/style.css" />
     <link rel="stylesheet" href="CSS/welcome.css" />
     <link rel="stylesheet" href="CSS/chapters.css" />
-    <link rel="stylesheet" href="CSS/admin-upload.css" />
+    <link rel="stylesheet" href="CSS/admin-upload.css?v=44" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -40,6 +40,11 @@
         </div>
 
         <div id="signedIn" hidden style="display: grid; gap: 18px">
+          <div class="up-tabs" id="mainTabs" role="group" aria-label="Section">
+            <button type="button" data-tab="upload" aria-pressed="true">Upload</button>
+            <button type="button" data-tab="fb" aria-pressed="false">Retours <span class="up-badge-n" id="fbNew" hidden></span></button>
+          </div>
+          <div id="uploadPane" class="up-pane">
           <div class="up-field">
             <span class="up-label" id="typeLabel">Content type</span>
             <div class="up-types" id="types" role="group" aria-labelledby="typeLabel"></div>
@@ -87,6 +92,24 @@
           <div class="up-actions">
             <button type="button" id="clear" disabled>Clear</button>
             <button type="button" class="up-go" id="go" disabled>Upload</button>
+          </div>
+          </div>
+
+          <div id="fbPane" class="up-pane" hidden>
+            <div class="fb-bar">
+              <select id="fbType" aria-label="Type"><option value="">All types</option></select>
+              <select id="fbRole" aria-label="Role"><option value="">All roles</option><option value="student">Student</option><option value="parent">Parent</option><option value="teacher">Teacher</option></select>
+              <select id="fbStatus" aria-label="Status"><option value="">All statuses</option><option value="new">New</option><option value="progress">In progress</option><option value="done">Done</option></select>
+              <select id="fbChapter" aria-label="Chapter"><option value="">All chapters</option></select>
+              <button type="button" id="fbReload" class="fb-reload">Refresh</button>
+            </div>
+            <p class="up-msg" id="fbMsg" role="status"></p>
+            <details class="fb-sum" id="fbSumWrap" open>
+              <summary>Exercise ratings <small id="fbSumCount"></small></summary>
+              <div id="fbSum"></div>
+            </details>
+            <div class="up-count"><span id="fbCount"></span></div>
+            <div id="fbList" class="fb-list"></div>
           </div>
         </div>
       </section>
@@ -358,6 +381,7 @@
             statement: ex.statement || "",
             hints: hintList(ex),
             hint: hintList(ex)[0] || "",
+            think: Number.isFinite(Number(ex.think)) && ex.think !== null && ex.think !== "" ? Number(ex.think) : null,
           });
           batch.set(sdk.doc(exRef, "private", "solution"), { text: ex.solution || "" });
         });
@@ -393,8 +417,180 @@
         busy = false;
         render();
       });
+
+      /* ---------- Retours: messages and ratings sent from the student space ---------- */
+      var TYPE_LABEL = { difficulty: "Too easy / too hard", clarity: "Didn’t understand", motivation: "Motivation", idea: "Idea", bug: "Technical problem", other: "Other" };
+      var STATUS_LABEL = { new: "New", progress: "In progress", done: "Done" };
+      var fbDocs = []; // { id, d }
+      var chTitles = {};
+      var fbLoading = false;
+      function fbFill(selId, pairs) {
+        var sel = $(selId);
+        var cur = sel.value;
+        var first = sel.options[0];
+        sel.textContent = "";
+        sel.append(first);
+        pairs.forEach(function (p) {
+          var o = document.createElement("option");
+          o.value = p[0];
+          o.textContent = p[1];
+          sel.append(o);
+        });
+        sel.value = cur;
+      }
+      function fbDate(ts) {
+        var ms = ts && ts.toMillis ? ts.toMillis() : Number(ts) || 0;
+        return ms ? new Date(ms).toLocaleString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "";
+      }
+      async function loadFeedback() {
+        if (fbLoading) return;
+        fbLoading = true;
+        $("fbMsg").textContent = "Loading…";
+        $("fbMsg").className = "up-msg";
+        try {
+          var cs = await sdk.getDocs(sdk.collection(db, "chapters"));
+          cs.docs.forEach(function (c) { chTitles[c.id] = c.data().title || c.id; });
+          var snap = await sdk.getDocs(sdk.query(sdk.collection(db, "feedback"), sdk.orderBy("createdAt", "desc"), sdk.limit(500)));
+          fbDocs = snap.docs.map(function (x) { return { id: x.id, d: x.data() }; });
+          $("fbMsg").textContent = "";
+          var news = fbDocs.filter(function (x) { return x.d.kind === "message" && x.d.status === "new"; }).length;
+          $("fbNew").hidden = !news;
+          $("fbNew").textContent = String(news);
+          fbFill("fbType", Object.keys(TYPE_LABEL).map(function (k) { return [k, TYPE_LABEL[k]]; }));
+          var chs = {};
+          fbDocs.forEach(function (x) { if (x.d.chapterId) chs[x.d.chapterId] = 1; });
+          fbFill("fbChapter", Object.keys(chs).map(function (k) { return [k, chTitles[k] || k]; }));
+          renderFeedbackAdmin();
+        } catch (e) {
+          console.warn(e);
+          $("fbMsg").textContent = "Couldn’t load: " + (e && e.code ? e.code : "error") + ". Are the feedback rules published?";
+          $("fbMsg").className = "up-msg is-error";
+        }
+        fbLoading = false;
+      }
+      function renderSummary() {
+        var by = {};
+        fbDocs.forEach(function (x) {
+          var d = x.d;
+          if (d.kind !== "rating" || !d.chapterId || !d.exerciseId) return;
+          var k = d.chapterId + "/" + d.exerciseId;
+          by[k] = by[k] || { ch: d.chapterId, ex: d.exerciseId, easy: 0, ok: 0, hard: 0, n: 0 };
+          if (by[k][d.rating] !== undefined) { by[k][d.rating]++; by[k].n++; }
+        });
+        var rows = Object.keys(by).map(function (k) { return by[k]; }).sort(function (a, b) {
+          return b.hard / b.n - a.hard / a.n || b.n - a.n;
+        });
+        $("fbSumCount").textContent = rows.length ? "(" + rows.length + ")" : "";
+        var host = $("fbSum");
+        host.textContent = "";
+        if (!rows.length) { host.append(Object.assign(document.createElement("p"), { className: "up-hint", textContent: "No ratings yet." })); return; }
+        rows.forEach(function (r) {
+          var row = document.createElement("div");
+          row.className = "fb-sum-row";
+          var name = document.createElement("div");
+          name.className = "fb-sum-name";
+          name.innerHTML = "<b>" + esc(chTitles[r.ch] || r.ch) + "</b> <span>" + esc(r.ex) + "</span>";
+          var bar = document.createElement("div");
+          bar.className = "fb-sum-bar";
+          [["easy", r.easy], ["ok", r.ok], ["hard", r.hard]].forEach(function (p) {
+            if (!p[1]) return;
+            var seg = document.createElement("i");
+            seg.className = "is-" + p[0];
+            seg.style.flex = String(p[1]);
+            bar.append(seg);
+          });
+          var nums = document.createElement("div");
+          nums.className = "fb-sum-n";
+          nums.textContent = "😀 " + r.easy + "  🙂 " + r.ok + "  😣 " + r.hard;
+          row.append(name, bar, nums);
+          host.append(row);
+        });
+      }
+      function renderFeedbackAdmin() {
+        renderSummary();
+        var f = { type: $("fbType").value, role: $("fbRole").value, status: $("fbStatus").value, ch: $("fbChapter").value };
+        var list = fbDocs.filter(function (x) {
+          var d = x.d;
+          return d.kind === "message" &&
+            (!f.type || d.type === f.type) && (!f.role || d.role === f.role) &&
+            (!f.status || d.status === f.status) && (!f.ch || d.chapterId === f.ch);
+        });
+        $("fbCount").textContent = list.length + (list.length === 1 ? " message" : " messages");
+        var host = $("fbList");
+        host.textContent = "";
+        list.forEach(function (x) { host.append(fbCard(x)); });
+      }
+      function fbCard(x) {
+        var d = x.d;
+        var card = document.createElement("article");
+        card.className = "fb-card is-" + (d.status || "new");
+        var ctxLine = d.chapterId ? "<span class=\"fb-ctx\">" + esc(chTitles[d.chapterId] || d.chapterId) + (d.exerciseId ? " · " + esc(d.exerciseId) : "") + "</span>" : "";
+        card.innerHTML =
+          "<div class=\"fb-top\"><span class=\"up-pill\">" + esc(d.role || "student") + "</span>" +
+          "<b>" + esc(d.name || "—") + "</b>" +
+          (d.level ? "<small>" + esc(d.level) + "</small>" : "") +
+          "<small class=\"fb-date\">" + esc(fbDate(d.createdAt)) + "</small></div>" +
+          "<div class=\"fb-type-row\"><span class=\"fb-type-chip\">" + esc(TYPE_LABEL[d.type] || d.type || "") + "</span>" + ctxLine + "</div>" +
+          "<p class=\"fb-msg\" dir=\"auto\">" + esc(d.message || "") + "</p>";
+        var ctl = document.createElement("div");
+        ctl.className = "fb-ctl";
+        var sel = document.createElement("select");
+        Object.keys(STATUS_LABEL).forEach(function (k) {
+          var o = document.createElement("option");
+          o.value = k; o.textContent = STATUS_LABEL[k];
+          sel.append(o);
+        });
+        sel.value = d.status || "new";
+        var note = document.createElement("input");
+        note.type = "text"; note.placeholder = "Note (only you see it)"; note.value = d.adminNote || ""; note.maxLength = 500;
+        var del = document.createElement("button");
+        del.type = "button"; del.className = "up-x"; del.title = "Delete"; del.innerHTML = ICON_DEL;
+        var state = document.createElement("small");
+        state.className = "fb-state";
+        async function save() {
+          state.textContent = "Saving…";
+          try {
+            await sdk.updateDoc(sdk.doc(db, "feedback", x.id), { status: sel.value, adminNote: note.value.trim(), handledAt: sdk.serverTimestamp() });
+            d.status = sel.value; d.adminNote = note.value.trim();
+            card.className = "fb-card is-" + d.status;
+            state.textContent = "Saved";
+            var news = fbDocs.filter(function (y) { return y.d.kind === "message" && y.d.status === "new"; }).length;
+            $("fbNew").hidden = !news; $("fbNew").textContent = String(news);
+          } catch (e) {
+            state.textContent = "Couldn’t save";
+          }
+        }
+        sel.addEventListener("change", save);
+        note.addEventListener("change", save);
+        del.addEventListener("click", async function () {
+          if (!confirm("Delete this message?")) return;
+          try {
+            await sdk.deleteDoc(sdk.doc(db, "feedback", x.id));
+            fbDocs = fbDocs.filter(function (y) { return y.id !== x.id; });
+            renderFeedbackAdmin();
+          } catch (e) { state.textContent = "Couldn’t delete"; }
+        });
+        ctl.append(sel, note, del, state);
+        card.append(ctl);
+        return card;
+      }
+      ["fbType", "fbRole", "fbStatus", "fbChapter"].forEach(function (id) { $(id).addEventListener("change", renderFeedbackAdmin); });
+      $("fbReload").addEventListener("click", loadFeedback);
+      $("mainTabs").addEventListener("click", function (e) {
+        var b = e.target.closest("button");
+        if (!b) return;
+        var tab = b.dataset.tab;
+        Array.prototype.forEach.call($("mainTabs").children, function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+        $("uploadPane").hidden = tab !== "upload";
+        $("fbPane").hidden = tab !== "fb";
+        document.querySelector(".up-wrap").classList.toggle("is-wide", tab === "fb");
+        document.querySelector(".up-head h1").textContent = tab === "fb" ? "Feedback" : "Upload content";
+        document.querySelector(".up-head p").textContent = tab === "fb" ? "Messages and ratings from students. Set a status, add a note." : "Pick a content type, add its JSON files, then upload.";
+        if (tab === "fb") loadFeedback();
+      });
       renderTypes();
       render();
+      sdk.onAuthStateChanged(auth, function (u) { if (u) loadFeedback(); }); // fills the "new" badge
     </script>
   </body>
 </html>

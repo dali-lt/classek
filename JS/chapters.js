@@ -21,6 +21,14 @@ var STR = {
     subjects: "Matières",
     exercises: "Exercices",
     exercisesCount: "{n} exercices",
+    thinkWait: "Réfléchis encore {t}",
+    fbAsk: "Ton avis sur cet exercice ?",
+    fbEasy: "Facile",
+    fbOk: "Bien",
+    fbHard: "Difficile",
+    fbThanks: "Merci !",
+    fbComment: "Écrire un commentaire",
+    fbFail: "Impossible d’envoyer. Réessaie.",
     navHome: "Accueil",
     hello: "Bonjour",
     meSub: "Voici où tu en es.",
@@ -113,6 +121,14 @@ var STR = {
     subjects: "المواد",
     exercises: "التمارين",
     exercisesCount: "{n} تمارين",
+    thinkWait: "فكّر زادة {t}",
+    fbAsk: "رأيك في التمرين؟",
+    fbEasy: "سهل",
+    fbOk: "مناسب",
+    fbHard: "صعب",
+    fbThanks: "يعطيك الصحة!",
+    fbComment: "اكتب تعليق",
+    fbFail: "ما نجّمناش نبعثوه. عاود.",
     navHome: "الرئيسية",
     hello: "مرحبا",
     meSub: "هذا وين وصلت.",
@@ -201,6 +217,54 @@ var SUBJECTS = ["prog", "sti", "info"];
 var SUBJECTS_BY_LEVEL = { "2eme": ["info"], "3eme": ["prog", "sti"], bac: ["prog", "sti"] };
 var SUBJECT_COLOR = { prog: "#0464de", sti: "#aee37b", info: "#0464de" };
 var MIN_ANSWER = 10; // characters typed before the solution unlocks
+/* Thinking time before the solution button unlocks (seconds), by difficulty. An exercise can set its own with "think" (0 = no wait). */
+var THINK_DEFAULT = { easy: 60, medium: 180, bac: 360 };
+var THINK_KEY = "classledger:think:";
+var thinkSpent = {}; // "chapterId/exId" -> seconds the exercise has been open and on screen
+var thinkTimers = {}; // "chapterId/exId" -> { card, update }
+var thinkTick = 0;
+function thinkNeed(ex, diff) {
+  if (ex.think != null && ex.think !== "" && isFinite(Number(ex.think)) && Number(ex.think) >= 0) {
+    return Math.min(3600, Math.round(Number(ex.think)));
+  }
+  return THINK_DEFAULT[diff] || 0;
+}
+function mmss(sec) {
+  sec = Math.max(0, Math.ceil(sec));
+  var m = Math.floor(sec / 60);
+  var r = sec % 60;
+  return m + ":" + (r < 10 ? "0" : "") + r;
+}
+function loadThink() {
+  try {
+    thinkSpent = JSON.parse(localStorage.getItem(THINK_KEY + ctx.uid) || "{}") || {};
+  } catch (e) {
+    thinkSpent = {};
+  }
+}
+function saveThink() {
+  try {
+    localStorage.setItem(THINK_KEY + ctx.uid, JSON.stringify(thinkSpent));
+  } catch (e) {}
+}
+function startThinkTicker() {
+  setInterval(function () {
+    if (document.hidden) return; // time only counts while the page is on screen
+    thinkTick++;
+    Object.keys(thinkTimers).forEach(function (k) {
+      var tm = thinkTimers[k];
+      if (!tm.card.isConnected) {
+        delete thinkTimers[k];
+        return;
+      }
+      if (tm.card.classList.contains("is-collapsed")) return; // a closed exercise does not count
+      thinkSpent[k] = (thinkSpent[k] || 0) + 1;
+      tm.update();
+    });
+    if (thinkTick % 5 === 0) saveThink();
+  }, 1000);
+}
+var ratings = {}; // "chapterId/exId" -> "easy" | "ok" | "hard" (the student's own opinion)
 
 var ICON_BACK =
   '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>';
@@ -575,6 +639,14 @@ async function loadExercises(chId) {
     if (S.cur && S.cur.id === chId) S.cur.failed = true;
   }
   if (S.cur && S.cur.id === chId && !S.cur.failed) await loadAnswers(chId);
+  if (S.cur && S.cur.id === chId && !S.cur.failed && ctx.loadRatings) {
+    try {
+      var mine = await ctx.loadRatings(chId);
+      Object.keys(mine).forEach(function (k) {
+        ratings[chId + "/" + k] = mine[k];
+      });
+    } catch (e) {} // rules not published yet: the buttons still show, a failed send says so
+  }
   if (S.cur && S.cur.id === chId) S.cur.loading = false;
   render();
 }
@@ -1377,17 +1449,30 @@ function exerciseCard(ch, ex, index) {
     var actions = el("div", "ex-actions");
     var show = el("button", "pc-btn", t("showSolution"));
     show.type = "button";
-    var unlocked = function () {
-      if (st) return true;
+    var needT = st ? 0 : thinkNeed(ex, diff);
+    var attemptOk = function () {
       var need = split ? MIN_Q : MIN_ANSWER; // with several questions, every box needs an attempt
       return boxes.every(function (b) {
         return b.value.trim().length >= need;
       });
     };
-    show.disabled = !unlocked();
-    refresh = function () {
-      show.disabled = !unlocked();
+    var timeLeft = function () {
+      return Math.max(0, needT - (thinkSpent[key] || 0));
     };
+    var unlocked = function () {
+      if (st) return true;
+      return timeLeft() <= 0 && attemptOk();
+    };
+    var paintShow = function () {
+      var l = timeLeft();
+      show.disabled = !unlocked();
+      show.textContent = l > 0 ? tf("thinkWait", { t: mmss(l) }) : t("showSolution");
+      show.classList.toggle("is-timing", l > 0);
+      show.style.setProperty("--tp", Math.min(100, ((needT - l) / needT) * 100) + "%");
+    };
+    paintShow();
+    refresh = paintShow;
+    if (needT > 0) thinkTimers[key] = { card: card, update: paintShow };
     show.addEventListener("click", async function () {
       show.disabled = true;
       try {
@@ -1431,8 +1516,61 @@ function exerciseCard(ch, ex, index) {
     sol.append(mark);
     work.append(sol);
   }
+  if ((isOpen || st) && ctx.sendRating) work.append(feedbackRow(ch, ex, key, index));
   if (rowError[key]) work.append(el("p", "set-msg", rowError[key]));
   return card;
+}
+
+/* "Ton avis ?": one tap to say the exercise was easy / fine / hard (read in the admin page), plus a link to write more */
+var FB_CHOICES = [
+  ["easy", "😀", "fbEasy"],
+  ["ok", "🙂", "fbOk"],
+  ["hard", "😣", "fbHard"],
+];
+function feedbackRow(ch, ex, key, index) {
+  var row = el("div", "ex-fb");
+  row.append(el("span", "ex-fb-ask", t("fbAsk")));
+  var chips = el("div", "ex-fb-chips");
+  var msg = el("small", "ex-fb-msg");
+  FB_CHOICES.forEach(function (c) {
+    var b = el("button", "fb-chip" + (ratings[key] === c[0] ? " is-on" : ""));
+    b.type = "button";
+    b.setAttribute("aria-pressed", ratings[key] === c[0] ? "true" : "false");
+    b.append(el("span", "fb-emo", c[1]), document.createTextNode(t(c[2])));
+    b.addEventListener("click", async function () {
+      var prev = ratings[key];
+      ratings[key] = c[0];
+      chips.querySelectorAll(".fb-chip").forEach(function (x, i) {
+        var on = FB_CHOICES[i][0] === c[0];
+        x.classList.toggle("is-on", on);
+        x.setAttribute("aria-pressed", on ? "true" : "false");
+      });
+      msg.textContent = "";
+      try {
+        await ctx.sendRating(ch.id, ex.id, c[0]);
+        msg.textContent = "✓ " + t("fbThanks");
+      } catch (e) {
+        console.warn("Couldn’t send the rating:", e);
+        if (prev === undefined) delete ratings[key];
+        else ratings[key] = prev;
+        chips.querySelectorAll(".fb-chip").forEach(function (x, i) {
+          var on = FB_CHOICES[i][0] === ratings[key];
+          x.classList.toggle("is-on", on);
+          x.setAttribute("aria-pressed", on ? "true" : "false");
+        });
+        msg.textContent = t("fbFail");
+      }
+    });
+    chips.append(b);
+  });
+  row.append(chips);
+  var more = el("button", "ex-link", t("fbComment"));
+  more.type = "button";
+  more.addEventListener("click", function () {
+    ctx.openFeedback({ chapterId: ch.id, exerciseId: ex.id, label: chapterTitle(ch) + " · #" + (index + 1) });
+  });
+  row.append(more, msg);
+  return row;
 }
 
 var ICON_X =
@@ -2064,6 +2202,8 @@ export var Chapters = {
   /* c: { sdk, db, uid, getLang(), getLevel(), ready(), topicOf(key), subjectIcon(subject) } */
   init: function (c) {
     ctx = c;
+    loadThink();
+    startThinkTicker();
     /* a reload always starts on the subjects page */
     if (window.location.hash && window.history && window.history.replaceState) {
       window.history.replaceState(null, "", window.location.pathname + window.location.search);

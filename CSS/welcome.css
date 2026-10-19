@@ -1364,7 +1364,7 @@ html.s-drawer-open .ch-back.ch-back-float { opacity: 0; pointer-events: none; vi
     margin: 0 auto;
     gap: 16px;
   }
-  .student-wrap { flex: none; width: 100%; max-width: none; margin: 0; }
+  .student-shell > .student-wrap { flex: none; width: 100%; max-width: none; margin: 0; }
   .s-rail {
     position: relative;
     top: auto;

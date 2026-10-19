@@ -15,9 +15,9 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="CSS/style.css" />
-    <link rel="stylesheet" href="CSS/welcome.css?v=42" />
-    <link rel="stylesheet" href="CSS/test.css?v=42" />
-    <link rel="stylesheet" href="CSS/chapters.css?v=42" />
+    <link rel="stylesheet" href="CSS/welcome.css?v=44" />
+    <link rel="stylesheet" href="CSS/test.css?v=44" />
+    <link rel="stylesheet" href="CSS/chapters.css?v=44" />
   </head>
   <body class="student-body">
     <div class="student-shell" id="studentApp" hidden>
@@ -130,6 +130,21 @@
       </div>
     </div>
 
+    <!-- Boîte à idées -->
+    <div class="modal-overlay" id="fbOverlay">
+      <div class="modal modal-fixed fb-modal" role="dialog" aria-modal="true" aria-labelledby="fbTitle">
+        <button type="button" class="modal-x" id="fbClose">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+            <path d="m6 6 12 12M18 6 6 18" />
+          </svg>
+        </button>
+        <div class="modal-scroll">
+          <h2 id="fbTitle"></h2>
+          <div id="fbBody"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- Settings box -->
     <div class="modal-overlay" id="setOverlay">
       <div class="modal modal-fixed" role="dialog" aria-modal="true" aria-labelledby="setTitle">
@@ -147,6 +162,6 @@
 
 
     <script src="JS/firebase-config.js"></script>
-    <script type="module" src="JS/student.js?v=42"></script>
+    <script type="module" src="JS/student.js?v=44"></script>
   </body>
 </html>

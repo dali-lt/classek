@@ -3,7 +3,7 @@
    The profile card ("My account") reuses the teacher app's modal look (style.css)
    and saves to users/{uid}/meta/profile. */
 
-import { Chapters } from "./chapters.js?v=42";
+import { Chapters } from "./chapters.js?v=44";
 import {
   MAX_SHOWN,
   parseDevice,
@@ -61,6 +61,27 @@ var STR = {
     devComputer: "Ordinateur",
     devBrowserOn: "{browser} sur {os}",
     close: "Fermer",
+    fbTitle: "Boîte à idées",
+    fbIntro: "Dis-nous ce qui t’aide ou te bloque. Chaque message est lu.",
+    fbType: "De quoi s’agit-il ?",
+    fbtDifficulty: "Un exercice est trop facile ou trop difficile",
+    fbtClarity: "Je n’ai pas compris",
+    fbtMotivation: "Je manque de motivation",
+    fbtIdea: "Une idée pour améliorer le site",
+    fbtBug: "Un problème technique",
+    fbtOther: "Autre",
+    fbAbout: "À propos de",
+    fbPlaceholder: "Écris ton message ici…",
+    fbSend: "Envoyer",
+    fbSending: "Envoi…",
+    fbThanksTitle: "Merci !",
+    fbThanksText: "Ton message est bien arrivé. On le lit et on s’en sert pour améliorer le site.",
+    fbAgain: "Envoyer un autre message",
+    fbTooMany: "Tu as déjà envoyé plusieurs messages aujourd’hui. Reviens demain.",
+    fbFailMsg: "Impossible d’envoyer. Réessaie.",
+    fbPickType: "Choisis d’abord de quoi il s’agit.",
+    ideas: "Boîte à idées",
+
     profileEdit: "Modifier",
     profileSave: "Enregistrer",
     profileFirstName: "Prénom",
@@ -173,6 +194,27 @@ var STR = {
     devComputer: "كمبيوتر",
     devBrowserOn: "{browser} على {os}",
     close: "إغلاق",
+    fbTitle: "صندوق الأفكار",
+    fbIntro: "قلّنا شنوة يعاونك وشنوة يعطّلك. كل رسالة تتقرا.",
+    fbType: "علاش تكتب؟",
+    fbtDifficulty: "تمرين سهل برشا ولا صعب برشا",
+    fbtClarity: "ما فهمتش",
+    fbtMotivation: "ما نتحمّسش",
+    fbtIdea: "فكرة باش يتطوّر الموقع",
+    fbtBug: "مشكل تقني",
+    fbtOther: "أخرى",
+    fbAbout: "بخصوص",
+    fbPlaceholder: "اكتب رسالتك هنا…",
+    fbSend: "ابعث",
+    fbSending: "نبعثوها…",
+    fbThanksTitle: "يعطيك الصحة!",
+    fbThanksText: "رسالتك وصلت. نقراوها ونستعملوها باش نحسّنو الموقع.",
+    fbAgain: "ابعث رسالة أخرى",
+    fbTooMany: "بعثت برشا رسائل اليوم. ارجع غدوة.",
+    fbFailMsg: "ما نجّمناش نبعثوها. عاود.",
+    fbPickType: "اختار علاش تكتب قبل.",
+    ideas: "صندوق الأفكار",
+
     profileEdit: "تعديل",
     profileSave: "حفظ",
     profileFirstName: "الاسم",
@@ -254,6 +296,8 @@ var ICON_USER =
   '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"/></svg>';
 var ICON_GEAR =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
+var ICON_BULB =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1 2V16h5.2v-.2c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/></svg>';
 var ICON_OUT =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>';
 var ICON_EDIT =
@@ -451,6 +495,191 @@ function buildAvatarNode() {
   return el("span", "student-initial", (first || (currentUser && currentUser.email) || "?").charAt(0).toUpperCase());
 }
 
+
+/* ---------------- Boîte à idées: a message to the teacher (read in the admin page) ---------------- */
+var FB_TYPES = [
+  ["difficulty", "fbtDifficulty"],
+  ["clarity", "fbtClarity"],
+  ["motivation", "fbtMotivation"],
+  ["idea", "fbtIdea"],
+  ["bug", "fbtBug"],
+  ["other", "fbtOther"],
+];
+var FB_MAX = 1000;
+var FB_PER_DAY = 5;
+var fb = { type: "", text: "", context: null, sending: false, done: false, error: "" };
+function fbTodayKey() {
+  return "classledger:fb:" + new Date().toISOString().slice(0, 10);
+}
+function fbSentToday() {
+  try {
+    return Number(localStorage.getItem(fbTodayKey()) || 0);
+  } catch (e) {
+    return 0;
+  }
+}
+function fbIsOpen() {
+  return $("fbOverlay").classList.contains("open");
+}
+function openFeedback(context) {
+  fb = { type: context ? "difficulty" : "", text: "", context: context || null, sending: false, done: false, error: "" };
+  renderFeedback();
+  $("fbOverlay").classList.add("open");
+  setTimeout(function () {
+    var ta = $("fbText");
+    if (ta) ta.focus();
+  }, 60);
+}
+function closeFeedback() {
+  $("fbOverlay").classList.remove("open");
+}
+function renderFeedback() {
+  $("fbClose").setAttribute("aria-label", t("close"));
+  $("fbTitle").textContent = t("fbTitle");
+  var body = $("fbBody");
+  body.textContent = "";
+  if (fb.done) {
+    var ok = el("div", "fb-done");
+    ok.append(el("b", "", t("fbThanksTitle")), el("p", "", t("fbThanksText")));
+    var again = pBtn(t("fbAgain"), "is-ghost", function () {
+      openFeedback(null);
+    });
+    var close = pBtn(t("close"), "", closeFeedback);
+    var row = el("div", "fb-actions");
+    row.append(again, close);
+    ok.append(row);
+    body.append(ok);
+    return;
+  }
+  body.append(el("p", "fb-intro", t("fbIntro")));
+  if (fb.context) {
+    var ctxRow = el("div", "fb-context");
+    ctxRow.append(el("span", "", t("fbAbout") + " : " + fb.context.label));
+    var x = el("button", "fb-ctx-x", "×");
+    x.type = "button";
+    x.setAttribute("aria-label", t("close"));
+    x.addEventListener("click", function () {
+      fb.context = null;
+      renderFeedback();
+    });
+    ctxRow.append(x);
+    body.append(ctxRow);
+  }
+  body.append(el("div", "fb-label", t("fbType")));
+  var types = el("div", "fb-types");
+  types.setAttribute("role", "radiogroup");
+  FB_TYPES.forEach(function (ty) {
+    var b = el("button", "fb-type" + (fb.type === ty[0] ? " is-on" : ""), t(ty[1]));
+    b.type = "button";
+    b.setAttribute("role", "radio");
+    b.setAttribute("aria-checked", fb.type === ty[0] ? "true" : "false");
+    b.addEventListener("click", function () {
+      fb.type = ty[0];
+      fb.error = "";
+      var ta0 = $("fbText");
+      if (ta0) fb.text = ta0.value;
+      renderFeedback();
+    });
+    types.append(b);
+  });
+  body.append(types);
+  var ta = el("textarea", "fb-text");
+  ta.id = "fbText";
+  ta.rows = 5;
+  ta.maxLength = FB_MAX;
+  ta.placeholder = t("fbPlaceholder");
+  ta.value = fb.text;
+  ta.setAttribute("dir", "auto");
+  var count = el("small", "fb-count", fb.text.length + " / " + FB_MAX);
+  ta.addEventListener("input", function () {
+    fb.text = ta.value;
+    count.textContent = ta.value.length + " / " + FB_MAX;
+    send.disabled = !canSend();
+  });
+  body.append(ta, count);
+  var msg = el("p", "fb-error", fb.error);
+  body.append(msg);
+  function canSend() {
+    return !fb.sending && !!fb.type && fb.text.trim().length >= 3;
+  }
+  var send = pBtn(fb.sending ? t("fbSending") : t("fbSend"), "", submitFeedback);
+  send.disabled = !canSend();
+  var cancel = pBtn(t("close"), "is-ghost", closeFeedback);
+  var actions = el("div", "fb-actions");
+  actions.append(cancel, send);
+  body.append(actions);
+}
+async function submitFeedback() {
+  if (fb.sending) return;
+  if (fbSentToday() >= FB_PER_DAY) {
+    fb.error = t("fbTooMany");
+    renderFeedback();
+    return;
+  }
+  fb.sending = true;
+  fb.error = "";
+  renderFeedback();
+  try {
+    var data = {
+      kind: "message",
+      uid: currentUser.uid,
+      role: "student",
+      name: shownNames().first || "",
+      level: levelOption(profile.level),
+      type: fb.type,
+      message: fb.text.trim().slice(0, FB_MAX),
+      status: "new",
+      createdAt: sdkRef.serverTimestamp(),
+    };
+    if (fb.context) {
+      data.chapterId = fb.context.chapterId;
+      data.exerciseId = fb.context.exerciseId;
+    }
+    await sdkRef.addDoc(sdkRef.collection(dbRef, "feedback"), data);
+    try {
+      localStorage.setItem(fbTodayKey(), String(fbSentToday() + 1));
+    } catch (e) {}
+    fb.done = true;
+  } catch (e) {
+    console.warn("Couldn’t send the message:", e);
+    fb.error = t("fbFailMsg");
+  }
+  fb.sending = false;
+  renderFeedback();
+}
+var sdkRef = null;
+var dbRef = null;
+async function sendRating(chapterId, exerciseId, rating) {
+  var data = {
+    kind: "rating",
+    uid: currentUser.uid,
+    role: "student",
+    name: shownNames().first || "",
+    level: levelOption(profile.level),
+    chapterId: chapterId,
+    exerciseId: exerciseId,
+    rating: rating,
+    status: "new",
+    createdAt: sdkRef.serverTimestamp(),
+  };
+  await sdkRef.setDoc(sdkRef.doc(dbRef, "feedback", "r_" + currentUser.uid + "_" + chapterId + "_" + exerciseId), data);
+}
+async function loadRatings(chapterId) {
+  var q = sdkRef.query(
+    sdkRef.collection(dbRef, "feedback"),
+    sdkRef.where("uid", "==", currentUser.uid),
+    sdkRef.where("kind", "==", "rating"),
+    sdkRef.where("chapterId", "==", chapterId),
+  );
+  var snap = await sdkRef.getDocs(q);
+  var out = {};
+  snap.docs.forEach(function (d) {
+    var v = d.data();
+    if (v.exerciseId && v.rating) out[v.exerciseId] = v.rating;
+  });
+  return out;
+}
+
 /* ---------------- page ---------------- */
 function renderPage() {
   document.documentElement.lang = lang;
@@ -482,6 +711,7 @@ function renderPage() {
   if (testIsOpen()) renderTest();
   if (modalIsOpen()) renderModal();
   if (settingsIsOpen()) renderSettings();
+  if (fbIsOpen()) renderFeedback();
   if (menuIsOpen()) renderMenu();
 }
 
@@ -1701,6 +1931,9 @@ function renderMenu() {
   m.textContent = "";
   m.append(
     menuItem(t("account"), ICON_USER, openModal),
+    menuItem(t("ideas"), ICON_BULB, function () {
+      openFeedback(null);
+    }),
     menuItem(t("settings"), ICON_GEAR, openSettings),
     langRow(),
     menuItem(t("signOut"), ICON_OUT, function () {
@@ -2206,6 +2439,10 @@ async function main() {
   $("sPhoneLogo").addEventListener("click", function () {
     Chapters.home();
   });
+  $("fbClose").addEventListener("click", closeFeedback);
+  $("fbOverlay").addEventListener("click", function (e) {
+    if (e.target === $("fbOverlay")) closeFeedback();
+  });
   $("pClose").addEventListener("click", closeModal);
   $("pGear").addEventListener("click", openSettings);
   $("setClose").addEventListener("click", closeSettings);
@@ -2235,7 +2472,8 @@ async function main() {
   });
   document.addEventListener("keydown", function (e) {
     if (e.key !== "Escape") return;
-    if (settingsIsOpen()) closeSettings();
+    if (fbIsOpen()) closeFeedback();
+    else if (settingsIsOpen()) closeSettings();
     else if (testIsOpen()) $("tClose").click();
     else if (modalIsOpen()) closeModal();
     else if (drawerIsOpen()) closeDrawer();
@@ -2286,6 +2524,8 @@ async function main() {
       return;
     }
     currentUser = u;
+    sdkRef = sdk;
+    dbRef = db;
     Chapters.init({
       sdk: sdk,
       db: db,
@@ -2300,6 +2540,9 @@ async function main() {
         return profileLoaded;
       },
       topicOf: topicOf,
+      sendRating: sendRating,
+      loadRatings: loadRatings,
+      openFeedback: openFeedback,
       me: function () {
         return { first: shownNames().first, avatar: buildAvatarNode(), level: levelOption(profile.level) };
       },
