@@ -22,6 +22,7 @@ var STR = {
     exercises: "Exercices",
     exercisesCount: "{n} exercices",
     thinkWait: "Réfléchis encore {t}",
+    thinkStart: "Commencer à réfléchir · {t}",
     fbAsk: "Ton avis sur cet exercice ?",
     fbEasy: "Facile",
     fbOk: "Bien",
@@ -32,6 +33,7 @@ var STR = {
     navHome: "Accueil",
     hello: "Bonjour",
     meSub: "Voici où tu en es.",
+    meNote: "À revoir = les exercices que tu as marqués « pas encore compris ».",
     mePct: "de progression totale",
     stDone: "Terminés",
     stReview: "À revoir",
@@ -122,6 +124,7 @@ var STR = {
     exercises: "التمارين",
     exercisesCount: "{n} تمارين",
     thinkWait: "فكّر زادة {t}",
+    thinkStart: "ابدأ التفكير · {t}",
     fbAsk: "رأيك في التمرين؟",
     fbEasy: "سهل",
     fbOk: "مناسب",
@@ -132,6 +135,7 @@ var STR = {
     navHome: "الرئيسية",
     hello: "مرحبا",
     meSub: "هذا وين وصلت.",
+    meNote: "للمراجعة = التمارين اللي حطّيتها «ما فهمتهاش مليح».",
     mePct: "من التقدّم الكلي",
     stDone: "منجزة",
     stReview: "للمراجعة",
@@ -257,6 +261,7 @@ function startThinkTicker() {
         delete thinkTimers[k];
         return;
       }
+      if (thinkSpent[k] === undefined) return; // the student has not pressed "start" yet
       if (tm.card.classList.contains("is-collapsed")) return; // a closed exercise does not count
       thinkSpent[k] = (thinkSpent[k] || 0) + 1;
       tm.update();
@@ -1450,30 +1455,36 @@ function exerciseCard(ch, ex, index) {
     var show = el("button", "pc-btn", t("showSolution"));
     show.type = "button";
     var needT = st ? 0 : thinkNeed(ex, diff);
-    var attemptOk = function () {
-      var need = split ? MIN_Q : MIN_ANSWER; // with several questions, every box needs an attempt
-      return boxes.every(function (b) {
-        return b.value.trim().length >= need;
-      });
+    var started = function () {
+      return thinkSpent[key] !== undefined;
     };
     var timeLeft = function () {
       return Math.max(0, needT - (thinkSpent[key] || 0));
     };
     var unlocked = function () {
-      if (st) return true;
-      return timeLeft() <= 0 && attemptOk();
+      if (st || needT <= 0) return true;
+      return started() && timeLeft() <= 0;
     };
     var paintShow = function () {
       var l = timeLeft();
-      show.disabled = !unlocked();
-      show.textContent = l > 0 ? tf("thinkWait", { t: mmss(l) }) : t("showSolution");
-      show.classList.toggle("is-timing", l > 0);
+      var waiting = !st && needT > 0 && started() && l > 0;
+      var notYet = !st && needT > 0 && !started();
+      show.disabled = !unlocked() && !notYet;
+      show.textContent = notYet ? tf("thinkStart", { t: mmss(needT) }) : waiting ? tf("thinkWait", { t: mmss(l) }) : t("showSolution");
+      show.classList.toggle("is-timing", waiting);
+      show.classList.toggle("is-start", notYet);
       show.style.setProperty("--tp", Math.min(100, ((needT - l) / needT) * 100) + "%");
     };
     paintShow();
     refresh = paintShow;
     if (needT > 0) thinkTimers[key] = { card: card, update: paintShow };
     show.addEventListener("click", async function () {
+      if (!st && needT > 0 && !started()) {
+        thinkSpent[key] = 0; // "start": the countdown begins now
+        saveThink();
+        paintShow();
+        return;
+      }
       show.disabled = true;
       try {
         if (solutions[key] === undefined) await loadSolution(ch.id, ex.id);
@@ -2071,7 +2082,7 @@ function paintMe() {
     cell.append(el("b", "", String(x[0])), el("span", "", t(x[1])));
     stats.append(cell);
   });
-  box.append(ring, el("h2", "me-hello", hello), el("p", "me-sub", t("meSub")), pctRow, bar, stats);
+  box.append(ring, el("h2", "me-hello", hello), el("p", "me-sub", t("meSub")), pctRow, bar, stats, el("p", "me-note", t("meNote")));
 }
 
 function paintResume() {

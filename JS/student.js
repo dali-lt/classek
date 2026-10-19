@@ -3,7 +3,7 @@
    The profile card ("My account") reuses the teacher app's modal look (style.css)
    and saves to users/{uid}/meta/profile. */
 
-import { Chapters } from "./chapters.js?v=44";
+import { Chapters } from "./chapters.js?v=45";
 import {
   MAX_SHOWN,
   parseDevice,
@@ -77,6 +77,15 @@ var STR = {
     fbThanksTitle: "Merci !",
     fbThanksText: "Ton message est bien arrivé. On le lit et on s’en sert pour améliorer le site.",
     fbAgain: "Envoyer un autre message",
+    inboxTitle: "Mes idées et réponses",
+    inboxIntro: "Tes messages au professeur et ses réponses.",
+    inboxNew: "Nouvelle idée",
+    inboxWaiting: "En attente de réponse",
+    inboxReplied: "Réponse reçue",
+    inboxYou: "Ton message",
+    inboxAnswer: "Réponse du professeur",
+    inboxBack: "Retour",
+    inboxNewBadge: "Nouveau",
     fbTooMany: "Tu as déjà envoyé plusieurs messages aujourd’hui. Reviens demain.",
     fbFailMsg: "Impossible d’envoyer. Réessaie.",
     fbPickType: "Choisis d’abord de quoi il s’agit.",
@@ -210,6 +219,15 @@ var STR = {
     fbThanksTitle: "يعطيك الصحة!",
     fbThanksText: "رسالتك وصلت. نقراوها ونستعملوها باش نحسّنو الموقع.",
     fbAgain: "ابعث رسالة أخرى",
+    inboxTitle: "أفكاري والردود",
+    inboxIntro: "رسائلك للأستاذ وردوده عليها.",
+    inboxNew: "فكرة جديدة",
+    inboxWaiting: "في انتظار الرد",
+    inboxReplied: "وصلك رد",
+    inboxYou: "رسالتك",
+    inboxAnswer: "رد الأستاذ",
+    inboxBack: "رجوع",
+    inboxNewBadge: "جديد",
     fbTooMany: "بعثت برشا رسائل اليوم. ارجع غدوة.",
     fbFailMsg: "ما نجّمناش نبعثوها. عاود.",
     fbPickType: "اختار علاش تكتب قبل.",
@@ -507,7 +525,13 @@ var FB_TYPES = [
 ];
 var FB_MAX = 1000;
 var FB_PER_DAY = 5;
-var fb = { type: "", text: "", context: null, sending: false, done: false, error: "" };
+var fb = { type: "", text: "", context: null, sending: false, done: false, error: "", view: "form", detail: "" };
+var inbox = []; // the student's own messages, newest first: { id, type, message, createdAt, adminReply, repliedAt, replySeen }
+function unreadCount() {
+  return inbox.filter(function (m) {
+    return m.adminReply && !m.replySeen;
+  }).length;
+}
 function fbTodayKey() {
   return "classledger:fb:" + new Date().toISOString().slice(0, 10);
 }
@@ -521,8 +545,20 @@ function fbSentToday() {
 function fbIsOpen() {
   return $("fbOverlay").classList.contains("open");
 }
-function openFeedback(context) {
-  fb = { type: context ? "difficulty" : "", text: "", context: context || null, sending: false, done: false, error: "" };
+function openFeedback(context, forceForm) {
+  var hasReplies = inbox.some(function (m) {
+    return m.adminReply;
+  });
+  fb = {
+    type: context ? "difficulty" : "",
+    text: "",
+    context: context || null,
+    sending: false,
+    done: false,
+    error: "",
+    view: !context && !forceForm && hasReplies ? "inbox" : "form",
+    detail: "",
+  };
   renderFeedback();
   $("fbOverlay").classList.add("open");
   setTimeout(function () {
@@ -538,11 +574,13 @@ function renderFeedback() {
   $("fbTitle").textContent = t("fbTitle");
   var body = $("fbBody");
   body.textContent = "";
+  if (fb.view === "inbox") return renderInbox(body);
+  if (fb.view === "detail") return renderInboxDetail(body);
   if (fb.done) {
     var ok = el("div", "fb-done");
     ok.append(el("b", "", t("fbThanksTitle")), el("p", "", t("fbThanksText")));
     var again = pBtn(t("fbAgain"), "is-ghost", function () {
-      openFeedback(null);
+      openFeedback(null, true);
     });
     var close = pBtn(t("close"), "", closeFeedback);
     var row = el("div", "fb-actions");
@@ -609,6 +647,140 @@ function renderFeedback() {
   actions.append(cancel, send);
   body.append(actions);
 }
+function fbDate(ts) {
+  var d = ts && ts.toDate ? ts.toDate() : null;
+  if (!d) return "";
+  return d.toLocaleDateString(lang === "ar" ? "ar-TN-u-nu-latn" : "fr-FR", { day: "numeric", month: "short" });
+}
+function fbTypeLabel(type) {
+  var f = FB_TYPES.filter(function (x) {
+    return x[0] === type;
+  })[0];
+  return f ? t(f[1]) : "";
+}
+function renderInbox(body) {
+  $("fbTitle").textContent = t("inboxTitle");
+  body.append(el("p", "fb-intro", t("inboxIntro")));
+  var list = el("div", "ib-list");
+  inbox.forEach(function (m) {
+    var unread = m.adminReply && !m.replySeen;
+    var box = el("button", "ib-box" + (unread ? " is-new" : ""));
+    box.type = "button";
+    var top = el("div", "ib-top");
+    top.append(el("b", "", fbTypeLabel(m.type)), el("small", "", fbDate(m.createdAt)));
+    var prev = el("p", "ib-prev", m.message);
+    var state = el(
+      "span",
+      "ib-state" + (m.adminReply ? " is-replied" : ""),
+      unread ? t("inboxNewBadge") + " · " + t("inboxReplied") : m.adminReply ? t("inboxReplied") : t("inboxWaiting"),
+    );
+    box.append(top, prev, state);
+    box.addEventListener("click", function () {
+      fb.view = "detail";
+      fb.detail = m.id;
+      markSeen(m);
+      renderFeedback();
+    });
+    list.append(box);
+  });
+  body.append(list);
+  var actions = el("div", "fb-actions");
+  actions.append(
+    pBtn(t("inboxNew"), "", function () {
+      openFeedback(null, true);
+    }),
+  );
+  body.append(actions);
+}
+function renderInboxDetail(body) {
+  $("fbTitle").textContent = t("inboxTitle");
+  var m = inbox.filter(function (x) {
+    return x.id === fb.detail;
+  })[0];
+  if (!m) {
+    fb.view = "inbox";
+    return renderInbox(body);
+  }
+  var back = el("button", "ib-back", "← " + t("inboxBack"));
+  back.type = "button";
+  back.addEventListener("click", function () {
+    fb.view = "inbox";
+    renderFeedback();
+  });
+  body.append(back);
+  var mine = el("div", "ib-card");
+  mine.append(el("small", "", t("inboxYou") + " · " + fbTypeLabel(m.type) + " · " + fbDate(m.createdAt)), el("p", "", m.message));
+  body.append(mine);
+  var ans = el("div", "ib-card is-answer");
+  if (m.adminReply) {
+    ans.append(el("small", "", t("inboxAnswer") + " · " + fbDate(m.repliedAt)), el("p", "", m.adminReply));
+  } else {
+    ans.append(el("small", "", t("inboxWaiting")));
+  }
+  body.append(ans);
+}
+async function markSeen(m) {
+  if (!m.adminReply || m.replySeen) return;
+  m.replySeen = true;
+  paintNotif();
+  try {
+    await sdkRef.updateDoc(sdkRef.doc(dbRef, "feedback", m.id), { replySeen: true });
+  } catch (e) {
+    console.warn("Couldn’t mark the reply as read:", e);
+  }
+}
+async function loadInbox() {
+  if (!sdkRef || !currentUser) return;
+  try {
+    var q = sdkRef.query(
+      sdkRef.collection(dbRef, "feedback"),
+      sdkRef.where("uid", "==", currentUser.uid),
+      sdkRef.where("kind", "==", "message"),
+    );
+    var snap = await sdkRef.getDocs(q);
+    inbox = snap.docs
+      .map(function (d) {
+        var v = d.data();
+        return {
+          id: d.id,
+          type: v.type,
+          message: v.message || "",
+          createdAt: v.createdAt,
+          adminReply: v.adminReply || "",
+          repliedAt: v.repliedAt,
+          replySeen: !!v.replySeen,
+        };
+      })
+      .sort(function (a, b) {
+        var x = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0;
+        var y = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0;
+        return y - x;
+      })
+      .slice(0, 30);
+  } catch (e) {
+    console.warn("Couldn’t load the ideas inbox:", e);
+    return;
+  }
+  paintNotif();
+  if (menuIsOpen()) renderMenu();
+  if (fbIsOpen() && fb.view !== "form") renderFeedback();
+}
+/* red dot with the number of unread replies: on the avatar (and the phone menu button); inside the menu it sits on "Boîte à idées" */
+function paintNotif() {
+  var n = unreadCount();
+  [$("sUser"), $("sMenuBtn")].forEach(function (host) {
+    if (!host) return;
+    var old = host.querySelector(".notif-dot");
+    if (old) old.remove();
+    if (n > 0) {
+      var dot = el("span", "notif-dot", String(n > 9 ? "9+" : n));
+      dot.setAttribute("aria-hidden", "true");
+      host.append(dot);
+    }
+  });
+  var u = $("sUser");
+  if (u) u.title = t("account") + (n > 0 ? " (" + n + ")" : "");
+}
 async function submitFeedback() {
   if (fb.sending) return;
   if (fbSentToday() >= FB_PER_DAY) {
@@ -640,6 +812,7 @@ async function submitFeedback() {
       localStorage.setItem(fbTodayKey(), String(fbSentToday() + 1));
     } catch (e) {}
     fb.done = true;
+    loadInbox();
   } catch (e) {
     console.warn("Couldn’t send the message:", e);
     fb.error = t("fbFailMsg");
@@ -713,6 +886,7 @@ function renderPage() {
   if (settingsIsOpen()) renderSettings();
   if (fbIsOpen()) renderFeedback();
   if (menuIsOpen()) renderMenu();
+  paintNotif();
 }
 
 /* ---------------- profile modal ---------------- */
@@ -1872,13 +2046,14 @@ function syncDrawerMode() {
     $("sMenuBtn").setAttribute("aria-expanded", "false");
   }
 }
-function menuItem(label, icon, onClick) {
+function menuItem(label, icon, onClick, badge) {
   var b = el("button");
   b.type = "button";
   b.setAttribute("role", "menuitem");
   var ic = el("span");
   ic.innerHTML = icon; // static, trusted SVG
   b.append(ic.firstChild, el("span", "", label));
+  if (badge) b.append(el("span", "menu-badge", String(badge > 9 ? "9+" : badge)));
   b.addEventListener("click", function () {
     closeMenu();
     onClick();
@@ -1931,15 +2106,21 @@ function renderMenu() {
   m.textContent = "";
   m.append(
     menuItem(t("account"), ICON_USER, openModal),
-    menuItem(t("ideas"), ICON_BULB, function () {
-      openFeedback(null);
-    }),
+    menuItem(
+      t("ideas"),
+      ICON_BULB,
+      function () {
+        openFeedback(null);
+      },
+      unreadCount(),
+    ),
     menuItem(t("settings"), ICON_GEAR, openSettings),
     langRow(),
     menuItem(t("signOut"), ICON_OUT, function () {
       if (signOutNow) signOutNow();
     }),
   );
+  m.lastChild.classList.add("is-danger");
 }
 function onAvatarClick() {
   if (menuIsOpen()) {
@@ -2526,6 +2707,13 @@ async function main() {
     currentUser = u;
     sdkRef = sdk;
     dbRef = db;
+    loadInbox();
+    document.addEventListener("visibilitychange", function () {
+      if (!document.hidden) loadInbox();
+    });
+    setInterval(function () {
+      if (!document.hidden) loadInbox();
+    }, 120000);
     Chapters.init({
       sdk: sdk,
       db: db,

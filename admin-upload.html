@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="CSS/style.css" />
     <link rel="stylesheet" href="CSS/welcome.css" />
     <link rel="stylesheet" href="CSS/chapters.css" />
-    <link rel="stylesheet" href="CSS/admin-upload.css?v=44" />
+    <link rel="stylesheet" href="CSS/admin-upload.css?v=45" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -572,6 +572,36 @@
         });
         ctl.append(sel, note, del, state);
         card.append(ctl);
+        var rep = document.createElement("div");
+        rep.className = "fb-reply";
+        var ta = document.createElement("textarea");
+        ta.rows = 2; ta.maxLength = 1000; ta.dir = "auto";
+        ta.placeholder = "Reply to the student (they see it in their Boîte à idées)";
+        ta.value = d.adminReply || "";
+        var send = document.createElement("button");
+        send.type = "button"; send.className = "up-btn"; send.textContent = d.adminReply ? "Update reply" : "Send reply";
+        var rstate = document.createElement("small");
+        rstate.className = "fb-state";
+        if (d.adminReply) rstate.textContent = d.replySeen ? "Seen by the student" : "Sent, not seen yet";
+        send.addEventListener("click", async function () {
+          var text = ta.value.trim();
+          if (!text) { rstate.textContent = "Write a reply first"; return; }
+          send.disabled = true; rstate.textContent = "Sending…";
+          try {
+            var upd = { adminReply: text, repliedAt: sdk.serverTimestamp(), replySeen: false, handledAt: sdk.serverTimestamp() };
+            if ((d.status || "new") === "new") upd.status = "done";
+            await sdk.updateDoc(sdk.doc(db, "feedback", x.id), upd);
+            d.adminReply = text; d.replySeen = false;
+            if (upd.status) { d.status = "done"; sel.value = "done"; card.className = "fb-card is-done"; }
+            send.textContent = "Update reply";
+            rstate.textContent = "Sent";
+            var news2 = fbDocs.filter(function (y) { return y.d.kind === "message" && y.d.status === "new"; }).length;
+            $("fbNew").hidden = !news2; $("fbNew").textContent = String(news2);
+          } catch (e) { rstate.textContent = "Couldn’t send"; }
+          send.disabled = false;
+        });
+        rep.append(ta, send, rstate);
+        card.append(rep);
         return card;
       }
       ["fbType", "fbRole", "fbStatus", "fbChapter"].forEach(function (id) { $(id).addEventListener("change", renderFeedbackAdmin); });

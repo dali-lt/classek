@@ -165,3 +165,10 @@
 .fb-state { color: var(--color-text-muted); }
 .up-pane { display: grid; gap: 16px; }
 .up-pane[hidden] { display: none; }
+
+/* reply to the student */
+.fb-reply { display: grid; gap: 6px; padding-top: 8px; border-top: 1px dashed var(--color-border); }
+.fb-reply textarea { width: 100%; padding: 8px 10px; border: 1.5px solid var(--color-border); border-radius: 12px; font: inherit; resize: vertical; box-sizing: border-box; }
+.fb-reply button { justify-self: start; }
+.fb-reply .up-btn { height: 38px; padding: 0 18px; border: 0; border-radius: 999px; background: var(--color-navy); color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+.fb-reply .up-btn:disabled { opacity: .5; cursor: wait; }
