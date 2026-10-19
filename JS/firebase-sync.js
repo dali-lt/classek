@@ -191,26 +191,93 @@ async function main() {
     lastAccountKey = key;
     app.setAccount(info);
   }
+  function menuRow(label, icon, onClick, danger) {
+    var b = el("button", "t-menu-item" + (danger ? " is-danger" : ""));
+    b.type = "button";
+    b.setAttribute("role", "menuitem");
+    var ic = el("span", "t-menu-ic");
+    ic.innerHTML = icon; // static, trusted SVG
+    b.append(ic, el("span", "", label));
+    b.addEventListener("click", function () {
+      closeTeacherMenu();
+      onClick();
+    });
+    return b;
+  }
+  var tUser = document.getElementById("tUser");
+  var tMenu = document.getElementById("tMenu");
+  var tWrap = document.getElementById("tUserWrap");
+  function closeTeacherMenu() {
+    if (!tMenu) return;
+    tMenu.hidden = true;
+    tUser.setAttribute("aria-expanded", "false");
+  }
+  function openTeacherMenu() {
+    // fixed position, computed from the avatar: the top bar scrolls sideways on phones and would clip a normal dropdown
+    var r = tUser.getBoundingClientRect();
+    tMenu.hidden = false;
+    tMenu.style.top = Math.round(r.bottom + 10) + "px";
+    var rtl = document.documentElement.dir === "rtl";
+    tMenu.style.left = rtl ? Math.max(8, Math.round(r.left)) + "px" : "auto";
+    tMenu.style.right = rtl ? "auto" : Math.max(8, Math.round(window.innerWidth - r.right)) + "px";
+    tUser.setAttribute("aria-expanded", "true");
+  }
+  if (tUser && tMenu) {
+    tUser.addEventListener("click", function () {
+      if (tMenu.hidden) openTeacherMenu();
+      else closeTeacherMenu();
+    });
+    document.addEventListener("click", function (e) {
+      if (!tMenu.hidden && !e.target.closest("#tUserWrap")) closeTeacherMenu();
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && !tMenu.hidden) {
+        closeTeacherMenu();
+        tUser.focus();
+      }
+    });
+    window.addEventListener("resize", closeTeacherMenu);
+  }
+  function paintTeacherAvatar(shownName) {
+    if (!tUser) return;
+    tUser.textContent = "";
+    tUser.title = t("account");
+    tUser.setAttribute("aria-label", t("account"));
+    if (user && user.photoURL) {
+      var img = el("img");
+      img.alt = "";
+      img.referrerPolicy = "no-referrer";
+      img.src = user.photoURL;
+      tUser.append(img);
+    } else if (user && shownName) {
+      tUser.append(el("span", "t-initial", shownName.charAt(0).toUpperCase()));
+    } else {
+      var ic = el("span", "t-initial");
+      ic.innerHTML = ICON_USER; // static, trusted SVG
+      tUser.append(ic);
+    }
+  }
   function render() {
     if (!authReady) return;
     syncAccountInfo();
     mount.hidden = false;
+    if (tWrap) tWrap.hidden = false;
     mount.textContent = "";
-    var mark = el("img", "cloud-watermark");
-    mark.src = "Images/logo-icon.svg";
-    mark.alt = "";
-    mark.setAttribute("aria-hidden", "true");
-    mount.append(mark);
     if (!user) {
+      paintTeacherAvatar("");
       var row = el("div", "cloud-actions");
       row.append(
-        button(t("signIn"), ICON_USER, function () {
+        menuRow(t("signIn"), ICON_USER, function () {
           signIn(false);
         }),
       );
       mount.append(el("p", "cloud-hint", t("hint")), row);
       return;
     }
+    var own = app.getProfile();
+    var shownName =
+      [own.firstName, own.lastName].filter(Boolean).join(" ") || user.displayName || user.email || "";
+    paintTeacherAvatar(shownName);
     var account = el("div", "cloud-account");
     if (user.photoURL) {
       var img = el("img", "cloud-avatar");
@@ -219,19 +286,21 @@ async function main() {
       img.src = user.photoURL;
       account.append(img);
     }
-    var own = app.getProfile();
-    var shownName =
-      [own.firstName, own.lastName].filter(Boolean).join(" ") || user.displayName || user.email || "";
     account.append(el("span", "cloud-email", shownName));
     var status = currentStatus();
     var actions = el("div", "cloud-actions");
     actions.append(
-      button(t("account"), ICON_USER, function () {
+      menuRow(t("account"), ICON_USER, function () {
         app.openProfile();
       }),
-      button(t("signOut"), ICON_OUT, function () {
-        sdk.signOut(auth);
-      }),
+      menuRow(
+        t("signOut"),
+        ICON_OUT,
+        function () {
+          sdk.signOut(auth);
+        },
+        true,
+      ),
     );
     mount.append(
       account,

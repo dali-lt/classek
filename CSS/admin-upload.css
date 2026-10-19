@@ -1,5 +1,5 @@
 /* ClassLedger: admin chapter uploader */
-.up-wrap { max-width: 560px; }
+.up-wrap { max-width: 760px; }
 .up-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -127,7 +127,6 @@
 .up-field[hidden] { display: none; }
 
 /* Retours */
-.up-wrap.is-wide { max-width: 920px; }
 .up-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; background: var(--color-sunken); border-radius: 16px; }
 .up-tabs button { border: 0; background: none; border-radius: 12px; padding: 10px 6px; cursor: pointer; font: inherit; font-size: 14px; font-weight: 700; color: var(--color-text-muted); }
 .up-tabs button[aria-pressed="true"] { background: var(--color-surface); color: var(--color-navy); box-shadow: 0 4px 12px -6px rgba(1, 9, 45, 0.35); }

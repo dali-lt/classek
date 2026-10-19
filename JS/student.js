@@ -3,7 +3,7 @@
    The profile card ("My account") reuses the teacher app's modal look (style.css)
    and saves to users/{uid}/meta/profile. */
 
-import { Chapters } from "./chapters.js?v=45";
+import { Chapters } from "./chapters.js?v=46";
 import {
   MAX_SHOWN,
   parseDevice,
@@ -86,6 +86,10 @@ var STR = {
     inboxAnswer: "Réponse du professeur",
     inboxBack: "Retour",
     inboxNewBadge: "Nouveau",
+    inboxProgress: "En cours de traitement",
+    inboxDone: "Traité",
+    inboxProgressText: "Le professeur a lu ton message et s’en occupe.",
+    inboxDoneText: "Le professeur a traité ton message. Merci !",
     fbTooMany: "Tu as déjà envoyé plusieurs messages aujourd’hui. Reviens demain.",
     fbFailMsg: "Impossible d’envoyer. Réessaie.",
     fbPickType: "Choisis d’abord de quoi il s’agit.",
@@ -228,6 +232,10 @@ var STR = {
     inboxAnswer: "رد الأستاذ",
     inboxBack: "رجوع",
     inboxNewBadge: "جديد",
+    inboxProgress: "في طور المعالجة",
+    inboxDone: "تمّت المعالجة",
+    inboxProgressText: "الأستاذ قرا رسالتك وراهو يخدم عليها.",
+    inboxDoneText: "الأستاذ عالج رسالتك. يعطيك الصحة!",
     fbTooMany: "بعثت برشا رسائل اليوم. ارجع غدوة.",
     fbFailMsg: "ما نجّمناش نبعثوها. عاود.",
     fbPickType: "اختار علاش تكتب قبل.",
@@ -527,9 +535,12 @@ var FB_MAX = 1000;
 var FB_PER_DAY = 5;
 var fb = { type: "", text: "", context: null, sending: false, done: false, error: "", view: "form", detail: "" };
 var inbox = []; // the student's own messages, newest first: { id, type, message, createdAt, adminReply, repliedAt, replySeen }
+function hasNews(m) {
+  return !!m.adminReply || m.status === "progress" || m.status === "done";
+}
 function unreadCount() {
   return inbox.filter(function (m) {
-    return m.adminReply && !m.replySeen;
+    return hasNews(m) && !m.replySeen;
   }).length;
 }
 function fbTodayKey() {
@@ -546,9 +557,7 @@ function fbIsOpen() {
   return $("fbOverlay").classList.contains("open");
 }
 function openFeedback(context, forceForm) {
-  var hasReplies = inbox.some(function (m) {
-    return m.adminReply;
-  });
+  var hasReplies = inbox.some(hasNews);
   fb = {
     type: context ? "difficulty" : "",
     text: "",
@@ -658,22 +667,25 @@ function fbTypeLabel(type) {
   })[0];
   return f ? t(f[1]) : "";
 }
+function stateLabel(m) {
+  if (m.adminReply) return t("inboxReplied");
+  if (m.status === "done") return t("inboxDone");
+  if (m.status === "progress") return t("inboxProgress");
+  return t("inboxWaiting");
+}
 function renderInbox(body) {
   $("fbTitle").textContent = t("inboxTitle");
   body.append(el("p", "fb-intro", t("inboxIntro")));
   var list = el("div", "ib-list");
   inbox.forEach(function (m) {
-    var unread = m.adminReply && !m.replySeen;
+    var unread = hasNews(m) && !m.replySeen;
     var box = el("button", "ib-box" + (unread ? " is-new" : ""));
     box.type = "button";
     var top = el("div", "ib-top");
     top.append(el("b", "", fbTypeLabel(m.type)), el("small", "", fbDate(m.createdAt)));
     var prev = el("p", "ib-prev", m.message);
-    var state = el(
-      "span",
-      "ib-state" + (m.adminReply ? " is-replied" : ""),
-      unread ? t("inboxNewBadge") + " · " + t("inboxReplied") : m.adminReply ? t("inboxReplied") : t("inboxWaiting"),
-    );
+    var label = stateLabel(m);
+    var state = el("span", "ib-state" + (hasNews(m) ? " is-replied" : ""), unread ? t("inboxNewBadge") + " · " + label : label);
     box.append(top, prev, state);
     box.addEventListener("click", function () {
       fb.view = "detail";
@@ -715,12 +727,14 @@ function renderInboxDetail(body) {
   if (m.adminReply) {
     ans.append(el("small", "", t("inboxAnswer") + " · " + fbDate(m.repliedAt)), el("p", "", m.adminReply));
   } else {
-    ans.append(el("small", "", t("inboxWaiting")));
+    ans.append(el("small", "", stateLabel(m)));
+    if (m.status === "done") ans.append(el("p", "", t("inboxDoneText")));
+    else if (m.status === "progress") ans.append(el("p", "", t("inboxProgressText")));
   }
   body.append(ans);
 }
 async function markSeen(m) {
-  if (!m.adminReply || m.replySeen) return;
+  if (!hasNews(m) || m.replySeen) return;
   m.replySeen = true;
   paintNotif();
   try {
@@ -746,6 +760,7 @@ async function loadInbox() {
           type: v.type,
           message: v.message || "",
           createdAt: v.createdAt,
+          status: v.status || "new",
           adminReply: v.adminReply || "",
           repliedAt: v.repliedAt,
           replySeen: !!v.replySeen,

@@ -14,7 +14,7 @@
       href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="CSS/style.css" />
+    <link rel="stylesheet" href="CSS/style.css?v=46" />
   </head>
   <body>
     <div class="app-shell">
@@ -163,9 +163,17 @@
               <span id="pillPaymentsLabel"></span>
             </button>
           </div>
-          <div class="lang-switch" id="langSwitch">
-            <button type="button" class="lang-btn" data-lang="en">EN</button>
-            <button type="button" class="lang-btn" data-lang="ar">AR</button>
+          <div class="topbar-end">
+            <div class="lang-switch" id="langSwitch">
+              <button type="button" class="lang-btn" data-lang="en">EN</button>
+              <button type="button" class="lang-btn" data-lang="ar">AR</button>
+            </div>
+            <div class="t-user-wrap" id="tUserWrap" hidden>
+              <button type="button" class="t-user" id="tUser" aria-haspopup="menu" aria-expanded="false"></button>
+              <div class="t-menu" id="tMenu" role="menu" hidden>
+                <div class="cloud-sync" id="cloudSync" hidden></div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -431,7 +439,6 @@
           </section>
         </main>
         <div class="data-reset-area">
-          <div class="cloud-sync" id="cloudSync" hidden></div>
           <div class="data-transfer-actions">
             <button type="button" class="data-transfer-btn" id="exportDataBtn">
               <span class="data-btn-icon">

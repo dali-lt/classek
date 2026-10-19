@@ -6,10 +6,10 @@
     <meta name="robots" content="noindex" />
     <title>ClassLedger · Upload content</title>
     <link rel="icon" type="image/svg+xml" href="Images/logo-icon.svg" />
-    <link rel="stylesheet" href="CSS/style.css" />
+    <link rel="stylesheet" href="CSS/style.css?v=46" />
     <link rel="stylesheet" href="CSS/welcome.css" />
     <link rel="stylesheet" href="CSS/chapters.css" />
-    <link rel="stylesheet" href="CSS/admin-upload.css?v=45" />
+    <link rel="stylesheet" href="CSS/admin-upload.css?v=46" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -29,8 +29,8 @@
 
       <section class="up-card">
         <div class="up-head">
-          <h1>Upload content</h1>
-          <p>Pick a content type, add its JSON files, then upload.</p>
+          <h1>Admin</h1>
+          <p>Upload chapters and read feedback from students.</p>
           <span class="up-uid" id="uidRow" hidden>Admin uid <code id="uid"></code></span>
         </div>
 
@@ -550,7 +550,10 @@
         async function save() {
           state.textContent = "Saving…";
           try {
-            await sdk.updateDoc(sdk.doc(db, "feedback", x.id), { status: sel.value, adminNote: note.value.trim(), handledAt: sdk.serverTimestamp() });
+            var upd0 = { status: sel.value, adminNote: note.value.trim(), handledAt: sdk.serverTimestamp() };
+            if (sel.value !== (d.status || "new") && sel.value !== "new") upd0.replySeen = false; // the student gets a notification for the new status
+            await sdk.updateDoc(sdk.doc(db, "feedback", x.id), upd0);
+            if ("replySeen" in upd0) d.replySeen = false;
             d.status = sel.value; d.adminNote = note.value.trim();
             card.className = "fb-card is-" + d.status;
             state.textContent = "Saved";
@@ -613,9 +616,6 @@
         Array.prototype.forEach.call($("mainTabs").children, function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
         $("uploadPane").hidden = tab !== "upload";
         $("fbPane").hidden = tab !== "fb";
-        document.querySelector(".up-wrap").classList.toggle("is-wide", tab === "fb");
-        document.querySelector(".up-head h1").textContent = tab === "fb" ? "Feedback" : "Upload content";
-        document.querySelector(".up-head p").textContent = tab === "fb" ? "Messages and ratings from students. Set a status, add a note." : "Pick a content type, add its JSON files, then upload.";
         if (tab === "fb") loadFeedback();
       });
       renderTypes();

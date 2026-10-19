@@ -4035,3 +4035,41 @@ html[dir="rtl"] .month-end-modal::after {
     width: auto;
   }
 }
+
+/* ---------- Teacher top bar: account icon + side menu (same idea as the student page) ---------- */
+.topbar-end { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.t-user-wrap[hidden], .t-menu[hidden] { display: none; }
+.t-user {
+  display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; padding: 0;
+  border: 0; border-radius: 50%; background: var(--color-light-blue); cursor: pointer; overflow: hidden;
+  transition: box-shadow 0.15s ease;
+}
+.t-user:hover, .t-user:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 25%, transparent); }
+.t-user img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.t-initial { display: flex; align-items: center; justify-content: center; color: var(--color-text); font-weight: 700; font-size: 16px; }
+.t-initial svg { width: 20px; height: 20px; }
+.t-menu {
+  position: fixed; z-index: 80; width: min(280px, calc(100vw - 16px)); padding: 8px;
+  border: 1px solid var(--color-border); border-radius: 16px; background: var(--color-surface);
+  box-shadow: 0 10px 28px rgba(1, 9, 45, 0.16);
+}
+.t-menu .cloud-sync {
+  max-width: none; margin: 0; padding: 6px 4px 2px; border: 0; border-radius: 0; background: none;
+  align-items: stretch; text-align: start; gap: 6px; overflow: visible;
+}
+.t-menu .cloud-account { padding: 4px 8px; }
+.t-menu .cloud-status { padding: 0 8px 6px; }
+.t-menu .cloud-hint { padding: 4px 8px; }
+.t-menu .cloud-actions { flex-direction: column; flex-wrap: nowrap; gap: 2px; justify-content: flex-start; border-top: 1px solid var(--color-border); padding-top: 6px; }
+.t-menu-item {
+  display: flex; align-items: center; gap: 10px; min-height: 42px; padding: 8px 12px; border: 0; border-radius: 10px;
+  background: none; color: var(--color-text); font: inherit; font-size: 14px; font-weight: 600; text-align: start; cursor: pointer; width: 100%;
+}
+.t-menu-item:hover { background: var(--color-light-blue); }
+.t-menu-ic { display: flex; flex: none; color: var(--color-text-muted); }
+.t-menu-ic svg { width: 18px; height: 18px; }
+.t-menu-item.is-danger, .t-menu-item.is-danger .t-menu-ic { color: var(--color-danger); }
+.t-menu-item.is-danger:hover { background: #fdeceb; }
+.t-menu .acct-details { padding: 6px 4px 0; }
+.t-menu .acct-summary { text-align: start; padding: 8px; color: var(--color-danger); }
+@media (max-width: 720px) { .t-user { width: 34px; height: 34px; } }
