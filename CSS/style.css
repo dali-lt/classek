@@ -4053,14 +4053,14 @@ html[dir="rtl"] .month-end-modal::after {
   border: 1px solid var(--color-border); border-radius: 16px; background: var(--color-surface);
   box-shadow: 0 10px 28px rgba(1, 9, 45, 0.16);
 }
-.t-menu .cloud-sync {
+.t-menu .cloud-sync, .t-drawer .cloud-sync {
   max-width: none; margin: 0; padding: 6px 4px 2px; border: 0; border-radius: 0; background: none;
   align-items: stretch; text-align: start; gap: 6px; overflow: visible;
 }
-.t-menu .cloud-account { padding: 4px 8px; }
-.t-menu .cloud-status { padding: 0 8px 6px; }
-.t-menu .cloud-hint { padding: 4px 8px; }
-.t-menu .cloud-actions { flex-direction: column; flex-wrap: nowrap; gap: 2px; justify-content: flex-start; border-top: 1px solid var(--color-border); padding-top: 6px; }
+.t-menu .cloud-account, .t-drawer .cloud-account { padding: 4px 8px; }
+.t-menu .cloud-status, .t-drawer .cloud-status { padding: 0 8px 6px; }
+.t-menu .cloud-hint, .t-drawer .cloud-hint { padding: 4px 8px; }
+.t-menu .cloud-actions, .t-drawer .cloud-actions { flex-direction: column; flex-wrap: nowrap; gap: 2px; justify-content: flex-start; border-top: 1px solid var(--color-border); padding-top: 6px; }
 .t-menu-item {
   display: flex; align-items: center; gap: 10px; min-height: 42px; padding: 8px 12px; border: 0; border-radius: 10px;
   background: none; color: var(--color-text); font: inherit; font-size: 14px; font-weight: 600; text-align: start; cursor: pointer; width: 100%;
@@ -4070,6 +4070,54 @@ html[dir="rtl"] .month-end-modal::after {
 .t-menu-ic svg { width: 18px; height: 18px; }
 .t-menu-item.is-danger, .t-menu-item.is-danger .t-menu-ic { color: var(--color-danger); }
 .t-menu-item.is-danger:hover { background: #fdeceb; }
-.t-menu .acct-details { padding: 6px 4px 0; }
-.t-menu .acct-summary { text-align: start; padding: 8px; color: var(--color-danger); }
+.t-menu .acct-details, .t-drawer .acct-details { padding: 6px 4px 0; }
+.t-menu .acct-summary, .t-drawer .acct-summary { text-align: start; padding: 8px; color: var(--color-danger); }
 @media (max-width: 720px) { .t-user { width: 34px; height: 34px; } }
+
+/* ---------- Teacher phone: fixed menu button + side drawer (same look as the student page) ---------- */
+.t-menu-btn, .t-scrim, .t-drawer { display: none; }
+@media (max-width: 720px) {
+  .topbar .nav-pills, .topbar .topbar-end { display: none; }
+  .topbar { padding-inline-end: 66px; }
+  .t-menu-btn {
+    position: fixed; top: calc(10px + env(safe-area-inset-top, 0px)); inset-inline-end: 12px; z-index: 60;
+    width: 44px; height: 44px; display: grid; place-items: center; padding: 0;
+    border: 1px solid var(--color-border); border-radius: 50%; background: var(--color-surface);
+    box-shadow: 0 6px 18px rgba(1, 9, 45, 0.14); color: var(--color-text); cursor: pointer;
+  }
+  .t-menu-btn svg { width: 22px; height: 22px; }
+  .t-scrim {
+    display: block; position: fixed; inset: 0; z-index: 80; background: rgba(1, 9, 45, 0.45);
+    opacity: 0; pointer-events: none; touch-action: none; transition: opacity 0.25s ease;
+  }
+  html.t-drawer-open .t-scrim { opacity: 1; pointer-events: auto; }
+  html.t-drawer-open, html.t-drawer-open body { overflow: hidden; }
+  html.t-drawer-open .t-menu-btn { display: none; }
+  .t-drawer {
+    display: flex; flex-direction: column; gap: 6px; position: fixed; top: 0; bottom: 0; inset-inline-start: 0; z-index: 90;
+    width: min(84vw, 300px); padding: calc(16px + env(safe-area-inset-top, 0px)) 14px calc(16px + env(safe-area-inset-bottom, 0px));
+    background: var(--color-surface); border-radius: 0 24px 24px 0; box-shadow: 0 0 40px rgba(1, 9, 45, 0.25);
+    overflow-y: auto; overscroll-behavior: contain; transform: translateX(-104%); visibility: hidden;
+    transition: transform 0.26s ease, visibility 0s linear 0.26s;
+  }
+  html[dir="rtl"] .t-drawer { border-radius: 24px 0 0 24px; transform: translateX(104%); }
+  html.t-drawer-open .t-drawer { transform: none; visibility: visible; transition-delay: 0s; }
+  .t-drawer-close {
+    position: absolute; top: calc(14px + env(safe-area-inset-top, 0px)); inset-inline-end: 14px; width: 38px; height: 38px;
+    display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%;
+    background: var(--color-sunken); color: var(--color-text-muted); cursor: pointer;
+  }
+  .t-drawer-close svg { width: 17px; height: 17px; }
+  .t-drawer-logo { display: block; height: 24px; width: auto; max-width: 190px; margin: 10px 4px 14px; }
+  .t-drawer-nav { display: flex; flex-direction: column; gap: 4px; }
+  .t-drawer-btn {
+    display: flex; align-items: center; gap: 14px; width: 100%; height: 50px; padding: 0 14px; border: 0; border-radius: 14px;
+    background: none; color: var(--color-text); font: inherit; font-size: 15px; font-weight: 700; text-align: start; cursor: pointer;
+  }
+  .t-drawer-btn svg { width: 22px; height: 22px; flex: none; }
+  .t-drawer-btn.active { background: var(--color-primary); color: #fff; }
+  .t-drawer-foot { margin-top: auto; border-top: 1px solid var(--color-border); padding-top: 8px; }
+  .t-drawer-lang { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; font-size: 13.5px; font-weight: 700; }
+  .t-drawer .cloud-sync { display: flex; }
+  .t-drawer .cloud-sync[hidden] { display: none; }
+}

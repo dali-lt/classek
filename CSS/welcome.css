@@ -1552,12 +1552,11 @@ html[dir="rtl"] .rs-mark { transform: translateY(-50%) scaleX(-1); }
 }
 
 /* ---- v44: notification dot, red sign-out, "à revoir" note ---- */
-.student-user, .s-menu-btn { position: relative; }
+.student-user { position: relative; }
 .notif-dot {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  top: -5px;
+  inset-inline-end: -5px;
   min-width: 20px;
   height: 20px;
   padding: 0 5px;

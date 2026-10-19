@@ -3,7 +3,7 @@
    The profile card ("My account") reuses the teacher app's modal look (style.css)
    and saves to users/{uid}/meta/profile. */
 
-import { Chapters } from "./chapters.js?v=46";
+import { Chapters } from "./chapters.js?v=47";
 import {
   MAX_SHOWN,
   parseDevice,
@@ -567,7 +567,16 @@ function openFeedback(context, forceForm) {
     error: "",
     view: !context && !forceForm && hasReplies ? "inbox" : "form",
     detail: "",
+    fresh: {}, // replies that were unread when the box opened: they stay highlighted during this visit
   };
+  if (fb.view === "inbox") {
+    inbox.forEach(function (m) {
+      if (hasNews(m) && !m.replySeen) {
+        fb.fresh[m.id] = true;
+        markSeen(m);
+      }
+    });
+  }
   renderFeedback();
   $("fbOverlay").classList.add("open");
   setTimeout(function () {
@@ -678,7 +687,7 @@ function renderInbox(body) {
   body.append(el("p", "fb-intro", t("inboxIntro")));
   var list = el("div", "ib-list");
   inbox.forEach(function (m) {
-    var unread = hasNews(m) && !m.replySeen;
+    var unread = hasNews(m) && (!m.replySeen || !!fb.fresh[m.id]);
     var box = el("button", "ib-box" + (unread ? " is-new" : ""));
     box.type = "button";
     var top = el("div", "ib-top");
@@ -690,7 +699,6 @@ function renderInbox(body) {
     box.addEventListener("click", function () {
       fb.view = "detail";
       fb.detail = m.id;
-      markSeen(m);
       renderFeedback();
     });
     list.append(box);

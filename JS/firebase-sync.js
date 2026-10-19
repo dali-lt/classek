@@ -200,6 +200,7 @@ async function main() {
     b.append(ic, el("span", "", label));
     b.addEventListener("click", function () {
       closeTeacherMenu();
+      document.dispatchEvent(new CustomEvent("classledger:menu-pick")); // closes the phone drawer
       onClick();
     });
     return b;
