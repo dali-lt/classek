@@ -59,79 +59,81 @@ var UI = {
 var CODE = {
   "tri-bulles": {
     algo: [
-      "Procédure TriBulles (@T : Tab, N : entier)",
+      "Procédure tri_bulles (@T : Tab, n : Entier)",
       "DEBUT",
-      "  Répéter",
-      "    echange ← Faux",
-      "    Pour i de 1 à N-1 Faire",
-      "      Si T[i] > T[i+1] Alors",
-      "        aux ← T[i]",
-      "        T[i] ← T[i+1]",
-      "        T[i+1] ← aux",
-      "        echange ← Vrai",
-      "      FinSi",
-      "    FinPour",
-      "  Jusqu'à (echange = Faux)",
+      "   Pour i de 1 à n - 1 Faire",
+      "      Pour j de 1 à n - i Faire",
+      "         Si T[j] > T[j + 1] Alors",
+      "            t ← T[j]",
+      "            T[j] ← T[j + 1]",
+      "            T[j + 1] ← t",
+      "         FinSi",
+      "      FinPour",
+      "   FinPour",
       "FIN",
     ],
     python: [
       "def tri_bulles(T, n):",
-      "    while True:",
-      "        echange = False",
-      "        for i in range(n - 1):",
-      "            if T[i] > T[i + 1]:",
-      "                T[i], T[i + 1] = T[i + 1], T[i]",
-      "                echange = True",
-      "        if not echange:",
-      "            break",
+      "    for i in range(1, n):",
+      "        for j in range(n - i):",
+      "            if T[j] > T[j + 1]:",
+      "                t = T[j]",
+      "                T[j] = T[j + 1]",
+      "                T[j + 1] = t",
     ],
-    // algo line -> python line
-    map: [0, 0, 1, 2, 3, 4, 5, 5, 5, 6, 4, 3, 7, 8],
+    map: [0, 0, 1, 2, 3, 4, 5, 6, 3, 2, 1, 6],
   },
   "tri-selection": {
     algo: [
-      "Procédure TriSelection (@T : Tab, N : entier)",
+      "Procédure tri_selection (@T : Tab, n : Entier)",
       "DEBUT",
-      "  Pour i de 1 à N-1 Faire",
-      "    min ← i",
-      "    Pour j de i+1 à N Faire",
-      "      Si T[j] < T[min] Alors",
-      "        min ← j",
+      "   Pour i de 1 à n - 1 Faire",
+      "      im ← i",
+      "      Pour j de i + 1 à n Faire",
+      "         Si T[j] < T[im] Alors",
+      "            im ← j",
+      "         FinSi",
+      "      FinPour",
+      "      Si im ≠ i Alors",
+      "         t ← T[i]",
+      "         T[i] ← T[im]",
+      "         T[im] ← t",
       "      FinSi",
-      "    FinPour",
-      "    Si min ≠ i Alors",
-      "      aux ← T[i]",
-      "      T[i] ← T[min]",
-      "      T[min] ← aux",
-      "    FinSi",
-      "  FinPour",
+      "   FinPour",
       "FIN",
     ],
     python: [
       "def tri_selection(T, n):",
       "    for i in range(n - 1):",
-      "        mini = i",
+      "        im = i",
       "        for j in range(i + 1, n):",
-      "            if T[j] < T[mini]:",
-      "                mini = j",
-      "        if mini != i:",
-      "            T[i], T[mini] = T[mini], T[i]",
+      "            if T[j] < T[im]:",
+      "                im = j",
+      "        if im != i:",
+      "            t = T[i]",
+      "            T[i] = T[im]",
+      "            T[im] = t",
     ],
-    map: [0, 0, 1, 2, 3, 4, 5, 4, 3, 6, 7, 7, 7, 6, 1, 7],
+    map: [0, 0, 1, 2, 3, 4, 5, 4, 3, 6, 7, 8, 9, 6, 1, 9],
   },
   "tri-insertion": {
     algo: [
-      "Procédure TriInsertion (@T : Tab, N : entier)",
+      "Procédure tri_insertion (@T : Tab, n : Entier)",
       "DEBUT",
-      "  Pour i de 2 à N Faire",
-      "    x ← T[i]",
-      "    j ← i - 1",
-      "    Tant que (j ≥ 1) ET (T[j] > x) Faire",
-      "      T[j+1] ← T[j]",
-      "      j ← j - 1",
-      "    FinTantQue",
-      "    T[j+1] ← x",
-      "  FinPour",
+      "   Pour i de 2 à n Faire",
+      "      x ← T[i]",
+      "      j ← i - 1",
+      "      place ← Faux",
+      "      Tant que (j ≥ 1) ET (NON place) Faire",
+      "         Si T[j] > x Alors",
+      "            T[j + 1] ← T[j]",
+      "            j ← j - 1",
+      "         Sinon",
+      "            place ← Vrai",
+      "         FinSi",
+      "      FinTantQue",
+      "      T[j + 1] ← x",
+      "   FinPour",
       "FIN",
     ],
     python: [
@@ -139,12 +141,16 @@ var CODE = {
       "    for i in range(1, n):",
       "        x = T[i]",
       "        j = i - 1",
-      "        while j >= 0 and T[j] > x:",
-      "            T[j + 1] = T[j]",
-      "            j = j - 1",
+      "        place = False",
+      "        while j >= 0 and not place:",
+      "            if T[j] > x:",
+      "                T[j + 1] = T[j]",
+      "                j = j - 1",
+      "            else:",
+      "                place = True",
       "        T[j + 1] = x",
     ],
-    map: [0, 0, 1, 2, 3, 4, 5, 6, 4, 7, 1, 7],
+    map: [0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 6, 5, 11, 1, 11],
   },
 };
 
@@ -169,48 +175,43 @@ function gen(kind, input) {
   push({ line: 1, msg: { fr: "Début : tableau de " + n + " éléments.", ar: "البداية: مصفوفة من " + n + " عناصر." } });
 
   if (kind === "tri-bulles") {
-    var pass = 0;
-    var swapped;
-    do {
-      swapped = false;
-      push({ line: 3, msg: { fr: "Nouveau passage : echange ← Faux.", ar: "دورة جديدة: echange ← Faux." } });
-      for (i = 0; i < n - 1; i++) {
+    for (var pi = 1; pi <= n - 1; pi++) {
+      push({ line: 2, msg: { fr: "Passage i = " + pi + " : j va de 1 à " + (n - pi) + ".", ar: "الدورة i = " + pi + " : j من 1 إلى " + (n - pi) + "." } });
+      for (j = 0; j < n - pi; j++) {
         c++;
-        var gt = a[i] > a[i + 1];
+        var gt = a[j] > a[j + 1];
         push({
-          line: 5,
-          cmp: [i, i + 1],
+          line: 4,
+          cmp: [j, j + 1],
           msg: {
-            fr: "Compare T[" + (i + 1) + "] = " + a[i] + " et T[" + (i + 2) + "] = " + a[i + 1] + " : " + (gt ? a[i] + " > " + a[i + 1] + ", il faut échanger." : "dans le bon ordre."),
-            ar: "نقارن T[" + (i + 1) + "] = " + a[i] + " مع T[" + (i + 2) + "] = " + a[i + 1] + " : " + (gt ? "نبدّل لأن " + a[i] + " > " + a[i + 1] : "الترتيب صحيح."),
+            fr: "Compare T[" + (j + 1) + "] = " + a[j] + " et T[" + (j + 2) + "] = " + a[j + 1] + " : " + (gt ? a[j] + " > " + a[j + 1] + ", il faut échanger." : "dans le bon ordre."),
+            ar: "نقارن T[" + (j + 1) + "] = " + a[j] + " مع T[" + (j + 2) + "] = " + a[j + 1] + " : " + (gt ? "نبدّل لأن " + a[j] + " > " + a[j + 1] : "الترتيب صحيح."),
           },
         });
         if (gt) {
-          var tmp = a[i];
-          a[i] = a[i + 1];
-          a[i + 1] = tmp;
+          var tmp = a[j];
+          a[j] = a[j + 1];
+          a[j + 1] = tmp;
           s++;
-          swapped = true;
           push({
-            line: 6,
-            swap: [i, i + 1],
-            msg: { fr: "Échange : " + a[i + 1] + " passe à droite, echange ← Vrai.", ar: "تبديل: " + a[i + 1] + " ينتقل لليمين، echange ← Vrai." },
+            line: 5,
+            swap: [j, j + 1],
+            msg: { fr: "Échange avec la variable t : " + a[j + 1] + " passe à droite.", ar: "تبديل بالمتغير t : " + a[j + 1] + " ينتقل لليمين." },
           });
         }
       }
-      done.push(n - 1 - pass);
-      pass++;
+      done.push(n - pi);
       push({
-        line: 12,
+        line: 9,
         msg: {
-          fr: "Fin du passage " + pass + " : le plus grand reste est à sa place. " + (swapped ? "echange = Vrai, on recommence." : "echange = Faux, c'est fini."),
-          ar: "نهاية الدورة " + pass + " : أكبر عنصر بقي أخذ مكانه. " + (swapped ? "echange = Vrai، نعيد." : "echange = Faux، انتهى."),
+          fr: "Fin du passage " + pi + " : le plus grand des éléments restants est à sa place (T[" + (n - pi + 1) + "]).",
+          ar: "نهاية الدورة " + pi + " : أكبر العناصر المتبقية أخذ مكانه (T[" + (n - pi + 1) + "]).",
         },
       });
-    } while (swapped && pass < n);
+    }
     done = [];
     for (i = 0; i < n; i++) done.push(i);
-    push({ line: 13, msg: null });
+    push({ line: 11, msg: null });
   } else if (kind === "tri-selection") {
     for (i = 0; i < n - 1; i++) {
       var mn = i;
@@ -223,13 +224,13 @@ function gen(kind, input) {
           cmp: [j, mn],
           mark: mn,
           msg: {
-            fr: "Compare T[" + (j + 1) + "] = " + a[j] + " au minimum " + a[mn] + " : " + (lt ? "plus petit, nouveau minimum." : "pas plus petit."),
+            fr: "Compare T[" + (j + 1) + "] = " + a[j] + " au minimum " + a[mn] + " : " + (lt ? "plus petit, nouveau minimum (im)." : "pas plus petit."),
             ar: "نقارن T[" + (j + 1) + "] = " + a[j] + " مع الأصغر " + a[mn] + " : " + (lt ? "أصغر، الأصغر الجديد." : "ليس أصغر."),
           },
         });
         if (lt) {
           mn = j;
-          push({ line: 6, mark: mn, msg: { fr: "min ← " + (j + 1) + ".", ar: "min ← " + (j + 1) + "." } });
+          push({ line: 6, mark: mn, msg: { fr: "im ← " + (j + 1) + ".", ar: "im ← " + (j + 1) + "." } });
         }
       }
       if (mn !== i) {
@@ -253,33 +254,35 @@ function gen(kind, input) {
       var x = a[i];
       a[i] = null;
       j = i - 1;
-      push({ line: 3, held: x, hole: i, msg: { fr: "i = " + (i + 1) + " : on prend x = " + x + " et on lui cherche une place à gauche.", ar: "i = " + (i + 1) + " : نأخذ x = " + x + " ونبحث له عن مكان على اليسار." } });
-      while (true) {
-        if (j < 0) break;
+      push({ line: 3, held: x, hole: i, msg: { fr: "i = " + (i + 1) + " : x ← T[" + (i + 1) + "] = " + x + ". On lui cherche une place à gauche.", ar: "i = " + (i + 1) + " : x ← T[" + (i + 1) + "] = " + x + ". نبحث له عن مكان على اليسار." } });
+      while (j >= 0) {
         c++;
         var bigger = a[j] > x;
         push({
-          line: 5,
+          line: 7,
           held: x,
           cmp: [j],
           msg: {
-            fr: "Compare T[" + (j + 1) + "] = " + a[j] + " avec x = " + x + " : " + (bigger ? a[j] + " > " + x + ", on le décale à droite." : "pas plus grand, on s'arrête."),
-            ar: "نقارن T[" + (j + 1) + "] = " + a[j] + " مع x = " + x + " : " + (bigger ? "أكبر، نزحزحه لليمين." : "ليس أكبر، نتوقف."),
+            fr: "Si T[" + (j + 1) + "] > x ? " + a[j] + " > " + x + " : " + (bigger ? "oui, on le décale à droite." : "non."),
+            ar: "هل T[" + (j + 1) + "] > x ؟ " + a[j] + " > " + x + " : " + (bigger ? "نعم، نزحزحه لليمين." : "لا."),
           },
         });
-        if (!bigger) break;
+        if (!bigger) {
+          push({ line: 11, held: x, msg: { fr: "place ← Vrai : x a trouvé sa place.", ar: "place ← Vrai : x وجد مكانه." } });
+          break;
+        }
         a[j + 1] = a[j];
         a[j] = null;
         s++;
-        push({ line: 6, held: x, msg: { fr: "T[" + (j + 2) + "] ← T[" + (j + 1) + "] : décalage.", ar: "T[" + (j + 2) + "] ← T[" + (j + 1) + "] : إزاحة." } });
+        push({ line: 8, held: x, msg: { fr: "T[" + (j + 2) + "] ← T[" + (j + 1) + "] : décalage, puis j ← j - 1.", ar: "T[" + (j + 2) + "] ← T[" + (j + 1) + "] : إزاحة، ثم j ← j - 1." } });
         j--;
       }
       a[j + 1] = x;
       done = [];
       for (var k = 0; k <= i; k++) done.push(k);
-      push({ line: 9, msg: { fr: "T[" + (j + 2) + "] ← x = " + x + " : le début du tableau est trié.", ar: "T[" + (j + 2) + "] ← x = " + x + " : بداية المصفوفة مرتبة." } });
+      push({ line: 14, msg: { fr: "T[" + (j + 2) + "] ← x = " + x + " : le début du tableau est trié.", ar: "T[" + (j + 2) + "] ← x = " + x + " : بداية المصفوفة مرتبة." } });
     }
-    push({ line: 11, msg: null });
+    push({ line: 16, msg: null });
   }
   return steps;
 }
