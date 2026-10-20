@@ -171,6 +171,7 @@
       newGroupPlaceholder: "New group name",
       addGroup: "Add",
       allGroups: "All groups",
+      stoppedToggle: "Stopped",
       noGroups: "No groups yet",
       groupStudentCount: function (count) {
         return count + (count === 1 ? " student" : " students");
@@ -443,6 +444,7 @@
       newGroupPlaceholder: "اسم مجموعة جديدة",
       addGroup: "إضافة",
       allGroups: "كل المجموعات",
+      stoppedToggle: "الموقوفون",
       noGroups: "ما فماش مجموعات",
       groupStudentCount: function (count) {
         return count === 1 ? "تلميذ واحد" : count + " تلامذة";
@@ -644,6 +646,7 @@
     tableWrap: document.getElementById("tableWrap"),
     searchInput: document.getElementById("searchInput"),
     levelFilter: document.getElementById("levelFilter"),
+    stoppedToggle: document.getElementById("stoppedToggle"),
     groupFilter: document.getElementById("groupFilter"),
     groupFilterSummary: document.getElementById("groupFilterSummary"),
     openAddBtn: document.getElementById("openAddBtn"),
@@ -2146,6 +2149,7 @@
     });
   }
 
+  var showStopped = false;
   function getFilteredStudents() {
     var query = els.searchInput.value.trim().toLowerCase();
     var levelFilterVal = els.levelFilter.value;
@@ -2159,7 +2163,8 @@
         var matchesGroup =
           !groupFilterVal ||
           studentGroupNames(s).indexOf(groupFilterVal) !== -1;
-        return matchesQuery && matchesLevel && matchesGroup;
+        // a student who stopped is hidden everywhere except Payments (while money is owed); this toggle lists only them
+        return matchesQuery && matchesLevel && matchesGroup && isStopped(s) === showStopped;
       })
       .sort(function (a, b) {
         var aStopped = isStopped(a) ? 1 : 0,
@@ -2245,16 +2250,20 @@
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="7.5" r="3.3"/><path d="M12 10.8c-3.2 0-5.4 2.1-6 4.9-.1.6.4 1.1 1 1.1h3l-.4 3.2h4.8l-.4-3.2h3c.6 0 1.1-.5 1-1.1-.6-2.8-2.8-4.9-6-4.9Z"/></svg>';
   var MALE_AVATARS = [1, 3, 5, 7, 9];
   var FEMALE_AVATARS = [2, 4, 6, 8, 10];
-  var AVATAR_BACKGROUNDS = [
-    "#e6f0fc",
-    "#d6e6fb",
-    "#c3dbfa",
-    "#edf4fd",
-    "#f1f6fd",
-    "#eef9e3",
-    "#dff3c9",
-    "#cfeaa8",
-  ];
+  // same backgrounds as the student page (without the pink one)
+  var AVATAR_BACKGROUNDS = ["#032c7b", "#0464de", "#aee37b", "#e9fff4"];
+  var ROSE_BACKGROUND = "#e64d6b"; // offered to girls only (as on the student page)
+  function backgroundChoicesFor(student) {
+    return student && student.gender === "female" ? AVATAR_BACKGROUNDS.concat([ROSE_BACKGROUND]) : AVATAR_BACKGROUNDS;
+  }
+  // older students keep the pastel colour they were given before: show them in the matching new colour
+  var LEGACY_AVATAR_BACKGROUNDS = ["#e6f0fc", "#d6e6fb", "#c3dbfa", "#edf4fd", "#f1f6fd", "#eef9e3", "#dff3c9", "#cfeaa8"];
+  function avatarColorOf(student) {
+    var c = student.avatarBackground;
+    if (AVATAR_BACKGROUNDS.indexOf(c) !== -1 || c === ROSE_BACKGROUND) return c;
+    var i = LEGACY_AVATAR_BACKGROUNDS.indexOf(c);
+    return AVATAR_BACKGROUNDS[(i === -1 ? 0 : i) % AVATAR_BACKGROUNDS.length];
+  }
 
   function getNextAvatar(gender, index) {
     var avatars = gender === "female" ? FEMALE_AVATARS : MALE_AVATARS;
@@ -2268,15 +2277,21 @@
         return student.avatarBackground;
       })
       .filter(function (color) {
-        return AVATAR_BACKGROUNDS.indexOf(color) !== -1;
+        return AVATAR_BACKGROUNDS.indexOf(color) !== -1 || color === ROSE_BACKGROUND;
       });
 
     targetStudents.forEach(function (student) {
-      if (AVATAR_BACKGROUNDS.indexOf(student.avatarBackground) !== -1) return;
-      var unusedColors = AVATAR_BACKGROUNDS.filter(function (color) {
+      if (
+        AVATAR_BACKGROUNDS.indexOf(student.avatarBackground) !== -1 ||
+        student.avatarBackground === ROSE_BACKGROUND ||
+        LEGACY_AVATAR_BACKGROUNDS.indexOf(student.avatarBackground) !== -1
+      )
+        return;
+      var palette = backgroundChoicesFor(student);
+      var unusedColors = palette.filter(function (color) {
         return usedColors.indexOf(color) === -1;
       });
-      var choices = unusedColors.length ? unusedColors : AVATAR_BACKGROUNDS;
+      var choices = unusedColors.length ? unusedColors : palette;
       var color = choices[Math.floor(Math.random() * choices.length)];
       student.avatarBackground = color;
       usedColors.push(color);
@@ -2284,10 +2299,7 @@
   }
 
   function avatarMarkup(student) {
-    var background =
-      AVATAR_BACKGROUNDS.indexOf(student.avatarBackground) !== -1
-        ? student.avatarBackground
-        : AVATAR_BACKGROUNDS[0];
+    var background = avatarColorOf(student);
     return (
       '<img class="avatar" style="background-color:' +
       background +
@@ -2341,6 +2353,11 @@
   function renderTable() {
     populateGroupFilter();
     renderGroupFilterSummary();
+    var stoppedCount = students.filter(isStopped).length;
+    if (!stoppedCount) showStopped = false;
+    els.stoppedToggle.hidden = !stoppedCount;
+    els.stoppedToggle.textContent = t("stoppedToggle") + " (" + stoppedCount + ")";
+    els.stoppedToggle.setAttribute("aria-pressed", showStopped ? "true" : "false");
     var list = getFilteredStudents();
 
     if (students.length === 0) {
@@ -4449,6 +4466,10 @@
   els.searchInput.addEventListener("input", renderTable);
   els.levelFilter.addEventListener("change", renderTable);
   els.groupFilter.addEventListener("change", renderTable);
+  els.stoppedToggle.addEventListener("click", function () {
+    showStopped = !showStopped;
+    renderTable();
+  });
 
   els.noteCloseBtn.addEventListener("click", closeNoteModal);
   els.noteEditBtn.addEventListener("click", function () {

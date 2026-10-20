@@ -4121,3 +4121,28 @@ html[dir="rtl"] .month-end-modal::after {
   .t-drawer .cloud-sync { display: flex; }
   .t-drawer .cloud-sync[hidden] { display: none; }
 }
+
+/* students page: small toggle that lists the students who stopped */
+.stopped-toggle {
+  padding: 11px 16px; border: 1.5px solid var(--color-border); border-radius: 10px; background: var(--color-surface);
+  color: var(--color-text-muted); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; white-space: nowrap;
+}
+.stopped-toggle[hidden] { display: none; }
+.stopped-toggle:hover { border-color: var(--color-primary); color: var(--color-text); }
+.stopped-toggle[aria-pressed="true"] { background: var(--color-navy); border-color: var(--color-navy); color: #fff; }
+
+/* teacher phone: just the logo, no bar (like the student page) */
+@media (max-width: 720px) {
+  .topbar { background: none; border: 0; border-radius: 0; padding: 0 66px 0 4px; min-height: 44px; overflow: visible; }
+  .topbar .brand-wordmark { height: 24px; }
+}
+
+/* teacher phone: only the logo (no navbar box), like the student page */
+@media (max-width: 720px) {
+  .topbar {
+    background: none; border: 0; border-radius: 0; padding: 0; padding-inline: 4px 56px; min-height: 44px; margin-top: 0;
+    overflow: visible;
+  }
+  .topbar .brand-wordmark { height: 24px; }
+  .app-shell { padding-top: calc(12px + env(safe-area-inset-top, 0px)); }
+}

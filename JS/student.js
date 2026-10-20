@@ -3,7 +3,7 @@
    The profile card ("My account") reuses the teacher app's modal look (style.css)
    and saves to users/{uid}/meta/profile. */
 
-import { Chapters } from "./chapters.js?v=47";
+import { Chapters } from "./chapters.js?v=48";
 import {
   MAX_SHOWN,
   parseDevice,
@@ -1097,6 +1097,7 @@ function renderModal() {
     panel.append(el("span", "av-bg-label", t("avBg")));
     var sw = el("div", "av-swatches");
     Object.keys(AVATAR_BGS).forEach(function (key) {
+      if (key === "rose" && profile.gender !== "female" && pendingBg !== "rose") return; // the rose red is offered to girls only
       var b = el("button", "av-sw" + ((pendingBg || "frost") === key ? " is-on" : ""));
       b.type = "button";
       b.style.background = AVATAR_BGS[key];
