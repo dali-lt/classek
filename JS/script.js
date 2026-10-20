@@ -2425,7 +2425,7 @@
             escapeHtml(levelLabel(s.level)) +
             "</span>" +
             "</div>" +
-            timeLeftMarkup(s) +
+            (isStopped(s) ? "" : timeLeftMarkup(s)) +
             '<div class="card-menu">' +
             '<button type="button" class="kebab-btn" data-action="kebab" data-id="' +
             s.id +
@@ -3334,6 +3334,18 @@
     noteStudent = student;
     els.noteModalTitle.textContent = student.firstName + " " + student.lastName;
     els.noteModalAvatar.innerHTML = avatarMarkup(student);
+    var bannerKey = {
+      "#032c7b": "azure",
+      "#0464de": "royal",
+      "#aee37b": "lime",
+      "#e9fff4": "frost",
+      "#e64d6b": "rose",
+    }[avatarColorOf(student)];
+    var noteBanner = els.noteModalAvatar.parentNode.querySelector(".profile-banner");
+    if (noteBanner) {
+      if (bannerKey) noteBanner.setAttribute("data-bg", bannerKey);
+      else noteBanner.removeAttribute("data-bg");
+    }
     var badgeClass =
       LEVEL_CATEGORY[student.level] === "lycee"
         ? "badge-lycee"
@@ -4037,9 +4049,10 @@
       "</h3><p>" +
       escapeHtml(t("groupMemberHint")) +
       '</p><div class="group-modal-student-list">' +
-      (students.length
+      (activeStudents().length
         ? students
             .map(function (student, studentIndex) {
+              if (isStopped(student)) return ""; // a stopped student is not offered for groups
               var memberships = studentGroupNames(student);
               var conflictingMembership = memberships
                 .map(groupRecord)
@@ -4197,6 +4210,7 @@
         .sort();
     }
     students.forEach(function (student, studentIndex) {
+      if (isStopped(student)) return; // their groups stay as they were
       var names = membershipsByStudent[studentIndex].filter(function (name) {
         return name !== oldName;
       });
