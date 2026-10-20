@@ -4125,7 +4125,7 @@ html[dir="rtl"] .month-end-modal::after {
 /* students page: small toggle that lists the students who stopped */
 .stopped-toggle {
   padding: 11px 16px; border: 1.5px solid var(--color-border); border-radius: 10px; background: var(--color-surface);
-  color: var(--color-text-muted); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; white-space: nowrap;
+  color: var(--color-danger); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; white-space: nowrap;
 }
 .stopped-toggle[hidden] { display: none; }
 .stopped-toggle:hover { border-color: var(--color-primary); color: var(--color-text); }
