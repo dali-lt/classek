@@ -1952,8 +1952,8 @@ html[dir="rtl"] .note-band {
 .fd-ico svg { width: 19px; height: 19px; }
 .fd-gauge { position: relative; width: 64px; height: 38px; flex: none; margin-top: -4px; }
 .fd-gauge svg { display: block; width: 100%; height: 100%; overflow: visible; }
-.fd-gauge path { fill: none; stroke-width: 7; stroke-linecap: round; }
-.fd-gauge .fg-track { stroke: color-mix(in srgb, var(--fd-ink) 20%, transparent); }
+.fd-gauge path { fill: none; stroke-width: 9; stroke-linecap: round; }
+.fd-gauge .fg-rest { stroke: color-mix(in srgb, var(--fd-ink) 22%, transparent); }
 .fd-gauge .fg-bar { stroke: var(--fd-ink); }
 .fd-gauge-n { position: absolute; inset-inline: 0; bottom: -1px; text-align: center; font-size: 12.5px; font-weight: 900; line-height: 1; color: var(--fd-ink); }
 .fd-title { font-size: 16.5px; line-height: 1.2; }
@@ -1967,7 +1967,6 @@ html[dir="rtl"] .note-band {
   .fd-ico { width: 30px; height: 30px; border-radius: 10px; }
   .fd-ico svg { width: 16px; height: 16px; }
   .fd-gauge { width: 54px; height: 32px; }
-  .fd-gauge path { stroke-width: 6.5; }
   .fd-gauge-n { font-size: 11px; }
   .fd-title { font-size: 14px; }
   .fd-meta { font-size: 11px; }
@@ -1980,3 +1979,18 @@ html[dir="rtl"] .note-band {
 .ex-lock { display: inline-grid; place-items: center; width: 24px; height: 24px; margin-inline-start: auto; color: var(--color-text-muted); }
 .ex-lock svg { width: 17px; height: 17px; }
 .ex-locked-text { direction: inherit !important; text-align: start !important; }
+
+
+/* ---- v51: note sheets stay whole inside the folder ---- */
+.fd-sheet { bottom: 100px; height: 62px; }
+.fd-sheet.s2 { height: 68px; }
+.fd-sheet.s3 { height: 64px; }
+.folder:hover .fd-sheet.s1, .folder:focus-visible .fd-sheet.s1 { transform: translateY(-5px) rotate(-4deg); }
+.folder:hover .fd-sheet.s2, .folder:focus-visible .fd-sheet.s2 { transform: translateY(-7px) rotate(1deg); }
+.folder:hover .fd-sheet.s3, .folder:focus-visible .fd-sheet.s3 { transform: translateY(-5px) rotate(5deg); }
+.fd-sheet.has-note { padding-top: 12px; }
+@media (max-width: 520px) {
+  .fd-sheet { bottom: 92px; height: 56px; }
+  .fd-sheet.s2 { height: 62px; }
+  .fd-sheet.s3 { height: 58px; }
+}

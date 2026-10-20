@@ -903,17 +903,24 @@ function halfGauge(pct) {
   svg.setAttribute("viewBox", "0 0 64 38");
   svg.setAttribute("aria-hidden", "true");
   var d = "M7 33 A25 25 0 0 1 57 33";
-  var track = document.createElementNS(ns, "path");
-  track.setAttribute("d", d);
-  track.setAttribute("class", "fg-track");
-  svg.appendChild(track);
-  if (pct > 0) {
-    var bar = document.createElementNS(ns, "path");
-    bar.setAttribute("d", d);
-    bar.setAttribute("class", "fg-bar");
-    bar.setAttribute("pathLength", "100");
-    bar.setAttribute("stroke-dasharray", Math.max(pct, 3) + " 100");
-    svg.appendChild(bar);
+  // like the half-donut on the teacher page: two arcs with round ends and a small gap, the rest never runs under the colour.
+  // A round cap sticks out half the stroke width past each end of its dash, so every dash is shortened by that on both sides.
+  var CAP = (4.5 / (Math.PI * 25)) * 100;
+  var GAP = 4;
+  function arc(cls, from, to) {
+    var path = document.createElementNS(ns, "path");
+    path.setAttribute("d", d);
+    path.setAttribute("class", cls);
+    path.setAttribute("pathLength", "100");
+    path.setAttribute("stroke-dasharray", Math.max(to - from - 2 * CAP, 0.01) + " 200");
+    path.setAttribute("stroke-dashoffset", String(-(from + CAP)));
+    svg.appendChild(path);
+  }
+  if (pct === 0) arc("fg-rest", 0, 100);
+  else if (pct === 100) arc("fg-bar", 0, 100);
+  else {
+    arc("fg-bar", 0, pct - GAP / 2);
+    arc("fg-rest", pct + GAP / 2, 100);
   }
   wrap.appendChild(svg);
   wrap.appendChild(el("b", "fd-gauge-n", pct + "%"));

@@ -3,7 +3,7 @@
    The profile card ("My account") reuses the teacher app's modal look (style.css)
    and saves to users/{uid}/meta/profile. */
 
-import { Chapters } from "./chapters.js?v=50";
+import { Chapters } from "./chapters.js?v=51";
 import {
   MAX_SHOWN,
   parseDevice,
