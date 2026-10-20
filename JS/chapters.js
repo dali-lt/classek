@@ -46,6 +46,8 @@ var STR = {
     resumeAllDoneSub: "Tu as fini tous les exercices disponibles. D’autres arrivent bientôt.",
     resumeNone: "Les premiers exercices arrivent bientôt.",
     partN: "Partie {n}",
+    doneOf: "{d} / {n} exercices",
+    exLocked: "Termine l’exercice précédent pour débloquer celui-ci",
     weightCore: "Essentiel",
     weightMajor: "Important",
     weightMinor: "Complémentaire",
@@ -148,6 +150,8 @@ var STR = {
     resumeAllDoneSub: "كمّلت كل التمارين المتوفرة. جاية أخرى قريب.",
     resumeNone: "أول التمارين جاية قريب.",
     partN: "الجزء {n}",
+    doneOf: "{d} / {n} تمارين",
+    exLocked: "كمّل التمرين اللي قبل باش يتفتح هذا",
     weightCore: "أساسي",
     weightMajor: "مهم",
     weightMinor: "تكميلي",
@@ -271,6 +275,8 @@ function startThinkTicker() {
 }
 var ratings = {}; // "chapterId/exId" -> "easy" | "ok" | "hard" (the student's own opinion)
 
+var ICON_LOCK =
+  '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
 var ICON_BACK =
   '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>';
 
@@ -874,18 +880,54 @@ function weightOf(ch) {
   return w === "core" || w === "major" || w === "minor" ? w : "";
 }
 
-/* A chapter is a folder; its notes are the sheets peeking out of it. */
+/* A chapter is a folder; its notes are the sheets peeking out of it.
+   Folder colours are picked among the brand colours: stable for a given chapter, never the same as the previous folder. */
+var FOLDER_COLORS = 4;
+var lastFolderColor = -1;
+function folderColor(id) {
+  var h = 0;
+  for (var i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  var c = h % FOLDER_COLORS;
+  if (c === lastFolderColor) c = (c + 1) % FOLDER_COLORS;
+  lastFolderColor = c;
+  return c;
+}
+var ICON_FOLDER_BOOK =
+  '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.4C10.4 5.2 8.3 4.6 5.4 4.6H3.5v13.9h1.9c2.9 0 5 .6 6.6 1.8 1.6-1.2 3.7-1.8 6.6-1.8h1.9V4.6h-1.9c-2.9 0-5 .6-6.6 1.8z"/><path d="M12 6.4v13.9"/></svg>';
+/* half-circle progress with round ends, the percentage in the middle */
+function halfGauge(pct) {
+  pct = Math.max(0, Math.min(100, Math.round(pct)));
+  var ns = "http://www.w3.org/2000/svg";
+  var wrap = el("span", "fd-gauge");
+  var svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("viewBox", "0 0 64 38");
+  svg.setAttribute("aria-hidden", "true");
+  var d = "M7 33 A25 25 0 0 1 57 33";
+  var track = document.createElementNS(ns, "path");
+  track.setAttribute("d", d);
+  track.setAttribute("class", "fg-track");
+  svg.appendChild(track);
+  if (pct > 0) {
+    var bar = document.createElementNS(ns, "path");
+    bar.setAttribute("d", d);
+    bar.setAttribute("class", "fg-bar");
+    bar.setAttribute("pathLength", "100");
+    bar.setAttribute("stroke-dasharray", Math.max(pct, 3) + " 100");
+    svg.appendChild(bar);
+  }
+  wrap.appendChild(svg);
+  wrap.appendChild(el("b", "fd-gauge-n", pct + "%"));
+  wrap.setAttribute("role", "img");
+  wrap.setAttribute("aria-label", pct + "%");
+  return wrap;
+}
 function chapterCard(ch) {
   var total = Number(ch.exerciseCount) || 0;
   var done = doneCount(ch);
   var nNotes = notesOf(ch.id).length;
   var title = ctx.getLang() === "ar" && ch.title_ar ? ch.title_ar : ch.title;
   var soon = total === 0; // listed in the programme, exercises not written yet
-  var wt = weightOf(ch);
-  var card = el(
-    "button",
-    "folder is-" + (ch.subject === "sti" ? "sti" : "prog") + (wt ? " w-" + wt : "") + (soon ? " is-soon" : ""),
-  );
+  var card = el("button", "folder fc" + folderColor(ch.id) + (soon ? " is-soon" : ""));
   card.type = "button";
   card.disabled = soon;
   card.append(el("span", "fd-tab"));
@@ -904,15 +946,15 @@ function chapterCard(ch) {
   }
   card.append(back);
   var front = el("span", "fd-front");
-  front.append(el("b", "fd-title", title || ""));
-  var meta = soon ? t("soon") : tf("exercisesCount", { n: total });
+  var row = el("span", "fd-row");
+  var ic = el("span", "fd-ico");
+  ic.innerHTML = ICON_FOLDER_BOOK; // static, trusted SVG
+  row.append(ic);
+  if (total) row.append(halfGauge((done / total) * 100));
+  front.append(row, el("b", "fd-title", title || ""));
+  var meta = soon ? t("soon") : tf("doneOf", { d: done, n: total });
   if (nNotes) meta += " · " + notesLabel(nNotes);
   front.append(el("small", "fd-meta", meta));
-  if (total) {
-    var bar = el("span", "fd-bar");
-    segBar(bar, (done / total) * 100);
-    front.append(bar);
-  }
   card.append(front);
   card.addEventListener("click", function () {
     openChapter(ch.id);
@@ -993,16 +1035,7 @@ function renderList(host, route) {
     message(host, "emptyTitle", "emptyText", false);
     return;
   }
-  if (shown.some(weightOf)) {
-    var legend = el("div", "weight-legend");
-    legend.title = t("weightTip");
-    ["core", "major", "minor"].forEach(function (k) {
-      var chip = el("span", "wl-chip w-" + k);
-      chip.append(el("i", "wl-dot"), document.createTextNode(t("weight" + k.charAt(0).toUpperCase() + k.slice(1))));
-      legend.append(chip);
-    });
-    host.append(legend);
-  }
+  lastFolderColor = -1;
   var lastPart = null;
   shown.forEach(function (c) {
     // chapters grouped by part of the programme (when the chapter file says which part it belongs to)
@@ -1345,9 +1378,13 @@ function exerciseCard(ch, ex, index) {
     : openEx[ch.id] !== undefined
       ? openEx[ch.id] === ex.id
       : reached;
+  // exercises come one at a time: the ones after the one the student has reached stay locked until it is finished
+  var reachedId = currentExerciseId(ch);
+  var locked = !st && !!reachedId && !reached;
+  if (locked) isOpenCard = false;
   var card = el(
     "article",
-    "ex-card d-" + diff + (index % 2 ? " is-b" : " is-a") + (st ? " is-" + st : "") + (isOpenCard ? "" : " is-collapsed")
+    "ex-card d-" + diff + (index % 2 ? " is-b" : " is-a") + (st ? " is-" + st : "") + (isOpenCard ? "" : " is-collapsed") + (locked ? " is-locked" : "")
   );
   card.id = "ex-" + ex.id;
   var pin = el("span", "ex-pin");
@@ -1370,6 +1407,18 @@ function exerciseCard(ch, ex, index) {
   sum.append(el("span", "ex-num", (index < 9 ? "0" : "") + (index + 1)), el("span", "ex-diff is-" + diff, t("d_" + diff)));
   if (st) sum.append(el("span", "ex-state is-" + st, t(st)));
   sum.append(el("span", "ex-chev"));
+  if (locked) {
+    // no statement, no answers: just the row, with a lock and the reason
+    sum.disabled = true;
+    sum.setAttribute("aria-expanded", "false");
+    sum.title = t("exLocked");
+    var lockIco = el("span", "ex-lock");
+    lockIco.innerHTML = ICON_LOCK; // static, trusted SVG
+    sum.append(lockIco, el("span", "ex-preview ex-locked-text", t("exLocked")));
+    panel.append(sum);
+    card.append(pin, panel);
+    return card;
+  }
   var split = splitQuestions(ex.statement);
   var prev = previewOf(ex.statement);
   if (prev) sum.append(el("span", "ex-preview", prev));

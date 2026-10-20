@@ -206,57 +206,11 @@
   --fd-bottom: #9fd868;
   --fd-ink: #01092d;
 }
-/* colour = importance for the exam (brand colours): core = royal blue, major = lime, minor = soft blue */
-.folder.w-core {
-  --fd-top: #3b8bf5;
-  --fd-bottom: #0464de;
-  --fd-ink: #fff;
-}
-.folder.w-major {
-  --fd-top: #c3ec9a;
-  --fd-bottom: #9fd868;
-  --fd-ink: #01092d;
-}
-.folder.w-minor {
-  --fd-top: #eef4fd;
-  --fd-bottom: #cfe0f7;
-  --fd-ink: #032c7b;
-}
-.folder.w-major .fd-bar,
-.folder.w-minor .fd-bar {
-  background: rgba(1, 9, 45, 0.15);
-}
-.folder.w-minor .fd-back {
-  box-shadow: 0 12px 26px rgba(1, 9, 45, 0.1), inset 0 0 0 1px rgba(3, 44, 123, 0.1);
-}
-.folder.w-minor .fd-front {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.35), rgba(3, 44, 123, 0.06)), var(--fd-bottom);
-}
-.weight-legend {
-  grid-column: 1 / -1;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 16px;
-  margin: -6px 2px 0;
-  color: var(--color-text-muted);
-  font-size: 12.5px;
-  font-weight: 700;
-}
-.wl-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-}
-.wl-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--wl, #0464de);
-}
-.wl-chip.w-core { --wl: #0464de; }
-.wl-chip.w-major { --wl: #9fd868; }
-.wl-chip.w-minor { --wl: #cfe0f7; }
-.wl-chip.w-minor .wl-dot { box-shadow: inset 0 0 0 1px rgba(3, 44, 123, 0.25); }
+/* folder colours: brand colours picked per chapter (see folderColor in chapters.js) */
+.folder.fc0 { --fd-top: #4f9bff; --fd-bottom: #0464de; --fd-ink: #fff; }
+.folder.fc1 { --fd-top: #c3ec9a; --fd-bottom: #9fd868; --fd-ink: #01092d; }
+.folder.fc2 { --fd-top: #2a63c9; --fd-bottom: #032c7b; --fd-ink: #fff; }
+.folder.fc3 { --fd-top: #d9e8ff; --fd-bottom: #a9cbf8; --fd-ink: #032c7b; }
 .fd-tab {
   position: absolute;
   top: 0;
@@ -1968,3 +1922,61 @@ html[dir="rtl"] .note-band {
 .ib-card.is-answer { background: var(--color-light-blue); }
 .ib-card small { display: block; color: var(--color-text-muted); font-weight: 700; }
 .ib-card p { margin: 6px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+
+/* ---- v50: glass folders with a half-circle progress ---- */
+.folder { height: 200px; }
+.fd-sheet { bottom: 100px; height: 84px; }
+.fd-sheet.s2 { height: 92px; }
+.fd-sheet.s3 { height: 88px; }
+.fd-front {
+  display: grid;
+  grid-template-rows: auto auto auto;
+  align-content: end;
+  gap: 2px;
+  height: 118px;
+  padding: 12px 16px 14px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.14));
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 0 -6px 16px rgba(1, 9, 45, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+.fd-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: auto; }
+.fd-ico {
+  width: 36px; height: 36px; display: grid; place-items: center; border-radius: 12px;
+  background: color-mix(in srgb, var(--fd-ink) 14%, transparent);
+  color: var(--fd-ink);
+}
+.fd-ico svg { width: 19px; height: 19px; }
+.fd-gauge { position: relative; width: 64px; height: 38px; flex: none; margin-top: -4px; }
+.fd-gauge svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.fd-gauge path { fill: none; stroke-width: 7; stroke-linecap: round; }
+.fd-gauge .fg-track { stroke: color-mix(in srgb, var(--fd-ink) 20%, transparent); }
+.fd-gauge .fg-bar { stroke: var(--fd-ink); }
+.fd-gauge-n { position: absolute; inset-inline: 0; bottom: -1px; text-align: center; font-size: 12.5px; font-weight: 900; line-height: 1; color: var(--fd-ink); }
+.fd-title { font-size: 16.5px; line-height: 1.2; }
+.fd-meta { font-size: 12px; }
+@media (max-width: 520px) {
+  .folder { height: 186px; }
+  .fd-sheet { bottom: 92px; height: 64px; }
+  .fd-sheet.s2 { height: 70px; }
+  .fd-sheet.s3 { height: 66px; }
+  .fd-front { height: 110px; padding: 10px 12px 12px; border-radius: 16px; }
+  .fd-ico { width: 30px; height: 30px; border-radius: 10px; }
+  .fd-ico svg { width: 16px; height: 16px; }
+  .fd-gauge { width: 54px; height: 32px; }
+  .fd-gauge path { stroke-width: 6.5; }
+  .fd-gauge-n { font-size: 11px; }
+  .fd-title { font-size: 14px; }
+  .fd-meta { font-size: 11px; }
+}
+
+/* ---- v50: exercises unlock one by one ---- */
+.ex-card.is-locked { opacity: 0.62; }
+.ex-card.is-locked .ex-sum { cursor: not-allowed; }
+.ex-card.is-locked .ex-chev { display: none; }
+.ex-lock { display: inline-grid; place-items: center; width: 24px; height: 24px; margin-inline-start: auto; color: var(--color-text-muted); }
+.ex-lock svg { width: 17px; height: 17px; }
+.ex-locked-text { direction: inherit !important; text-align: start !important; }
