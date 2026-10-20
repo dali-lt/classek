@@ -3,7 +3,7 @@
    The profile card ("My account") reuses the teacher app's modal look (style.css)
    and saves to users/{uid}/meta/profile. */
 
-import { Chapters } from "./chapters.js?v=52";
+import { Chapters } from "./chapters.js?v=53";
 import {
   MAX_SHOWN,
   parseDevice,
@@ -1752,7 +1752,8 @@ function renderQuestionCard(body) {
   head.append(badge, right);
   var tbar = el("div", "tc-timer");
   var tfill = el("i");
-  tbar.append(tfill);
+  var trest = el("b");
+  tbar.append(tfill, trest);
   fixedHead.append(head, tbar);
   var limit = timeFor(q);
   clock.querySelector("b").textContent = limit + "s";
@@ -1869,7 +1870,10 @@ function renderQuestionCard(body) {
     qTimer = setInterval(function () {
       if (!document.body.contains(tbar)) return stopTimer();
       var left = Math.max(0, endAt - Date.now());
-      tfill.style.width = ((left / (limit * 1000)) * 100).toFixed(1) + "%";
+      var tp = (left / (limit * 1000)) * 100;
+      tfill.style.flexBasis = tp.toFixed(1) + "%";
+      tfill.style.display = tp <= 0.5 ? "none" : "";
+      trest.style.display = tp >= 99.5 ? "none" : "";
       clock.querySelector("b").textContent = Math.ceil(left / 1000) + "s";
       var low = left <= Math.min(10000, limit * 1000 * 0.3);
       tbar.classList.toggle("is-low", low);
@@ -1924,8 +1928,8 @@ function renderResultCard(body) {
   svg.setAttribute("aria-hidden", "true");
   svg.innerHTML =
     '<defs><linearGradient id="tcGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="' + LV.g1 + '"/><stop offset="1" stop-color="' + LV.g2 + '"/></linearGradient></defs>' +
-    '<circle class="tc-ring-track" cx="60" cy="60" r="52"/>' +
-    '<circle class="tc-ring-fill" cx="60" cy="60" r="52" stroke="url(#tcGrad)" stroke-dasharray="' + C.toFixed(1) + '" stroke-dashoffset="' + C.toFixed(1) + '"/>';
+    '<circle class="tc-ring-rest" cx="60" cy="60" r="52"/>' +
+    '<circle class="tc-ring-fill" cx="60" cy="60" r="52" stroke="url(#tcGrad)"/>';
   var num = el("div", "tc-ring-num");
   var big = el("b", "", "0");
   num.append(big, el("small", "", "/ " + r.total));
@@ -1936,10 +1940,31 @@ function renderResultCard(body) {
   moodBox.append(el("h3", "tc-h tc-mood", t(moodKey)), levelBadge(pct, r.correct + "/" + r.total, "tc-mood-badge"));
   body.append(top, moodBox);
 
+  // two arcs with round ends and a small gap: the empty part never runs under the filled one.
+  // A round cap sticks out half the stroke width past each end of its dash, so each dash is shortened by that on both sides.
   var fillCircle = svg.querySelector(".tc-ring-fill");
+  var restCircle = svg.querySelector(".tc-ring-rest");
+  var CAPW = 5;
+  var GAPW = 9;
+  function setArc(c, from, to, visible) {
+    c.style.opacity = visible ? "1" : "0";
+    c.style.strokeDasharray = Math.max(to - from - 2 * CAPW, 0.01).toFixed(1) + " " + (C * 2).toFixed(1);
+    c.style.strokeDashoffset = (-(from + CAPW)).toFixed(1);
+  }
+  var cut = C * pct;
+  setArc(fillCircle, 0, 0, false); // starts empty, then grows
+  setArc(restCircle, 0, C, true);
   requestAnimationFrame(function () {
     requestAnimationFrame(function () {
-      fillCircle.style.strokeDashoffset = (C * (1 - pct)).toFixed(1);
+      if (pct <= 0) {
+        setArc(restCircle, 0, C, true);
+      } else if (pct >= 1) {
+        setArc(fillCircle, 0, C, true);
+        setArc(restCircle, C, C, false);
+      } else {
+        setArc(fillCircle, 0, cut - GAPW / 2, true);
+        setArc(restCircle, cut + GAPW / 2, C, true);
+      }
     });
   });
   var t0 = null;
@@ -1966,11 +1991,13 @@ function renderResultCard(body) {
     var bar = el("div", "tc-tile-bar");
     var fill = el("i");
     bar.append(fill);
+    if (p < 1) bar.append(el("b", "tc-tile-rest")); // the empty part is its own pill, with a gap after the filled one
     var lvl = levelBadge(p);
     tile.append(th, score, bar, lvl);
     tiles.append(tile);
     setTimeout(function () {
-      fill.style.width = Math.round(p * 100) + "%";
+      fill.style.width = p > 0 ? "calc(" + Math.round(p * 100) + "% - " + (p < 1 ? 2 : 0) + "px)" : "0";
+      if (p > 0 && p < 1) bar.classList.add("has-fill");
     }, 350 + idx * 120);
   });
   body.append(tiles);

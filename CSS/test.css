@@ -1420,19 +1420,24 @@ html[dir="rtl"] .lv-mid .lv-overall {
   height: 5px;
   margin-top: 10px;
   border-radius: 999px;
+  display: flex;
+  gap: 4px;
+}
+.tc-timer b {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+  border-radius: 999px;
   background: var(--color-light-blue);
-  overflow: hidden;
 }
 .tc-timer i {
   display: block;
-  width: 100%;
+  flex: 0 0 100%;
+  min-width: 5px;
   height: 100%;
-  border-radius: inherit;
+  border-radius: 999px;
   background: var(--tc, #0464de);
-  transition: width 0.2s linear, background 0.3s ease;
-}
-html[dir="rtl"] .tc-timer i {
-  margin-inline-start: auto;
+  transition: flex-basis 0.2s linear, background 0.3s ease;
 }
 .tc-timer.is-low i {
   background: #e0473e;
@@ -1843,3 +1848,14 @@ html[dir="rtl"] .tc-timer i {
     border-radius: 50%;
   }
 }
+
+
+/* ---- v53: result box: arcs and bars made of two round-ended pieces with a small gap ---- */
+.tc-ring-rest, .tc-ring-fill { fill: none; stroke-width: 10; stroke-linecap: round; }
+.tc-ring-rest { stroke: rgba(255, 255, 255, 0.2); transition: stroke-dasharray 1.15s cubic-bezier(0.2, 0.8, 0.2, 1), stroke-dashoffset 1.15s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s ease; }
+.tc-ring-fill { transition: stroke-dasharray 1.15s cubic-bezier(0.2, 0.8, 0.2, 1), stroke-dashoffset 1.15s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s ease; }
+.tc-tile-bar { display: flex; gap: 0; height: 8px; border-radius: 0; background: none; overflow: visible; }
+.tc-tile-bar i { flex: none; min-width: 0; height: 8px; }
+.tc-tile-rest { flex: 1; min-width: 8px; height: 8px; border-radius: 999px; background: color-mix(in srgb, var(--g1) 22%, var(--color-surface)); }
+.tc-tile-bar.has-fill .tc-tile-rest { margin-inline-start: 4px; }
+@media (prefers-reduced-motion: reduce) { .tc-ring-fill, .tc-ring-rest { transition: none; } }
