@@ -23,6 +23,7 @@ var STR = {
     exercisesCount: "{n} exercices",
     thinkWait: "Réfléchis encore {t}",
     thinkStart: "Commencer à réfléchir · {t}",
+    thinkStop: "Arrêter et recommencer",
     fbAsk: "Ton avis sur cet exercice ?",
     fbEasy: "Facile",
     fbOk: "Bien",
@@ -127,6 +128,7 @@ var STR = {
     exercisesCount: "{n} تمارين",
     thinkWait: "فكّر زادة {t}",
     thinkStart: "ابدأ التفكير · {t}",
+    thinkStop: "أوقف وابدأ من جديد",
     fbAsk: "رأيك في التمرين؟",
     fbEasy: "سهل",
     fbOk: "مناسب",
@@ -275,6 +277,8 @@ function startThinkTicker() {
 }
 var ratings = {}; // "chapterId/exId" -> "easy" | "ok" | "hard" (the student's own opinion)
 
+var ICON_RESET =
+  '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path d="M3.5 4.5v4.8h4.8"/></svg>';
 var ICON_LOCK =
   '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
 var ICON_BACK =
@@ -1521,9 +1525,22 @@ function exerciseCard(ch, ex, index) {
       if (st || needT <= 0) return true;
       return started() && timeLeft() <= 0;
     };
+    // icon-only button while the countdown runs: stops it and goes back to "Commencer"
+    var stopBtn = el("button", "pc-stop");
+    stopBtn.type = "button";
+    stopBtn.hidden = true;
+    stopBtn.title = t("thinkStop");
+    stopBtn.setAttribute("aria-label", t("thinkStop"));
+    stopBtn.innerHTML = ICON_RESET; // static, trusted SVG
+    stopBtn.addEventListener("click", function () {
+      delete thinkSpent[key];
+      saveThink();
+      paintShow();
+    });
     var paintShow = function () {
       var l = timeLeft();
       var waiting = !st && needT > 0 && started() && l > 0;
+      stopBtn.hidden = !waiting;
       var notYet = !st && needT > 0 && !started();
       show.disabled = !unlocked() && !notYet;
       show.textContent = notYet ? tf("thinkStart", { t: mmss(needT) }) : waiting ? tf("thinkWait", { t: mmss(l) }) : t("showSolution");
@@ -1552,7 +1569,7 @@ function exerciseCard(ch, ex, index) {
       }
       card.replaceWith(exerciseCard(ch, ex, index));
     });
-    actions.append(show);
+    actions.append(show, stopBtn);
     work.append(actions);
   } else {
     var sol = el("div", "ex-solution");

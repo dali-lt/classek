@@ -1994,3 +1994,13 @@ html[dir="rtl"] .note-band {
   .fd-sheet.s2 { height: 62px; }
   .fd-sheet.s3 { height: 58px; }
 }
+
+/* ---- v52: stop / restart the thinking time (icon only) ---- */
+.pc-stop {
+  flex: none; width: 38px; height: 38px; display: grid; place-items: center; padding: 0;
+  border: 1.5px solid var(--color-border); border-radius: 50%; background: var(--color-surface);
+  color: var(--color-text-muted); cursor: pointer; transition: background 0.15s ease, color 0.15s ease;
+}
+.pc-stop[hidden] { display: none; }
+.pc-stop:hover, .pc-stop:focus-visible { background: #fdeceb; color: var(--color-danger); border-color: var(--color-danger); outline: none; }
+.pc-stop svg { width: 17px; height: 17px; }
