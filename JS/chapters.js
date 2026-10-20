@@ -9,6 +9,8 @@
 
    The page chrome is in the student's language (EN / AR); the course content is French. */
 
+import { makeAlgoViz } from "./algoviz.js?v=54";
+
 var STR = {
   fr: {
     loading: "Chargement…",
@@ -388,8 +390,8 @@ function wordSet(list) {
   return o;
 }
 var KEYWORDS = {
-  algo: wordSet("Fonction Procédure DEBUT FIN Si Alors Sinon FinSi Pour de à Faire FinPour Tant que FinTantQue Répéter Jusqu'à Vrai Faux div mod"),
-  python: wordSet("def if elif else return for while in range and or not True False"),
+  algo: wordSet("Fonction Procédure DEBUT FIN Si Alors Sinon FinSi Pour de à Faire FinPour Tant que FinTantQue Répéter Jusqu'à Vrai Faux div mod ET OU NON"),
+  python: wordSet("def if elif else return for while in range and or not True False break"),
 };
 // light colouring (keywords, comments) built with DOM nodes only; the text itself is never changed
 function codeBlock(code, lang) {
@@ -410,6 +412,22 @@ function codeBlock(code, lang) {
     else pre.append(document.createTextNode(m[0]));
   }
   return pre;
+}
+// one coloured line of code, for the animations
+function codeLine(text, lang) {
+  var frag = document.createDocumentFragment();
+  var kw = KEYWORDS[lang];
+  var re =
+    lang === "python"
+      ? /(#[^\n]*)|([A-Za-zÀ-ÿ_'][A-Za-zÀ-ÿ_0-9']*)|([\s\S])/g
+      : /(\{[^}]*\})|([A-Za-zÀ-ÿ_'][A-Za-zÀ-ÿ_0-9']*)|([\s\S])/g;
+  var m;
+  while ((m = re.exec(text))) {
+    if (m[1]) frag.append(el("span", "tk-com", m[1]));
+    else if (m[2] && kw[m[2]]) frag.append(el("span", "tk-kw", m[2]));
+    else frag.append(document.createTextNode(m[0]));
+  }
+  return frag;
 }
 function codePair(a, b) {
   var wrap = el("div", "code-pair");
@@ -468,6 +486,22 @@ function md(text) {
     var s = segs[i];
     if (!s.code) {
       words(s.v);
+      continue;
+    }
+    if (s.lang === "viz") {
+      box.append(
+        makeAlgoViz(s.v.trim(), {
+          el: el,
+          codeLine: codeLine,
+          lang: function () {
+            return ctx.getLang();
+          },
+          codeLang: function () {
+            return codeLang;
+          },
+          setCodeLang: setCodeLang,
+        })
+      );
       continue;
     }
     var known = s.lang === "algo" || s.lang === "python";

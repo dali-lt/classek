@@ -2004,3 +2004,228 @@ html[dir="rtl"] .note-band {
 .pc-stop[hidden] { display: none; }
 .pc-stop:hover, .pc-stop:focus-visible { background: #fdeceb; color: var(--color-danger); border-color: var(--color-danger); outline: none; }
 .pc-stop svg { width: 17px; height: 17px; }
+
+/* v54 algorithm animations */
+.av {
+  margin: 14px 0;
+  padding: 14px;
+  border-radius: 20px;
+  background: #fff;
+  border: 1.5px solid var(--color-light-blue);
+  box-shadow: 0 8px 24px rgba(3, 44, 123, 0.06);
+}
+.av-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.av-counters {
+  font-size: 12px;
+  font-weight: 700;
+  color: #5b6b8c;
+}
+.av-stage {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 8px;
+  height: 190px;
+  padding: 8px 4px 0;
+  border-radius: 14px;
+  background: var(--color-light-blue);
+  background: rgba(4, 100, 222, 0.06);
+}
+.av-col {
+  flex: 1 1 0;
+  max-width: 64px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: stretch;
+  gap: 4px;
+  text-align: center;
+}
+.av-col small {
+  font-size: 11px;
+  font-weight: 700;
+  color: #5b6b8c;
+  line-height: 1;
+  padding-bottom: 6px;
+}
+.av-bar {
+  position: relative;
+  border-radius: 12px 12px 6px 6px;
+  background: #b9c8e6;
+  transition: height 0.35s ease, background 0.25s ease, transform 0.25s ease;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 0;
+}
+.av-bar b {
+  margin-top: 6px;
+  font-size: 14px;
+  color: #032c7b;
+}
+.av-bar.is-sorted {
+  background: #8fd36f;
+}
+.av-bar.is-mark {
+  background: #5d8fe6;
+}
+.av-bar.is-cmp {
+  background: #0464de;
+  transform: translateY(-6px);
+}
+.av-bar.is-cmp b,
+.av-bar.is-swap b {
+  color: #fff;
+}
+.av-bar.is-swap {
+  background: #e8890c;
+  transform: translateY(-6px);
+}
+.av-bar.is-hole {
+  background: transparent;
+  border: 2px dashed #9fb3da;
+}
+.av-held {
+  min-height: 34px;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  visibility: hidden;
+}
+.av-held.is-on {
+  visibility: visible;
+}
+.av-held-lbl {
+  font-weight: 800;
+  font-size: 13px;
+  color: #5b6b8c;
+}
+.av-held-v {
+  min-width: 34px;
+  padding: 4px 10px;
+  text-align: center;
+  border-radius: 999px;
+  background: #e8890c;
+  color: #fff;
+  font-weight: 800;
+}
+.av-msg {
+  margin: 8px 0 0;
+  min-height: 44px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: #f3f6fc;
+  font-size: 14px;
+  font-weight: 600;
+  color: #032c7b;
+}
+.av-msg.is-done {
+  background: #e7f6df;
+  color: #2c6d17;
+}
+.av-ctl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0;
+  flex-wrap: wrap;
+}
+.av-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  border: 1.5px solid var(--color-light-blue);
+  background: #fff;
+  color: #032c7b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.av-btn:hover:not(:disabled) {
+  background: #eef3fc;
+}
+.av-btn:active:not(:disabled) {
+  transform: scale(0.94);
+}
+.av-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.av-btn.is-main {
+  width: 54px;
+  background: #0464de;
+  border-color: #0464de;
+  color: #fff;
+}
+.av-btn.is-main:hover {
+  background: #0353b8;
+}
+.av-speed {
+  height: 42px;
+  padding: 0 10px;
+  border-radius: 14px;
+  border: 1.5px solid var(--color-light-blue);
+  background: #fff;
+  font: inherit;
+  font-weight: 700;
+  color: #032c7b;
+  margin-inline-start: auto;
+}
+.av-code .test-code {
+  margin: 0;
+}
+.av-pre {
+  padding: 8px 0;
+  overflow-x: auto;
+}
+.av-line {
+  display: block;
+  white-space: pre;
+  padding: 1px 14px;
+  border-inline-start: 4px solid transparent;
+  transition: background 0.2s ease;
+}
+.av-line.is-on {
+  background: rgba(4, 100, 222, 0.14);
+  border-inline-start-color: #0464de;
+}
+.av-code .code-tabs {
+  margin-bottom: 6px;
+}
+@media (max-width: 520px) {
+  .av {
+    padding: 10px;
+  }
+  .av-stage {
+    height: 150px;
+    gap: 5px;
+  }
+  .av-speed {
+    margin-inline-start: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .av-bar {
+    transition: none;
+  }
+}
+.av-head .test-chip {
+  display: inline-flex;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(4, 100, 222, 0.1);
+  color: #0464de;
+  font-weight: 800;
+  font-size: 13px;
+}
