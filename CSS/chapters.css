@@ -1325,9 +1325,6 @@ input.note-input {
 .code-pair[data-lang="python"] .code-algo {
   display: none;
 }
-.code-algo {
-  border-inline-start: 4px solid var(--color-accent);
-}
 .tk-kw {
   color: var(--color-accent);
   font-weight: 700;
@@ -2833,4 +2830,22 @@ html[dir="rtl"] .note-band {
     width: 54px;
     height: 54px;
   }
+}
+
+/* animation window already has its own dots; its lines are numbered the same way */
+.av-pre::before {
+  display: none;
+}
+.av-pre {
+  counter-reset: ln;
+}
+.av-line::before {
+  counter-increment: ln;
+  content: counter(ln);
+  display: inline-block;
+  width: 1.6em;
+  margin-inline-end: 14px;
+  text-align: right;
+  color: rgba(234, 242, 255, 0.35);
+  user-select: none;
 }

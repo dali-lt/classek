@@ -723,16 +723,41 @@ html[dir="rtl"] .welcome-link .welcome-ico:first-child svg {
 
 /* code snippets inside test questions */
 .test-code {
+  position: relative;
   margin: 0 0 12px;
-  padding: 12px 14px;
+  padding: 14px 16px 12px;
   overflow-x: auto;
-  border-radius: 12px;
-  background: var(--color-navy);
+  border-radius: 16px;
+  background: #000a2e;
   color: #eaf2ff;
   font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   font-size: 13.5px;
-  line-height: 1.5;
+  line-height: 1.55;
   text-align: left;
+}
+/* code window: three dots on top (site colours), line numbers on code */
+.test-code::before {
+  content: "";
+  display: block;
+  width: 11px;
+  height: 11px;
+  margin: 0 0 14px;
+  border-radius: 50%;
+  background: #0464de;
+  box-shadow: 18px 0 0 #aee37b, 36px 0 0 #e64d6b;
+}
+.test-code.has-ln {
+  counter-reset: ln;
+}
+.test-code .cl::before {
+  counter-increment: ln;
+  content: counter(ln);
+  display: inline-block;
+  width: 1.8em;
+  margin-inline-end: 16px;
+  text-align: right;
+  color: rgba(234, 242, 255, 0.35);
+  user-select: none;
 }
 
 /* ================= Settings: devices where the account is open ================= */

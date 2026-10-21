@@ -3,7 +3,7 @@
    The profile card ("My account") reuses the teacher app's modal look (style.css)
    and saves to users/{uid}/meta/profile. */
 
-import { Chapters } from "./chapters.js?v=61";
+import { Chapters } from "./chapters.js?v=62";
 import {
   MAX_SHOWN,
   parseDevice,
@@ -368,6 +368,17 @@ function cleanAvatar(v) {
   if (/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/.test(v) && v.length < 200000) return v;
   return "";
 }
+// code with line numbers (CSS counter on .cl), plain text only
+function numberedCode(pre, code) {
+  pre.classList.add("has-ln");
+  String(code)
+    .split("\n")
+    .forEach(function (l, i) {
+      if (i) pre.append(document.createTextNode("\n"));
+      pre.append(el("span", "cl", l));
+    });
+}
+
 // background colours for the site avatars: the brand colours except the darkest one, plus a rose red
 var AVATAR_BGS = { azure: "#032c7b", royal: "#0464de", lime: "#aee37b", frost: "#e9fff4", rose: "#e64d6b" };
 function cleanBg(v) {
@@ -1763,7 +1774,7 @@ function renderQuestionCard(body) {
   if (q.code) {
     var codeBox = el("pre", "test-code");
     codeBox.setAttribute("dir", "ltr");
-    codeBox.textContent = q.code;
+    numberedCode(codeBox, q.code);
     body.append(codeBox);
   }
 
@@ -2033,7 +2044,7 @@ function renderResultCard(body) {
       item.append(head);
       if (q.code) {
         var codeRev = el("pre", "test-code");
-        codeRev.textContent = q.code;
+        numberedCode(codeRev, q.code);
         item.append(codeRev);
       }
       item.append(

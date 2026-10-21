@@ -9,7 +9,7 @@
 
    The page chrome is in the student's language (EN / AR); the course content is French. */
 
-import { makeAlgoLauncher, openAlgoViz, openAlgoLibrary, libraryLabel, algoTitle, hasAlgoViz } from "./algoviz.js?v=61";
+import { makeAlgoLauncher, openAlgoViz, openAlgoLibrary, libraryLabel, algoTitle, hasAlgoViz } from "./algoviz.js?v=62";
 
 var STR = {
   fr: {
@@ -405,11 +405,18 @@ function codeBlock(code, lang) {
     lang === "python"
       ? /(#[^\n]*)|([A-Za-zÀ-ÿ_'][A-Za-zÀ-ÿ_0-9']*)|([\s\S])/g
       : /(\{[^}]*\})|([A-Za-zÀ-ÿ_'][A-Za-zÀ-ÿ_0-9']*)|([\s\S])/g;
+  pre.classList.add("has-ln"); // line numbers (CSS counter on .cl)
+  var line = el("span", "cl");
+  pre.append(line);
   var m;
   while ((m = re.exec(code))) {
-    if (m[1]) pre.append(el("span", "tk-com", m[1]));
-    else if (m[2] && kw[m[2]]) pre.append(el("span", "tk-kw", m[2]));
-    else pre.append(document.createTextNode(m[0]));
+    if (m[1]) line.append(el("span", "tk-com", m[1]));
+    else if (m[2] && kw[m[2]]) line.append(el("span", "tk-kw", m[2]));
+    else if (m[0] === "\n") {
+      pre.append(document.createTextNode("\n"));
+      line = el("span", "cl");
+      pre.append(line);
+    } else line.append(document.createTextNode(m[0]));
   }
   return pre;
 }
