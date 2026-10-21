@@ -330,7 +330,7 @@ export function makeAlgoViz(kind, opts) {
 
   var bar = el("div", "av-ctl");
   function btn(cls, label, svg) {
-    var b = el("button", "av-btn " + cls);
+    var b = el("button", "avz-btn " + cls);
     b.type = "button";
     b.setAttribute("aria-label", label);
     b.title = label;
@@ -377,7 +377,7 @@ export function makeAlgoViz(kind, opts) {
   side.append(bReset, bShuf);
   var mainBtns = el("div", "av-main");
   mainBtns.append(bPrev, bPlay, bNext);
-  var row = el("div", "av-row");
+  var row = el("div", "avz-row");
   row.append(side, mainBtns, seg);
   bar.append(prog, row);
   right.append(bar);

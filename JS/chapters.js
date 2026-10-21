@@ -9,7 +9,7 @@
 
    The page chrome is in the student's language (EN / AR); the course content is French. */
 
-import { makeAlgoLauncher, openAlgoViz, algoTitle, hasAlgoViz } from "./algoviz.js?v=59";
+import { makeAlgoLauncher, openAlgoViz, algoTitle, hasAlgoViz } from "./algoviz.js?v=60";
 
 var STR = {
   fr: {

@@ -2014,20 +2014,24 @@ html[dir="rtl"] .note-band {
 .av-bar-top {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
   gap: 8px;
   margin: 0 0 14px;
-  padding: 10px 12px;
-  border-radius: 28px;
+  padding: 8px 8px 8px 18px;
+  border-radius: 999px;
 }
 .av-bar-top-l {
+  flex: 0 0 auto;
   font-weight: 800;
   font-size: 13px;
   color: #032c7b;
-  margin-inline: 6px 4px;
+  margin-inline-end: 6px;
 }
 .av-top-btn {
-  padding: 8px 14px;
+  flex: 1 1 0;
+  min-width: 0;
+  justify-content: center;
+  text-align: center;
+  padding: 10px 12px;
   font-size: 13px;
   background: #0464de;
   border-color: #0464de;
@@ -2137,7 +2141,7 @@ html[dir="rtl"] .note-band {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 16px;
-  align-items: start;
+  align-items: stretch;
 }
 .av-left {
   order: 1;
@@ -2146,13 +2150,33 @@ html[dir="rtl"] .note-band {
 .av-right {
   order: 2;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.av-left {
+  display: flex;
+  flex-direction: column;
+}
+.av-code {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+}
+.av-win {
+  flex: 1 1 auto;
 }
 
 /* stage and cards (playing-card look) */
 .av-stage {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
   padding: 62px 8px 36px;
   border-radius: 20px;
   background: #0464de;
+}
+.av-field {
+  width: 100%;
 }
 .av-field {
   position: relative;
@@ -2378,6 +2402,7 @@ html[dir="rtl"] .note-band {
 /* controls, like a media player: progress, big round play, round side buttons */
 .av-ctl {
   margin: 14px 0 0;
+  flex: 0 0 auto;
 }
 .av-prog {
   display: flex;
@@ -2398,7 +2423,7 @@ html[dir="rtl"] .note-band {
   border-radius: 999px;
   background: #dce6f0;
 }
-.av-row {
+.avz-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2411,7 +2436,7 @@ html[dir="rtl"] .note-band {
   align-items: center;
   gap: 8px;
 }
-.av-btn {
+.avz-btn {
   width: 42px;
   height: 42px;
   border-radius: 50%;
@@ -2424,26 +2449,26 @@ html[dir="rtl"] .note-band {
   cursor: pointer;
   transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease;
 }
-.av-btn:hover:not(:disabled) {
+.avz-btn:hover:not(:disabled) {
   background: #0464de;
   border-color: #0464de;
   color: #fff;
 }
-.av-btn:active:not(:disabled) {
+.avz-btn:active:not(:disabled) {
   transform: scale(0.94);
 }
-.av-btn:disabled {
+.avz-btn:disabled {
   opacity: 0.35;
   cursor: default;
 }
-.av-btn.is-main {
+.avz-btn.is-main {
   width: 60px;
   height: 60px;
   background: #0464de;
   border-color: #0464de;
   color: #fff;
 }
-.av-btn.is-main:hover:not(:disabled) {
+.avz-btn.is-main:hover:not(:disabled) {
   background: #032c7b;
   border-color: #032c7b;
 }
@@ -2546,6 +2571,21 @@ html[dir="rtl"] .note-band {
   .av-split {
     grid-template-columns: minmax(0, 1fr);
   }
+  .av-bar-top {
+    flex-wrap: wrap;
+    border-radius: 28px;
+    padding: 10px;
+  }
+  .av-bar-top-l {
+    flex: 1 0 100%;
+    margin: 0 0 2px 6px;
+  }
+  .av-top-btn {
+    flex: 1 1 calc(50% - 8px);
+  }
+  .av-stage {
+    flex: 0 0 auto;
+  }
   .av-right {
     order: 1;
   }
@@ -2573,7 +2613,7 @@ html[dir="rtl"] .note-band {
     width: 16px;
     height: 16px;
   }
-  .av-row {
+  .avz-row {
     justify-content: center;
   }
 }
@@ -2585,4 +2625,7 @@ html[dir="rtl"] .note-band {
     transition: none;
     animation: none;
   }
+}
+.av-code .code-tabs {
+  align-self: flex-start;
 }

@@ -1578,15 +1578,20 @@ html[dir="rtl"] .lv-mid .lv-overall {
 }
 .av-btns {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: stretch;
   gap: 8px;
   min-width: 0;
+  flex: 1 1 auto;
+  max-width: 260px;
 }
 .av-btn {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 7px;
-  min-height: 36px;
+  justify-content: flex-start;
+  gap: 9px;
+  width: 100%;
+  min-height: 40px;
   padding: 6px 13px;
   border: 1.5px solid var(--color-border, #dbe5f2);
   border-radius: 999px;
