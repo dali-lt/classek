@@ -319,13 +319,16 @@ export function makeAlgoViz(kind, opts) {
   var counters = el("span", "av-counters");
   head.append(counters);
   box.append(head);
+  var split = el("div", "av-split");
+  var left = el("div", "av-left");
+  var right = el("div", "av-right");
 
   var stage = el("div", "av-stage");
-  box.append(stage);
+  right.append(stage);
   var heldBox = el("div", "av-held");
   var msg = el("p", "av-msg");
-  if (kind === "tri-insertion") box.append(heldBox);
-  box.append(msg);
+  if (kind === "tri-insertion") right.append(heldBox);
+  right.append(msg);
 
   var bar = el("div", "av-ctl");
   function btn(cls, label, svg) {
@@ -365,7 +368,7 @@ export function makeAlgoViz(kind, opts) {
     }
   });
   bar.append(bReset, bPrev, bPlay, bNext, sel, bShuf);
-  box.append(bar);
+  right.append(bar);
 
   var codeWrap = el("div", "av-code");
   var tabs = el("div", "code-tabs");
@@ -383,7 +386,9 @@ export function makeAlgoViz(kind, opts) {
   });
   var pre = el("pre", "test-code av-pre");
   codeWrap.append(tabs, pre);
-  box.append(codeWrap);
+  left.append(codeWrap);
+  split.append(left, right);
+  box.append(split);
 
   var lineNodes = [];
   var paintedLang = "";
@@ -493,4 +498,56 @@ export function makeAlgoViz(kind, opts) {
   box.setAttribute("dir", "ltr");
   paintCode();
   return box;
+}
+
+/* ---------------- launcher card + big split-screen box ---------------- */
+export function algoTitle(kind, lang) {
+  var t = UI[lang === "ar" ? "ar" : "fr"].title[kind];
+  return t || kind;
+}
+export function openAlgoViz(kind, opts) {
+  var el = opts.el;
+  var old = document.querySelector(".av-modal");
+  if (old) old.remove();
+  var ov = el("div", "av-modal");
+  ov.setAttribute("role", "dialog");
+  ov.setAttribute("aria-modal", "true");
+  var card = el("div", "av-modal-card");
+  var close = el("button", "av-modal-x");
+  close.type = "button";
+  close.setAttribute("aria-label", "×");
+  close.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+  var prevOverflow = document.body.style.overflow;
+  function shut() {
+    ov.remove();
+    document.body.style.overflow = prevOverflow;
+    document.removeEventListener("keydown", onKey);
+  }
+  function onKey(e) {
+    if (e.key === "Escape") shut();
+  }
+  close.addEventListener("click", shut);
+  ov.addEventListener("mousedown", function (e) {
+    if (e.target === ov) shut();
+  });
+  document.addEventListener("keydown", onKey);
+  card.append(close, makeAlgoViz(kind, opts));
+  ov.append(card);
+  document.body.append(ov);
+  document.body.style.overflow = "hidden";
+  close.focus();
+}
+export function makeAlgoLauncher(kind, opts) {
+  var el = opts.el;
+  var lang = opts.lang() === "ar" ? "ar" : "fr";
+  var row = el("div", "av-launch");
+  var txt = el("div", "av-launch-t");
+  txt.append(el("b", "", algoTitle(kind, lang)), el("small", "", lang === "ar" ? "رسم متحرك خطوة بخطوة" : "Animation pas à pas"));
+  var b = el("button", "pc-btn av-launch-btn", lang === "ar" ? "فتح الرسم" : "Ouvrir l’animation");
+  b.type = "button";
+  b.addEventListener("click", function () {
+    openAlgoViz(kind, opts);
+  });
+  row.append(txt, b);
+  return row;
 }

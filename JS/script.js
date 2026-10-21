@@ -2252,9 +2252,9 @@
   var FEMALE_AVATARS = [2, 4, 6, 8, 10];
   // same backgrounds as the student page (without the pink one)
   var AVATAR_BACKGROUNDS = ["#032c7b", "#0464de", "#aee37b", "#e9fff4"];
-  var ROSE_BACKGROUND = "#e64d6b"; // offered to girls only (as on the student page)
+  var ROSE_BACKGROUND = "#e64d6b"; // offered to everyone (as on the student page)
   function backgroundChoicesFor(student) {
-    return student && student.gender === "female" ? AVATAR_BACKGROUNDS.concat([ROSE_BACKGROUND]) : AVATAR_BACKGROUNDS;
+    return AVATAR_BACKGROUNDS.concat([ROSE_BACKGROUND]);
   }
   // older students keep the pastel colour they were given before: show them in the matching new colour
   var LEGACY_AVATAR_BACKGROUNDS = ["#e6f0fc", "#d6e6fb", "#c3dbfa", "#edf4fd", "#f1f6fd", "#eef9e3", "#dff3c9", "#cfeaa8"];

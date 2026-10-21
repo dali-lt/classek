@@ -9,7 +9,7 @@
 
    The page chrome is in the student's language (EN / AR); the course content is French. */
 
-import { makeAlgoViz } from "./algoviz.js?v=54";
+import { makeAlgoLauncher, openAlgoViz, algoTitle } from "./algoviz.js?v=55";
 
 var STR = {
   fr: {
@@ -448,6 +448,45 @@ function codePair(a, b) {
   return wrap;
 }
 
+function vizOpts() {
+  return {
+    el: el,
+    codeLine: codeLine,
+    lang: function () {
+      return ctx.getLang();
+    },
+    codeLang: function () {
+      return codeLang;
+    },
+    setCodeLang: setCodeLang,
+  };
+}
+// the animations a lesson contains (```viz blocks), in order, without duplicates
+function vizKinds(text) {
+  var out = [];
+  var re = /```viz\s*\n?\s*([a-z-]+)/g;
+  var m;
+  while ((m = re.exec(String(text || "")))) if (out.indexOf(m[1]) < 0) out.push(m[1]);
+  return out;
+}
+// buttons above the lesson: they open the split-screen animation box
+function vizBar(ch) {
+  var kinds = vizKinds(ch.rappel);
+  if (!kinds.length) return null;
+  var ar = ctx.getLang() === "ar";
+  var bar = el("div", "av-bar-top");
+  bar.append(el("span", "av-bar-top-l", ar ? "رسوم متحركة" : "Animations"));
+  kinds.forEach(function (k) {
+    var b = el("button", "pc-btn av-top-btn", algoTitle(k, ctx.getLang()));
+    b.type = "button";
+    b.addEventListener("click", function () {
+      openAlgoViz(k, vizOpts());
+    });
+    bar.append(b);
+  });
+  return bar;
+}
+
 function md(text) {
   var box = el("div", "ch-content");
   box.setAttribute("lang", "fr");
@@ -489,19 +528,7 @@ function md(text) {
       continue;
     }
     if (s.lang === "viz") {
-      box.append(
-        makeAlgoViz(s.v.trim(), {
-          el: el,
-          codeLine: codeLine,
-          lang: function () {
-            return ctx.getLang();
-          },
-          codeLang: function () {
-            return codeLang;
-          },
-          setCodeLang: setCodeLang,
-        })
-      );
+      box.append(makeAlgoLauncher(s.v.trim(), vizOpts()));
       continue;
     }
     var known = s.lang === "algo" || s.lang === "python";
@@ -2069,7 +2096,11 @@ function renderView(view, ch) {
   slot.append(back);
   main.append(slot, hero);
 
-  if (tab === "course") main.append(lessonBlock(ch, true));
+  if (tab === "course") {
+    var vb = vizBar(ch);
+    if (vb) main.append(vb);
+    main.append(lessonBlock(ch, true));
+  }
   else if (tab === "notes") main.append(notesSection(ch, false));
   else main.append(exercisesPart(ch));
   view.append(main);
