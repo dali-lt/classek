@@ -325,9 +325,7 @@ export function makeAlgoViz(kind, opts) {
 
   var stage = el("div", "av-stage");
   right.append(stage);
-  var heldBox = el("div", "av-held");
   var msg = el("p", "av-msg");
-  if (kind === "tri-insertion") right.append(heldBox);
   right.append(msg);
 
   var bar = el("div", "av-ctl");
@@ -352,22 +350,28 @@ export function makeAlgoViz(kind, opts) {
   var bPlay = btn("is-main", u("play"), ICON.play);
   var bNext = btn("", u("next"), ICON.next);
   var bShuf = btn("", u("shuffle"), ICON.shuffle);
-  var sel = el("select", "av-speed");
-  sel.setAttribute("aria-label", u("speed"));
+  var seg = el("div", "av-seg");
+  seg.setAttribute("role", "group");
+  seg.setAttribute("aria-label", u("speed"));
   [["slow", 1500], ["normal", 900], ["fast", 380]].forEach(function (o) {
-    var op = el("option", "", u(o[0]));
-    op.value = String(o[1]);
-    if (o[1] === speed) op.selected = true;
-    sel.append(op);
+    var sb = el("button", "av-seg-b", u(o[0]));
+    sb.type = "button";
+    sb.setAttribute("aria-pressed", o[1] === speed ? "true" : "false");
+    sb.addEventListener("click", function () {
+      speed = o[1];
+      Array.prototype.forEach.call(seg.children, function (x) {
+        x.setAttribute("aria-pressed", x === sb ? "true" : "false");
+      });
+      if (timer) {
+        stop();
+        play();
+      }
+    });
+    seg.append(sb);
   });
-  sel.addEventListener("change", function () {
-    speed = Number(sel.value);
-    if (timer) {
-      stop();
-      play();
-    }
-  });
-  bar.append(bReset, bPrev, bPlay, bNext, sel, bShuf);
+  var circles = el("div", "av-circles");
+  circles.append(bReset, bPrev, bPlay, bNext, bShuf);
+  bar.append(circles, seg);
   right.append(bar);
 
   var codeWrap = el("div", "av-code");
@@ -415,30 +419,59 @@ export function makeAlgoViz(kind, opts) {
   }
 
   var off = 1;
+  var field = el("div", "av-field");
+  var cards = {};
+  var n0 = input.length;
+  function buildField() {
+    field.textContent = "";
+    cards = {};
+    var slots = el("div", "av-slots");
+    for (var q = 0; q < n0; q++) {
+      var sl = el("span", "av-slot");
+      sl.append(el("i"));
+      slots.append(sl);
+    }
+    field.append(slots);
+  }
+  function cardFor(v) {
+    if (cards[v]) return cards[v];
+    var w = el("div", "av-cw");
+    w.style.width = 100 / n0 + "%";
+    var c = el("div", "av-card");
+    c.append(el("span", "av-ci av-ci-a"), el("span", "av-logo"), el("b", "av-cv", String(v)), el("span", "av-ci av-ci-b"));
+    w.append(c);
+    field.append(w);
+    cards[v] = w;
+    return w;
+  }
+  buildField();
+  stage.append(field);
   function paintStage() {
     off = paintedLang === "python" ? 0 : 1;
     var st = steps[idx];
-    var max = Math.max.apply(null, input);
-    stage.textContent = "";
+    var hole = st.a.indexOf(null);
     st.a.forEach(function (v, k) {
-      var col = el("div", "av-col");
-      var cls = "av-bar";
-      if (v == null) cls += " is-hole";
+      if (v == null) return;
+      var w = cardFor(v);
+      var cls = "av-cw";
       if (st.done.indexOf(k) >= 0) cls += " is-sorted";
       if (st.mark === k) cls += " is-mark";
       if (st.cmp && st.cmp.indexOf(k) >= 0) cls += " is-cmp";
       if (st.swap && st.swap.indexOf(k) >= 0) cls += " is-swap";
-      var b = el("div", cls);
-      b.style.height = v == null ? "100%" : Math.max(14, (v / max) * 100) + "%";
-      if (v != null) b.append(el("b", "", String(v)));
-      col.append(b, el("small", "", String(k + off)));
-      stage.append(col);
+      w.className = cls;
+      w.style.left = (k * 100) / n0 + "%";
+      w.style.zIndex = "1";
+      w.querySelector(".av-ci-a").textContent = String(k + off);
+      w.querySelector(".av-ci-b").textContent = String(k + off);
     });
-    heldBox.textContent = "";
     if (st.held != null) {
-      heldBox.append(el("span", "av-held-lbl", "x ="), el("span", "av-held-v", String(st.held)));
+      var hw = cardFor(st.held);
+      hw.className = "av-cw is-held" + (st.cmp ? " is-cmp-held" : "");
+      hw.style.left = (hole < 0 ? 0 : (hole * 100) / n0) + "%";
+      hw.style.zIndex = "2";
+      hw.querySelector(".av-ci-a").textContent = "x";
+      hw.querySelector(".av-ci-b").textContent = "x";
     }
-    heldBox.classList.toggle("is-on", st.held != null);
     var last = idx === steps.length - 1;
     var text = last ? u("done") : idx === 0 ? u("start") : st.msg ? st.msg[opts.lang() === "ar" ? "ar" : "fr"] : "";
     msg.textContent = text;
@@ -491,6 +524,7 @@ export function makeAlgoViz(kind, opts) {
     stop();
     input = randomArray(6);
     steps = gen(kind, input);
+    buildField();
     go(0);
   });
 
