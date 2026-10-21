@@ -369,9 +369,17 @@ export function makeAlgoViz(kind, opts) {
     });
     seg.append(sb);
   });
-  var circles = el("div", "av-circles");
-  circles.append(bReset, bPrev, bPlay, bNext, bShuf);
-  bar.append(circles, seg);
+  var prog = el("div", "av-prog");
+  var progFill = el("i");
+  var progRest = el("b");
+  prog.append(progFill, progRest);
+  var side = el("div", "av-side");
+  side.append(bReset, bShuf);
+  var mainBtns = el("div", "av-main");
+  mainBtns.append(bPrev, bPlay, bNext);
+  var row = el("div", "av-row");
+  row.append(side, mainBtns, seg);
+  bar.append(prog, row);
   right.append(bar);
 
   var codeWrap = el("div", "av-code");
@@ -389,7 +397,11 @@ export function makeAlgoViz(kind, opts) {
     tabs.append(b);
   });
   var pre = el("pre", "test-code av-pre");
-  codeWrap.append(tabs, pre);
+  var win = el("div", "av-win");
+  var dots = el("div", "av-dots");
+  dots.append(el("i"), el("i"), el("i"));
+  win.append(dots, pre);
+  codeWrap.append(tabs, win);
   left.append(codeWrap);
   split.append(left, right);
   box.append(split);
@@ -433,13 +445,17 @@ export function makeAlgoViz(kind, opts) {
     }
     field.append(slots);
   }
+  var CHECK = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
+  var SWITCH = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h14l-3.5-3.5"/><path d="M20 16H6l3.5 3.5"/></svg>';
   function cardFor(v) {
     if (cards[v]) return cards[v];
     var w = el("div", "av-cw");
     w.style.width = 100 / n0 + "%";
-    var c = el("div", "av-card");
-    c.append(el("span", "av-ci av-ci-a"), el("span", "av-logo"), el("b", "av-cv", String(v)), el("span", "av-ci av-ci-b"));
-    w.append(c);
+    var c = el("div", "av-card c" + (v % 4));
+    c.append(el("span", "av-ci av-ci-a"), el("span", "av-ci av-ci-b"), el("i", "av-blob"), el("b", "av-cv", String(v)), el("span", "av-logo"));
+    var dn = el("span", "av-done");
+    dn.innerHTML = CHECK;
+    w.append(c, dn, el("span", "av-tag", "im"));
     field.append(w);
     cards[v] = w;
     return w;
@@ -450,12 +466,15 @@ export function makeAlgoViz(kind, opts) {
     off = paintedLang === "python" ? 0 : 1;
     var st = steps[idx];
     var hole = st.a.indexOf(null);
+    Array.prototype.forEach.call(field.querySelectorAll(".av-pair"), function (x) {
+      x.remove();
+    });
     st.a.forEach(function (v, k) {
       if (v == null) return;
       var w = cardFor(v);
       var cls = "av-cw";
       if (st.done.indexOf(k) >= 0) cls += " is-sorted";
-      if (st.mark === k) cls += " is-mark";
+      if (st.mark === k && kind === "tri-selection") cls += " is-mark";
       if (st.cmp && st.cmp.indexOf(k) >= 0) cls += " is-cmp";
       if (st.swap && st.swap.indexOf(k) >= 0) cls += " is-swap";
       w.className = cls;
@@ -466,12 +485,41 @@ export function makeAlgoViz(kind, opts) {
     });
     if (st.held != null) {
       var hw = cardFor(st.held);
-      hw.className = "av-cw is-held" + (st.cmp ? " is-cmp-held" : "");
+      hw.className = "av-cw is-held" + (st.cmp ? " is-cmp" : "");
       hw.style.left = (hole < 0 ? 0 : (hole * 100) / n0) + "%";
       hw.style.zIndex = "2";
       hw.querySelector(".av-ci-a").textContent = "x";
       hw.querySelector(".av-ci-b").textContent = "x";
     }
+    // a round badge between the two cards being looked at: the sign of the comparison, or the switch icon
+    var p = -1;
+    var q = -1;
+    var swapNow = false;
+    if (st.swap) {
+      p = Math.min(st.swap[0], st.swap[1]);
+      q = Math.max(st.swap[0], st.swap[1]);
+      swapNow = true;
+    } else if (st.cmp && st.cmp.length === 2) {
+      p = Math.min(st.cmp[0], st.cmp[1]);
+      q = Math.max(st.cmp[0], st.cmp[1]);
+    } else if (st.cmp && st.cmp.length === 1 && st.held != null && hole >= 0) {
+      p = st.cmp[0];
+      q = hole;
+    }
+    if (p >= 0) {
+      var vl = st.a[p];
+      var vr = q === hole && st.held != null ? st.held : st.a[q];
+      var adj = q - p === 1;
+      var badge = el("span", "av-pair" + (adj ? "" : " is-above") + (swapNow ? " is-switch" : ""));
+      if (swapNow) badge.innerHTML = SWITCH;
+      else badge.textContent = vl > vr ? ">" : vl < vr ? "<" : "=";
+      var hostVal = adj ? vl : vr;
+      var host = cards[hostVal];
+      if (host) host.append(badge);
+    }
+    progFill.style.flexBasis = (steps.length > 1 ? (idx / (steps.length - 1)) * 100 : 0) + "%";
+    progFill.style.display = idx === 0 ? "none" : "";
+    progRest.style.display = idx === steps.length - 1 ? "none" : "";
     var last = idx === steps.length - 1;
     var text = last ? u("done") : idx === 0 ? u("start") : st.msg ? st.msg[opts.lang() === "ar" ? "ar" : "fr"] : "";
     msg.textContent = text;
@@ -584,4 +632,8 @@ export function makeAlgoLauncher(kind, opts) {
   });
   row.append(txt, b);
   return row;
+}
+
+export function hasAlgoViz(kind) {
+  return !!CODE[kind];
 }

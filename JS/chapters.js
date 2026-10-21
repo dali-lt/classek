@@ -9,7 +9,7 @@
 
    The page chrome is in the student's language (EN / AR); the course content is French. */
 
-import { makeAlgoLauncher, openAlgoViz, algoTitle } from "./algoviz.js?v=57";
+import { makeAlgoLauncher, openAlgoViz, algoTitle, hasAlgoViz } from "./algoviz.js?v=59";
 
 var STR = {
   fr: {
@@ -1506,6 +1506,17 @@ function exerciseCard(ch, ex, index) {
     }
   });
   panel.append(sum, head, md(split ? split.intro : ex.statement));
+  // an exercise can point to an animation ("viz": "tri-bulles"): a round button opens the same split-screen box as in the course
+  if (ex.viz && hasAlgoViz(ex.viz)) {
+    var vz = el("button", "ex-viz");
+    vz.type = "button";
+    vz.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
+    vz.append(el("span", "", (ctx.getLang() === "ar" ? "رسم متحرك · " : "Animation · ") + algoTitle(ex.viz, ctx.getLang())));
+    vz.addEventListener("click", function () {
+      openAlgoViz(ex.viz, vizOpts());
+    });
+    panel.append(vz);
+  }
   card.append(pin, panel, work);
 
   // hints come one at a time: each click puts the next hint on screen in place of the previous one
