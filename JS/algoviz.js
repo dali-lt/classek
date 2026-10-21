@@ -30,7 +30,12 @@ var UI = {
     done: "Le tableau est trié.",
     start: "Tableau de départ. Appuie sur « Pas suivant » ou sur Lecture.",
     held: "x (valeur en main)",
-    title: { "tri-bulles": "Tri à bulles", "tri-selection": "Tri par sélection", "tri-insertion": "Tri par insertion" },
+    title: { "tri-bulles": "Tri à bulles", "tri-selection": "Tri par sélection", "tri-insertion": "Tri par insertion", "recherche-sequentielle": "Recherche séquentielle", "recherche-dichotomique": "Recherche dichotomique", "remplir-tableau": "Remplir un tableau" },
+    target: "Chercher x =",
+    badge: "Animation",
+    pick: "Choisir un algorithme",
+    libTitle: "Algorithmes",
+    groups: { tris: "Tris", recherche: "Recherche", tableaux: "Tableaux" },
   },
   ar: {
     reset: "من البداية",
@@ -51,7 +56,12 @@ var UI = {
     done: "المصفوفة مرتبة.",
     start: "المصفوفة الأولى. اضغط على « الخطوة التالية » أو تشغيل.",
     held: "x (القيمة في اليد)",
-    title: { "tri-bulles": "Tri à bulles", "tri-selection": "Tri par sélection", "tri-insertion": "Tri par insertion" },
+    title: { "tri-bulles": "Tri à bulles", "tri-selection": "Tri par sélection", "tri-insertion": "Tri par insertion", "recherche-sequentielle": "Recherche séquentielle", "recherche-dichotomique": "Recherche dichotomique", "remplir-tableau": "Remplir un tableau" },
+    target: "نبحث عن x =",
+    badge: "رسم متحرك",
+    pick: "اختر خوارزمية",
+    libTitle: "الخوارزميات",
+    groups: { tris: "الترتيب", recherche: "البحث", tableaux: "الجداول" },
   },
 };
 
@@ -152,12 +162,88 @@ var CODE = {
     ],
     map: [0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 6, 5, 11, 1, 11],
   },
+  "recherche-sequentielle": {
+    algo: [
+      "Fonction recherche_seq (T : Tab, n, x : Entier) : Booléen",
+      "DEBUT",
+      "   i ← 1",
+      "   Tant que (i ≤ n) ET (T[i] ≠ x) Faire",
+      "      i ← i + 1",
+      "   FinTantQue",
+      "   Retourner (i ≤ n)",
+      "FIN",
+    ],
+    python: [
+      "def recherche_seq(T, n, x):",
+      "    i = 0",
+      "    while i < n and T[i] != x:",
+      "        i = i + 1",
+      "    return i < n",
+    ],
+    map: [0, 0, 1, 2, 3, 2, 4, 4],
+  },
+  "recherche-dichotomique": {
+    algo: [
+      "Fonction recherche_dicho (T : Tab, n, x : Entier) : Booléen",
+      "DEBUT",
+      "   d ← 1",
+      "   f ← n",
+      "   trouve ← Faux",
+      "   Tant que (d ≤ f) ET (NON trouve) Faire",
+      "      m ← (d + f) div 2",
+      "      Si T[m] = x Alors",
+      "         trouve ← Vrai",
+      "      Sinon",
+      "         Si T[m] < x Alors",
+      "            d ← m + 1",
+      "         Sinon",
+      "            f ← m - 1",
+      "         FinSi",
+      "      FinSi",
+      "   FinTantQue",
+      "   Retourner trouve",
+      "FIN",
+    ],
+    python: [
+      "def recherche_dicho(T, n, x):",
+      "    d = 0",
+      "    f = n - 1",
+      "    trouve = False",
+      "    while d <= f and not trouve:",
+      "        m = (d + f) // 2",
+      "        if T[m] == x:",
+      "            trouve = True",
+      "        elif T[m] < x:",
+      "            d = m + 1",
+      "        else:",
+      "            f = m - 1",
+      "    return trouve",
+    ],
+    map: [0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 8, 9, 10, 11, 8, 6, 4, 12, 12],
+  },
+  "remplir-tableau": {
+    algo: [
+      "Procédure remplir (@T : Tab, n : Entier)",
+      "DEBUT",
+      "   Pour i de 1 à n Faire",
+      "      Écrire (\"T[\", i, \"] = \")",
+      "      Lire (T[i])",
+      "   FinPour",
+      "FIN",
+    ],
+    python: [
+      "def remplir(T, n):",
+      "    for i in range(n):",
+      "        T[i] = int(input(\"T[\" + str(i) + \"] = \"))",
+    ],
+    map: [0, 0, 1, 2, 2, 1, 2],
+  },
 };
 
 /* ---------------- step generators ----------------
    a step: { a: array (null = empty slot), cmp: [i, j], swap: [i, j], mark: index, done: [indexes], held: value|null,
              line: algo line index, msg: {fr, ar}, c: comparisons so far, s: swaps so far } */
-function gen(kind, input) {
+function gen(kind, input, x) {
   var a = input.slice();
   var n = a.length;
   var steps = [];
@@ -172,6 +258,10 @@ function gen(kind, input) {
     steps.push(o);
   }
   var i, j;
+  var vals = input.slice();
+  if (kind === "remplir-tableau") a = a.map(function () {
+    return null;
+  });
   push({ line: 1, msg: { fr: "Début : tableau de " + n + " éléments.", ar: "البداية: مصفوفة من " + n + " عناصر." } });
 
   if (kind === "tri-bulles") {
@@ -248,44 +338,164 @@ function gen(kind, input) {
     done = [];
     for (i = 0; i < n; i++) done.push(i);
     push({ line: 15, msg: null });
-  } else {
+  } else if (kind === "tri-insertion") {
     done = [0];
     for (i = 1; i < n; i++) {
-      var x = a[i];
+      var xv = a[i];
       a[i] = null;
       j = i - 1;
-      push({ line: 3, held: x, hole: i, msg: { fr: "i = " + (i + 1) + " : x ← T[" + (i + 1) + "] = " + x + ". On lui cherche une place à gauche.", ar: "i = " + (i + 1) + " : x ← T[" + (i + 1) + "] = " + x + ". نبحث له عن مكان على اليسار." } });
+      push({ line: 3, held: xv, hole: i, msg: { fr: "i = " + (i + 1) + " : x ← T[" + (i + 1) + "] = " + xv + ". On lui cherche une place à gauche.", ar: "i = " + (i + 1) + " : x ← T[" + (i + 1) + "] = " + xv + ". نبحث له عن مكان على اليسار." } });
       while (j >= 0) {
         c++;
-        var bigger = a[j] > x;
+        var bigger = a[j] > xv;
         push({
           line: 7,
-          held: x,
+          held: xv,
           cmp: [j],
           msg: {
-            fr: "Si T[" + (j + 1) + "] > x ? " + a[j] + " > " + x + " : " + (bigger ? "oui, on le décale à droite." : "non."),
-            ar: "هل T[" + (j + 1) + "] > x ؟ " + a[j] + " > " + x + " : " + (bigger ? "نعم، نزحزحه لليمين." : "لا."),
+            fr: "Si T[" + (j + 1) + "] > x ? " + a[j] + " > " + xv + " : " + (bigger ? "oui, on le décale à droite." : "non."),
+            ar: "هل T[" + (j + 1) + "] > x ؟ " + a[j] + " > " + xv + " : " + (bigger ? "نعم، نزحزحه لليمين." : "لا."),
           },
         });
         if (!bigger) {
-          push({ line: 11, held: x, msg: { fr: "place ← Vrai : x a trouvé sa place.", ar: "place ← Vrai : x وجد مكانه." } });
+          push({ line: 11, held: xv, msg: { fr: "place ← Vrai : x a trouvé sa place.", ar: "place ← Vrai : x وجد مكانه." } });
           break;
         }
         a[j + 1] = a[j];
         a[j] = null;
         s++;
-        push({ line: 8, held: x, msg: { fr: "T[" + (j + 2) + "] ← T[" + (j + 1) + "] : décalage, puis j ← j - 1.", ar: "T[" + (j + 2) + "] ← T[" + (j + 1) + "] : إزاحة، ثم j ← j - 1." } });
+        push({ line: 8, held: xv, msg: { fr: "T[" + (j + 2) + "] ← T[" + (j + 1) + "] : décalage, puis j ← j - 1.", ar: "T[" + (j + 2) + "] ← T[" + (j + 1) + "] : إزاحة، ثم j ← j - 1." } });
         j--;
       }
-      a[j + 1] = x;
+      a[j + 1] = xv;
       done = [];
       for (var k = 0; k <= i; k++) done.push(k);
-      push({ line: 14, msg: { fr: "T[" + (j + 2) + "] ← x = " + x + " : le début du tableau est trié.", ar: "T[" + (j + 2) + "] ← x = " + x + " : بداية المصفوفة مرتبة." } });
+      push({ line: 14, msg: { fr: "T[" + (j + 2) + "] ← x = " + xv + " : le début du tableau est trié.", ar: "T[" + (j + 2) + "] ← x = " + xv + " : بداية المصفوفة مرتبة." } });
     }
     push({ line: 16, msg: null });
+  } else if (kind === "recherche-sequentielle") {
+    var found = false;
+    function tg(k) {
+      var o = {};
+      o[k] = "i";
+      return o;
+    }
+    push({ line: 2, target: x, tags: tg(0), msg: { fr: "i ← 1 : on commence par la première case.", ar: "i ← 1 : نبدأ من الخانة الأولى." } });
+    for (i = 0; i < n; i++) {
+      c++;
+      var eq = a[i] === x;
+      push({
+        line: 3,
+        target: x,
+        cmp: [i],
+        eq: eq,
+        tags: tg(i),
+        msg: {
+          fr: "T[" + (i + 1) + "] = " + a[i] + " " + (eq ? "= " : "≠ ") + x + (eq ? " : trouvé, on s'arrête." : " : pas encore, on continue."),
+          ar: "T[" + (i + 1) + "] = " + a[i] + (eq ? " = " : " ≠ ") + x + (eq ? " : وجدناه، نتوقف." : " : ليس بعد، نواصل."),
+        },
+      });
+      if (eq) {
+        found = true;
+        done = [i];
+        push({ line: 6, target: x, tags: tg(i), msg: { fr: "Retourner Vrai : " + x + " est en T[" + (i + 1) + "], après " + (i + 1) + " comparaison(s).", ar: "نرجع Vrai : " + x + " موجود في T[" + (i + 1) + "] بعد " + (i + 1) + " مقارنة." } });
+        break;
+      }
+      if (i < n - 1) push({ line: 4, target: x, tags: tg(i + 1), msg: { fr: "i ← i + 1.", ar: "i ← i + 1." } });
+    }
+    if (!found) push({ line: 6, target: x, msg: { fr: "i > n : tout le tableau est parcouru, " + x + " n'y est pas. Retourner Faux.", ar: "i > n : مررنا على كامل المصفوفة و" + x + " غير موجود. نرجع Faux." } });
+  } else if (kind === "recherche-dichotomique") {
+    var d = 0;
+    var f = -1;
+    var foundD = false;
+    function marks(extra) {
+      var o = {};
+      function put(k, ch) {
+        if (k < 0 || k > n - 1) return;
+        o[k] = o[k] ? o[k] + "·" + ch : ch;
+      }
+      put(d, "d");
+      if (extra != null) put(extra, "m");
+      put(f, "f");
+      return o;
+    }
+    function outside() {
+      var o = [];
+      for (var q = 0; q < n; q++) if (q < d || q > f) o.push(q);
+      return o;
+    }
+    push({ line: 2, target: x, tags: marks(), msg: { fr: "d ← 1 : début de la zone de recherche.", ar: "d ← 1 : بداية منطقة البحث." } });
+    d = 0;
+    f = n - 1;
+    push({ line: 3, target: x, tags: marks(), msg: { fr: "f ← n : fin de la zone de recherche.", ar: "f ← n : نهاية منطقة البحث." } });
+    push({ line: 4, target: x, tags: marks(), msg: { fr: "trouve ← Faux.", ar: "trouve ← Faux." } });
+    while (d <= f && !foundD) {
+      push({ line: 5, target: x, tags: marks(), out: outside(), msg: { fr: "d ≤ f : il reste " + (f - d + 1) + " case(s) à examiner.", ar: "d ≤ f : بقيت " + (f - d + 1) + " خانة للفحص." } });
+      var m = Math.floor((d + f) / 2);
+      push({ line: 6, target: x, tags: marks(m), out: outside(), msg: { fr: "m ← (d + f) div 2 = " + (m + 1) + " : on regarde la case du milieu.", ar: "m ← (d + f) div 2 = " + (m + 1) + " : ننظر للخانة الوسطى." } });
+      c++;
+      var same = a[m] === x;
+      push({
+        line: 7,
+        target: x,
+        cmp: [m],
+        eq: same,
+        tags: marks(m),
+        out: outside(),
+        msg: { fr: "T[" + (m + 1) + "] = " + a[m] + " " + (same ? "= " : "≠ ") + x + (same ? " : trouvé !" : " : pas égal."), ar: "T[" + (m + 1) + "] = " + a[m] + (same ? " = " : " ≠ ") + x + (same ? " : وجدناه !" : " : غير متساويين.") },
+      });
+      if (same) {
+        foundD = true;
+        done = [m];
+        push({ line: 8, target: x, tags: marks(m), out: outside(), msg: { fr: "trouve ← Vrai : " + x + " est en T[" + (m + 1) + "].", ar: "trouve ← Vrai : " + x + " موجود في T[" + (m + 1) + "]." } });
+      } else {
+        var less = a[m] < x;
+        push({
+          line: 10,
+          target: x,
+          cmp: [m],
+          sign: less ? "<" : ">",
+          tags: marks(m),
+          out: outside(),
+          msg: { fr: "T[" + (m + 1) + "] = " + a[m] + (less ? " < " : " > ") + x + " : " + (less ? "x est à droite, on garde la partie droite." : "x est à gauche, on garde la partie gauche."), ar: "T[" + (m + 1) + "] = " + a[m] + (less ? " < " : " > ") + x + " : " + (less ? "x على اليمين، نحتفظ بالجزء الأيمن." : "x على اليسار، نحتفظ بالجزء الأيسر.") },
+        });
+        if (less) {
+          d = m + 1;
+          push({ line: 11, target: x, tags: marks(), out: outside(), msg: { fr: "d ← m + 1 = " + (d + 1) + " : on élimine la moitié gauche.", ar: "d ← m + 1 = " + (d + 1) + " : نحذف النصف الأيسر." } });
+        } else {
+          f = m - 1;
+          push({ line: 13, target: x, tags: marks(), out: outside(), msg: { fr: "f ← m - 1 = " + (f + 1) + " : on élimine la moitié droite.", ar: "f ← m - 1 = " + (f + 1) + " : نحذف النصف الأيمن." } });
+        }
+      }
+    }
+    push({
+      line: 17,
+      target: x,
+      tags: {},
+      out: foundD ? [] : outside(),
+      msg: foundD ? { fr: "Retourner Vrai : " + x + " est trouvé en " + c + " comparaison(s) seulement.", ar: "نرجع Vrai : " + x + " موجود بعد " + c + " مقارنة فقط." } : { fr: "d > f : la zone est vide, " + x + " n'est pas dans le tableau. Retourner Faux.", ar: "d > f : المنطقة فارغة و" + x + " غير موجود. نرجع Faux." },
+    });
+  } else if (kind === "remplir-tableau") {
+    for (i = 0; i < n; i++) {
+      var only = {};
+      only[i] = "i";
+      push({ line: 2, tags: only, msg: { fr: "i = " + (i + 1) + " : on va remplir la case T[" + (i + 1) + "].", ar: "i = " + (i + 1) + " : سنملأ الخانة T[" + (i + 1) + "]." } });
+      push({ line: 3, tags: only, msg: { fr: "Écrire : l'ordinateur affiche « T[" + (i + 1) + "] = » et attend une valeur.", ar: "Écrire : يعرض الحاسوب « T[" + (i + 1) + "] = » وينتظر قيمة." } });
+      a[i] = vals[i];
+      push({ line: 4, tags: only, msg: { fr: "Lire (T[" + (i + 1) + "]) : l'utilisateur tape " + vals[i] + ", la valeur est rangée dans la case.", ar: "Lire (T[" + (i + 1) + "]) : المستعمل كتب " + vals[i] + " والقيمة تتخزن في الخانة." } });
+    }
+    done = [];
+    push({ line: 6, tags: {}, msg: { fr: "Le tableau est rempli : " + n + " cases, de T[1] à T[" + n + "].", ar: "المصفوفة ممتلئة : " + n + " خانات من T[1] إلى T[" + n + "]." } });
   }
   return steps;
 }
+
+// the library: groups shown in the picker, in this order
+var LIB = [
+  { key: "tris", kinds: ["tri-bulles", "tri-selection", "tri-insertion"] },
+  { key: "recherche", kinds: ["recherche-sequentielle", "recherche-dichotomique"] },
+  { key: "tableaux", kinds: ["remplir-tableau"] },
+];
 
 function randomArray(n) {
   var pool = [];
@@ -303,9 +513,13 @@ export function makeAlgoViz(kind, opts) {
     box.textContent = "viz: " + kind;
     return box;
   }
-  var start = kind === "tri-insertion" ? [5, 3, 8, 1, 9, 2] : [5, 3, 8, 1, 9, 2];
+  var isSearch = kind === "recherche-sequentielle" || kind === "recherche-dichotomique";
+  var isSort = kind.indexOf("tri-") === 0;
+  var size = kind === "recherche-dichotomique" ? 7 : 6;
+  var start = kind === "recherche-dichotomique" ? [2, 5, 8, 11, 14, 17, 20] : isSearch || kind === "remplir-tableau" ? [4, 9, 2, 7, 5, 1] : [5, 3, 8, 1, 9, 2];
   var input = start.slice();
-  var steps = gen(kind, input);
+  var target = kind === "recherche-dichotomique" ? 14 : 7;
+  var steps = gen(kind, input, target);
   var idx = 0;
   var timer = null;
   var speed = 900;
@@ -314,8 +528,50 @@ export function makeAlgoViz(kind, opts) {
     return UI[opts.lang() === "ar" ? "ar" : "fr"][key];
   }
 
+  function buildPicker() {
+    var wrap = el("div", "av-pick");
+    var btn = el("button", "av-pick-b");
+    btn.type = "button";
+    btn.setAttribute("aria-haspopup", "listbox");
+    btn.setAttribute("aria-label", u("pick"));
+    btn.append(el("span", "", u("title")[kind]), el("i", "av-pick-i", "▾"));
+    var menu = el("div", "av-menu");
+    menu.hidden = true;
+    menu.setAttribute("role", "listbox");
+    LIB.forEach(function (g) {
+      menu.append(el("div", "av-menu-g", u("groups")[g.key]));
+      g.kinds.forEach(function (k) {
+        var it = el("button", "av-menu-it" + (k === kind ? " is-on" : ""));
+        it.type = "button";
+        it.setAttribute("role", "option");
+        it.setAttribute("aria-selected", k === kind ? "true" : "false");
+        it.append(el("span", "av-menu-d"), el("span", "av-menu-t", u("title")[k]), el("small", "", u("badge")));
+        it.addEventListener("click", function () {
+          menu.hidden = true;
+          if (k !== kind) opts.onPick(k);
+        });
+        menu.append(it);
+      });
+    });
+    function closeMenu(e) {
+      if (e && (wrap.contains(e.target) || menu.contains(e.target))) return;
+      menu.hidden = true;
+      document.removeEventListener("mousedown", closeMenu);
+    }
+    btn.addEventListener("click", function () {
+      if (!menu.hidden) return closeMenu();
+      var r = btn.getBoundingClientRect();
+      menu.style.top = r.bottom + 8 + "px";
+      menu.style.left = Math.max(8, Math.min(r.left, window.innerWidth - 348)) + "px";
+      menu.style.maxHeight = Math.max(160, window.innerHeight - r.bottom - 24) + "px";
+      menu.hidden = false;
+      document.addEventListener("mousedown", closeMenu);
+    });
+    wrap.append(btn, menu);
+    return wrap;
+  }
   var head = el("div", "av-head");
-  head.append(el("span", "test-chip", u("title")[kind]));
+  head.append(opts.onPick ? buildPicker() : el("span", "test-chip", u("title")[kind]));
   var counters = el("span", "av-counters");
   head.append(counters);
   box.append(head);
@@ -324,7 +580,9 @@ export function makeAlgoViz(kind, opts) {
   var right = el("div", "av-right");
 
   var stage = el("div", "av-stage");
-  right.append(stage);
+  var targetBox = el("span", "av-target");
+  targetBox.hidden = true;
+  right.append(targetBox, stage);
   var msg = el("p", "av-msg");
   right.append(msg);
 
@@ -440,7 +698,7 @@ export function makeAlgoViz(kind, opts) {
     var slots = el("div", "av-slots");
     for (var q = 0; q < n0; q++) {
       var sl = el("span", "av-slot");
-      sl.append(el("i"));
+      sl.append(el("i"), el("em"));
       slots.append(sl);
     }
     field.append(slots);
@@ -455,7 +713,7 @@ export function makeAlgoViz(kind, opts) {
     c.append(el("span", "av-ci av-ci-a"), el("span", "av-ci av-ci-b"), el("i", "av-blob"), el("b", "av-cv", String(v)), el("span", "av-logo"));
     var dn = el("span", "av-done");
     dn.innerHTML = CHECK;
-    w.append(c, dn, el("span", "av-tag", "im"));
+    w.append(c, dn);
     field.append(w);
     cards[v] = w;
     return w;
@@ -473,8 +731,8 @@ export function makeAlgoViz(kind, opts) {
       if (v == null) return;
       var w = cardFor(v);
       var cls = "av-cw";
-      if (st.done.indexOf(k) >= 0) cls += " is-sorted";
-      if (st.mark === k && kind === "tri-selection") cls += " is-mark";
+      if (st.done.indexOf(k) >= 0) cls += isSort ? " is-sorted" : " is-sorted is-found";
+      if (st.out && st.out.indexOf(k) >= 0) cls += " is-out";
       if (st.cmp && st.cmp.indexOf(k) >= 0) cls += " is-cmp";
       if (st.swap && st.swap.indexOf(k) >= 0) cls += " is-swap";
       w.className = cls;
@@ -491,6 +749,17 @@ export function makeAlgoViz(kind, opts) {
       hw.querySelector(".av-ci-a").textContent = "x";
       hw.querySelector(".av-ci-b").textContent = "x";
     }
+    // small labels under the slots: i, d / m / f, the current minimum
+    var tg = Object.assign({}, st.tags || {});
+    if (kind === "tri-selection" && st.mark != null) tg[st.mark] = "im";
+    var slotEls = field.querySelectorAll(".av-slot");
+    Array.prototype.forEach.call(slotEls, function (sl, k) {
+      var em = sl.querySelector("em");
+      em.textContent = tg[k] || "";
+      em.classList.toggle("is-on", !!tg[k]);
+    });
+    targetBox.hidden = st.target == null;
+    if (st.target != null) targetBox.textContent = u("target") + " " + st.target;
     // a round badge between the two cards being looked at: the sign of the comparison, or the switch icon
     var p = -1;
     var q = -1;
@@ -505,6 +774,15 @@ export function makeAlgoViz(kind, opts) {
     } else if (st.cmp && st.cmp.length === 1 && st.held != null && hole >= 0) {
       p = st.cmp[0];
       q = hole;
+    }
+    if (st.target != null && st.cmp && st.cmp.length === 1 && st.held == null) {
+      var one = cards[st.a[st.cmp[0]]];
+      var sign = st.sign || (st.eq ? "=" : "≠");
+      if (one) {
+        var b1 = el("span", "av-pair is-above" + (st.eq ? " is-hit" : ""));
+        b1.textContent = sign;
+        one.append(b1);
+      }
     }
     if (p >= 0) {
       var vl = st.a[p];
@@ -521,10 +799,11 @@ export function makeAlgoViz(kind, opts) {
     progFill.style.display = idx === 0 ? "none" : "";
     progRest.style.display = idx === steps.length - 1 ? "none" : "";
     var last = idx === steps.length - 1;
-    var text = last ? u("done") : idx === 0 ? u("start") : st.msg ? st.msg[opts.lang() === "ar" ? "ar" : "fr"] : "";
+    var langKey = opts.lang() === "ar" ? "ar" : "fr";
+    var text = idx === 0 ? u("start") : last && isSort ? u("done") : st.msg ? st.msg[langKey] : "";
     msg.textContent = text;
     msg.classList.toggle("is-done", last);
-    counters.textContent = u("step") + " " + idx + "/" + (steps.length - 1) + " · " + u("cmp") + " " + st.c + " · " + u("swp") + " " + st.s;
+    counters.textContent = u("step") + " " + idx + "/" + (steps.length - 1) + (isSort || isSearch ? " · " + u("cmp") + " " + st.c : "") + (isSort ? " · " + u("swp") + " " + st.s : "");
     bPrev.disabled = idx === 0;
     bNext.disabled = last;
     bReset.disabled = idx === 0;
@@ -570,8 +849,17 @@ export function makeAlgoViz(kind, opts) {
   });
   bShuf.addEventListener("click", function () {
     stop();
-    input = randomArray(6);
-    steps = gen(kind, input);
+    input = randomArray(size);
+    if (kind === "recherche-dichotomique") input.sort(function (p, q) {
+      return p - q;
+    });
+    if (isSearch) {
+      var miss = [];
+      for (var mv = 1; mv <= 12; mv++) if (input.indexOf(mv) < 0) miss.push(mv);
+      var wantMiss = Math.random() < 0.3 && miss.length;
+      target = wantMiss ? miss[Math.floor(Math.random() * miss.length)] : input[Math.floor(Math.random() * input.length)];
+    }
+    steps = gen(kind, input, target);
     buildField();
     go(0);
   });
@@ -595,6 +883,7 @@ export function openAlgoViz(kind, opts) {
   ov.setAttribute("role", "dialog");
   ov.setAttribute("aria-modal", "true");
   var card = el("div", "av-modal-card");
+  var holder = el("div", "av-holder");
   var close = el("button", "av-modal-x");
   close.type = "button";
   close.setAttribute("aria-label", "×");
@@ -608,16 +897,29 @@ export function openAlgoViz(kind, opts) {
   function onKey(e) {
     if (e.key === "Escape") shut();
   }
+  function show(k) {
+    var o = Object.assign({}, opts, { onPick: show });
+    holder.textContent = "";
+    holder.append(makeAlgoViz(k, o));
+  }
   close.addEventListener("click", shut);
   ov.addEventListener("mousedown", function (e) {
     if (e.target === ov) shut();
   });
   document.addEventListener("keydown", onKey);
-  card.append(close, makeAlgoViz(kind, opts));
+  show(kind || LIB[0].kinds[0]);
+  card.append(close, holder);
   ov.append(card);
   document.body.append(ov);
   document.body.style.overflow = "hidden";
   close.focus();
+}
+// the library: the same box, opened from the round button, on the first algorithm
+export function openAlgoLibrary(opts, kind) {
+  openAlgoViz(kind || LIB[0].kinds[0], opts);
+}
+export function libraryLabel(lang) {
+  return UI[lang === "ar" ? "ar" : "fr"].libTitle;
 }
 export function makeAlgoLauncher(kind, opts) {
   var el = opts.el;

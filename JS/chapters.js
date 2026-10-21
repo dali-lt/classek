@@ -9,7 +9,7 @@
 
    The page chrome is in the student's language (EN / AR); the course content is French. */
 
-import { makeAlgoLauncher, openAlgoViz, algoTitle, hasAlgoViz } from "./algoviz.js?v=60";
+import { makeAlgoLauncher, openAlgoViz, openAlgoLibrary, libraryLabel, algoTitle, hasAlgoViz } from "./algoviz.js?v=61";
 
 var STR = {
   fr: {
@@ -390,7 +390,7 @@ function wordSet(list) {
   return o;
 }
 var KEYWORDS = {
-  algo: wordSet("Fonction Procédure DEBUT FIN Si Alors Sinon FinSi Pour de à Faire FinPour Tant que FinTantQue Répéter Jusqu'à Vrai Faux div mod ET OU NON"),
+  algo: wordSet("Fonction Procédure DEBUT FIN Si Alors Sinon FinSi Pour de à Faire FinPour Tant que FinTantQue Répéter Jusqu'à Vrai Faux div mod ET OU NON Retourner Lire Écrire"),
   python: wordSet("def if elif else return for while in range and or not True False break"),
 };
 // light colouring (keywords, comments) built with DOM nodes only; the text itself is never changed
@@ -2289,6 +2289,44 @@ function goSubjects() {
   if (sec && sec.scrollIntoView) sec.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
+var FAB_ICON =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="8" height="11" rx="2"/><rect x="13" y="9" width="8" height="11" rx="2"/><path d="M7 19h3"/></svg>';
+// round button, always on screen inside Programmation: opens the algorithm library
+function syncFab(show) {
+  var f = document.getElementById("avFab");
+  if (!show) {
+    if (f) f.remove();
+    return;
+  }
+  var label = libraryLabel(ctx.getLang());
+  if (!f) {
+    f = el("div", "av-fab");
+    f.id = "avFab";
+    var b = el("button", "av-fab-b");
+    b.type = "button";
+    b.innerHTML = FAB_ICON; // static, trusted SVG
+    b.addEventListener("click", function () {
+      openAlgoLibrary(vizOpts());
+    });
+    f.append(b, el("span", "av-fab-l"));
+    document.body.append(f);
+    var seen = false;
+    try {
+      seen = window.localStorage.getItem("cl.fabSeen") === "1";
+    } catch (e) {}
+    if (seen) f.classList.add("is-quiet");
+    else
+      setTimeout(function () {
+        f.classList.add("is-quiet");
+        try {
+          window.localStorage.setItem("cl.fabSeen", "1");
+        } catch (e) {}
+      }, 7000);
+  }
+  f.querySelector(".av-fab-b").setAttribute("aria-label", label);
+  f.querySelector(".av-fab-l").textContent = label;
+}
+
 function render() {
   if (!ctx) return;
   if (ctx.ready() && S.loadedKey !== ctx.getLevel() && !S.loading) {
@@ -2336,6 +2374,7 @@ function render() {
   view.hidden = !opening;
   syncRail(opening && ch ? ch : null, inSubject ? "subject" : "home");
   syncNoteModal(opening && ch ? ch : null);
+  syncFab((inSubject && route.s === "prog") || (opening && !!ch && ch.subject === "prog"));
 
   if (!opening) {
     if (id) {
