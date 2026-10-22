@@ -505,6 +505,120 @@ function randomArray(n) {
   return out;
 }
 
+/* ---------------- animation definitions ----------------
+   Every animation is described by one record, built-in or stored by the admin:
+     META[kind] = { mode: "sort" | "search" | "fill" | "other", size, start: [...], target, markLabel,
+                    run(input, target) -> steps,  next(state) -> { input, target } }
+   A stored animation (registerAnimations) carries its own recorded steps ("variants"), nothing is computed in the browser. */
+var META = {};
+function builtinMeta(kind, mode, size, start, target, extra) {
+  META[kind] = Object.assign(
+    {
+      mode: mode,
+      size: size,
+      start: start,
+      target: target,
+      run: function (input, x) {
+        return gen(kind, input, x);
+      },
+      next: function () {
+        var input = randomArray(size);
+        if (extra && extra.sorted)
+          input.sort(function (p, q) {
+            return p - q;
+          });
+        var t = target;
+        if (mode === "search") {
+          var miss = [];
+          for (var mv = 1; mv <= 12; mv++) if (input.indexOf(mv) < 0) miss.push(mv);
+          var wantMiss = Math.random() < 0.3 && miss.length;
+          t = wantMiss ? miss[Math.floor(Math.random() * miss.length)] : input[Math.floor(Math.random() * input.length)];
+        }
+        return { input: input, target: t };
+      },
+    },
+    extra || {}
+  );
+}
+var UNSORTED = [5, 3, 8, 1, 9, 2];
+var SEARCHABLE = [4, 9, 2, 7, 5, 1];
+builtinMeta("tri-bulles", "sort", 6, UNSORTED, 0);
+builtinMeta("tri-selection", "sort", 6, UNSORTED, 0, { markLabel: "im" });
+builtinMeta("tri-insertion", "sort", 6, UNSORTED, 0);
+builtinMeta("recherche-sequentielle", "search", 6, SEARCHABLE, 7);
+builtinMeta("recherche-dichotomique", "search", 7, [2, 5, 8, 11, 14, 17, 20], 14, { sorted: true });
+builtinMeta("remplir-tableau", "fill", 6, SEARCHABLE, 0);
+
+function cleanSteps(list) {
+  return (list || []).map(function (st) {
+    var o = Object.assign({}, st);
+    o.a = (st.a || []).slice();
+    o.done = (st.done || []).slice();
+    o.c = st.c || 0;
+    o.s = st.s || 0;
+    if (!o.msg) o.msg = null;
+    return o;
+  });
+}
+// the animations the admin stored (Firestore "animations"): they join the library, the picker and the Run buttons
+export function registerAnimations(list) {
+  (list || []).forEach(function (d) {
+    var id = String(d.id || "").trim();
+    var vars = (d.variants || []).filter(function (v) {
+      return v && v.input && v.steps && v.steps.length;
+    });
+    if (!id || !vars.length || !d.algo || !d.python) return;
+    if (CODE[id] && !CODE[id].custom) return; // never replace a built-in one
+    CODE[id] = { algo: d.algo.slice(), python: d.python.slice(), map: (d.map || []).slice(), custom: true };
+    UI.fr.title[id] = d.title_fr || id;
+    UI.ar.title[id] = d.title_ar || d.title_fr || id;
+    var prepared = vars.map(function (v) {
+      return { input: v.input.slice(), target: v.target == null ? null : v.target, steps: cleanSteps(v.steps) };
+    });
+    var at = 0;
+    META[id] = {
+      mode: d.mode || "other",
+      size: prepared[0].input.length,
+      start: prepared[0].input,
+      target: prepared[0].target,
+      run: function (input) {
+        var hit = prepared.filter(function (v) {
+          return v.input.join(",") === input.join(",");
+        })[0];
+        return (hit || prepared[0]).steps;
+      },
+      next: function () {
+        at = (at + 1) % prepared.length;
+        return { input: prepared[at].input.slice(), target: prepared[at].target };
+      },
+      variants: prepared.length,
+    };
+    var gk = d.group || "autres";
+    LIB.forEach(function (g) {
+      var i = g.kinds.indexOf(id);
+      if (i >= 0) g.kinds.splice(i, 1);
+    });
+    var grp = LIB.filter(function (g) {
+      return g.key === gk;
+    })[0];
+    if (!grp) {
+      grp = { key: gk, label: { fr: d.group_fr || gk, ar: d.group_ar || d.group_fr || gk }, kinds: [] };
+      LIB.push(grp);
+    }
+    grp.kinds.push(id);
+  });
+}
+// a built-in animation as a stored record (what the admin page saves): used to check that the generic player reproduces it
+export function exportAnimation(kind, inputs) {
+  var m = META[kind];
+  var c = CODE[kind];
+  if (!m || !c) return null;
+  var list = (inputs && inputs.length ? inputs : [{ input: m.start, target: m.target }]).map(function (v) {
+    return { input: v.input.slice(), target: v.target == null ? null : v.target, steps: m.run(v.input.slice(), v.target) };
+  });
+  return { id: kind, mode: m.mode, algo: c.algo, python: c.python, map: c.map, variants: list };
+}
+
 export function makeAlgoViz(kind, opts) {
   var el = opts.el;
   var code = CODE[kind];
@@ -513,19 +627,22 @@ export function makeAlgoViz(kind, opts) {
     box.textContent = "viz: " + kind;
     return box;
   }
-  var isSearch = kind === "recherche-sequentielle" || kind === "recherche-dichotomique";
-  var isSort = kind.indexOf("tri-") === 0;
-  var size = kind === "recherche-dichotomique" ? 7 : 6;
-  var start = kind === "recherche-dichotomique" ? [2, 5, 8, 11, 14, 17, 20] : isSearch || kind === "remplir-tableau" ? [4, 9, 2, 7, 5, 1] : [5, 3, 8, 1, 9, 2];
-  var input = start.slice();
-  var target = kind === "recherche-dichotomique" ? 14 : 7;
-  var steps = gen(kind, input, target);
+  var meta = META[kind];
+  var isSearch = meta.mode === "search";
+  var isSort = meta.mode === "sort";
+  var size = meta.size;
+  var input = meta.start.slice();
+  var target = meta.target;
+  var steps = meta.run(input, target);
   var idx = 0;
   var timer = null;
   var speed = 900;
 
   function u(key) {
     return UI[opts.lang() === "ar" ? "ar" : "fr"][key];
+  }
+  function titleOf(k) {
+    return UI[opts.lang() === "ar" ? "ar" : "fr"].title[k] || k;
   }
 
   function buildPicker() {
@@ -534,18 +651,18 @@ export function makeAlgoViz(kind, opts) {
     btn.type = "button";
     btn.setAttribute("aria-haspopup", "listbox");
     btn.setAttribute("aria-label", u("pick"));
-    btn.append(el("span", "", u("title")[kind]), el("i", "av-pick-i", "▾"));
+    btn.append(el("span", "", titleOf(kind)), el("i", "av-pick-i", "▾"));
     var menu = el("div", "av-menu");
     menu.hidden = true;
     menu.setAttribute("role", "listbox");
     LIB.forEach(function (g) {
-      menu.append(el("div", "av-menu-g", u("groups")[g.key]));
+      menu.append(el("div", "av-menu-g", g.label ? g.label[opts.lang() === "ar" ? "ar" : "fr"] : u("groups")[g.key]));
       g.kinds.forEach(function (k) {
         var it = el("button", "av-menu-it" + (k === kind ? " is-on" : ""));
         it.type = "button";
         it.setAttribute("role", "option");
         it.setAttribute("aria-selected", k === kind ? "true" : "false");
-        it.append(el("span", "av-menu-d"), el("span", "av-menu-t", u("title")[k]), el("small", "", u("badge")));
+        it.append(el("span", "av-menu-d"), el("span", "av-menu-t", titleOf(k)), el("small", "", u("badge")));
         it.addEventListener("click", function () {
           menu.hidden = true;
           if (k !== kind) opts.onPick(k);
@@ -572,7 +689,7 @@ export function makeAlgoViz(kind, opts) {
   }
   var counters = el("span", "av-counters");
   var lhead = el("div", "av-lhead");
-  lhead.append(opts.onPick ? buildPicker() : el("span", "test-chip", u("title")[kind]));
+  lhead.append(opts.onPick ? buildPicker() : el("span", "test-chip", titleOf(kind)));
   var split = el("div", "av-split");
   var left = el("div", "av-left");
   var right = el("div", "av-right");
@@ -753,7 +870,7 @@ export function makeAlgoViz(kind, opts) {
     }
     // small labels under the slots: i, d / m / f, the current minimum
     var tg = Object.assign({}, st.tags || {});
-    if (kind === "tri-selection" && st.mark != null) tg[st.mark] = "im";
+    if (meta.markLabel && st.mark != null) tg[st.mark] = meta.markLabel;
     var slotEls = field.querySelectorAll(".av-slot");
     Array.prototype.forEach.call(slotEls, function (sl, k) {
       var em = sl.querySelector("em");
@@ -851,17 +968,10 @@ export function makeAlgoViz(kind, opts) {
   });
   bShuf.addEventListener("click", function () {
     stop();
-    input = randomArray(size);
-    if (kind === "recherche-dichotomique") input.sort(function (p, q) {
-      return p - q;
-    });
-    if (isSearch) {
-      var miss = [];
-      for (var mv = 1; mv <= 12; mv++) if (input.indexOf(mv) < 0) miss.push(mv);
-      var wantMiss = Math.random() < 0.3 && miss.length;
-      target = wantMiss ? miss[Math.floor(Math.random() * miss.length)] : input[Math.floor(Math.random() * input.length)];
-    }
-    steps = gen(kind, input, target);
+    var nx = meta.next();
+    input = nx.input;
+    target = nx.target;
+    steps = meta.run(input, target);
     buildField();
     go(0);
   });

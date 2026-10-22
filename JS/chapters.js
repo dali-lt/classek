@@ -9,7 +9,7 @@
 
    The page chrome is in the student's language (EN / AR); the course content is French. */
 
-import { openAlgoViz, openAlgoLibrary, libraryLabel, algoTitle, hasAlgoViz, kindForCode } from "./algoviz.js?v=66";
+import { openAlgoViz, openAlgoLibrary, libraryLabel, algoTitle, hasAlgoViz, kindForCode, registerAnimations } from "./algoviz.js?v=67";
 
 var STR = {
   fr: {
@@ -582,6 +582,17 @@ async function load() {
   } catch (e) {
     console.warn("Couldn’t load the chapters:", e);
     S.failed = true;
+  }
+  try {
+    // animations stored by the admin join the library (rules not published yet: the built-in ones still work)
+    var asnap = await sdk.getDocs(sdk.collection(ctx.db, "animations"));
+    registerAnimations(
+      asnap.docs.map(function (d) {
+        return Object.assign({ id: d.id }, d.data());
+      })
+    );
+  } catch (e) {
+    console.warn("Couldn’t load the animations:", e);
   }
   try {
     var nsnap = await sdk.getDocs(sdk.collection(ctx.db, "users", ctx.uid, "notes"));
