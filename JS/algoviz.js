@@ -941,6 +941,24 @@ export function makeAlgoLauncher(kind, opts) {
   return row;
 }
 
+// which animation (if any) a block of code is: its first line must be the signature of one of the algorithms
+export function kindForCode(text) {
+  var first = String(text || "")
+    .split("\n")
+    .map(function (l) {
+      return l.trim();
+    })
+    .filter(Boolean)[0];
+  if (!first) return "";
+  var found = "";
+  Object.keys(CODE).forEach(function (k) {
+    var a = /^(?:Procédure|Fonction)\s+([A-Za-z_0-9]+)/.exec(CODE[k].algo[0]);
+    var p = /^def\s+([A-Za-z_0-9]+)/.exec(CODE[k].python[0]);
+    var m = /^(?:Procédure|Fonction|def)\s+([A-Za-z_0-9]+)/.exec(first);
+    if (m && ((a && a[1] === m[1]) || (p && p[1] === m[1]))) found = k;
+  });
+  return found;
+}
 export function hasAlgoViz(kind) {
   return !!CODE[kind];
 }

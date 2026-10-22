@@ -3086,35 +3086,38 @@ html[dir="rtl"] .note-band {
   }
 }
 
-/* v65: back row = back on the left, visualiser on the right, same height; icon only when the row is narrow */
-.ch-tabs,
-.ch-back-slot {
+/* v65: subjects page: back on the left, visualiser on the right, same height; icon only when the row is narrow */
+.ch-tabs {
   container-type: inline-size;
   width: 100%;
   justify-content: space-between;
   align-items: stretch;
 }
 @media (min-width: 801px) {
-  .ch-back-slot,
   .ch-tabs {
     width: 100%;
   }
 }
-.ch-tabs .ch-back,
-.ch-back-slot .ch-back {
+.ch-tabs .ch-back {
   align-self: stretch;
+}
+/* chapter page: the visualiser button sits under the back button */
+.ch-back-slot {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
 }
 .ch-back > span:not(.ch-back-ico) {
   white-space: nowrap;
 }
 @container (max-width: 460px) {
-  .ch-back.ch-algo {
+  .ch-tabs .ch-back.ch-algo {
     width: 42px;
     padding: 0;
     justify-content: center;
     gap: 0;
   }
-  .ch-back.ch-algo > span:not(.ch-back-ico) {
+  .ch-tabs .ch-back.ch-algo > span:not(.ch-back-ico) {
     display: none;
   }
 }
@@ -3141,4 +3144,36 @@ body:has(.av-modal) .ch-back.ch-back-float {
     width: 30px;
     height: 30px;
   }
+}
+
+/* Run: opposite the three dots of a code window; opens the animation of that function */
+.code-run-row {
+  position: sticky;
+  left: 0;
+  display: block;
+  height: 0;
+  overflow: visible;
+  text-align: right;
+  user-select: none;
+}
+.code-run {
+  position: relative;
+  top: -29px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 12px 0 9px;
+  border: 0;
+  border-radius: 999px;
+  background: #0464de;
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.code-run:hover {
+  background: #aee37b;
+  color: #032c7b;
 }

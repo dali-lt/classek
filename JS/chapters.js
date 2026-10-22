@@ -9,7 +9,7 @@
 
    The page chrome is in the student's language (EN / AR); the course content is French. */
 
-import { makeAlgoLauncher, openAlgoViz, openAlgoLibrary, libraryLabel, algoTitle, hasAlgoViz } from "./algoviz.js?v=65";
+import { openAlgoViz, openAlgoLibrary, libraryLabel, algoTitle, hasAlgoViz, kindForCode } from "./algoviz.js?v=66";
 
 var STR = {
   fr: {
@@ -406,6 +406,21 @@ function codeBlock(code, lang) {
       ? /(#[^\n]*)|([A-Za-zÀ-ÿ_'][A-Za-zÀ-ÿ_0-9']*)|([\s\S])/g
       : /(\{[^}]*\})|([A-Za-zÀ-ÿ_'][A-Za-zÀ-ÿ_0-9']*)|([\s\S])/g;
   pre.classList.add("has-ln"); // line numbers (CSS counter on .cl)
+  var runKind = kindForCode(code);
+  if (runKind) {
+    // "Run" opposite the three dots: opens the animation of this very function
+    var row = el("span", "code-run-row");
+    var run = el("button", "code-run");
+    run.type = "button";
+    run.innerHTML = '<svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l12-7.5z"/></svg>';
+    run.append(el("span", "", ctx.getLang() === "ar" ? "تشغيل" : "Run"));
+    run.title = (ctx.getLang() === "ar" ? "عرض بالرسم المتحرك · " : "Voir l’animation · ") + algoTitle(runKind, ctx.getLang());
+    run.addEventListener("click", function () {
+      openAlgoViz(runKind, vizOpts());
+    });
+    row.append(run);
+    pre.append(row);
+  }
   var line = el("span", "cl");
   pre.append(line);
   var m;
@@ -468,32 +483,6 @@ function vizOpts() {
     setCodeLang: setCodeLang,
   };
 }
-// the animations a lesson contains (```viz blocks), in order, without duplicates
-function vizKinds(text) {
-  var out = [];
-  var re = /```viz\s*\n?\s*([a-z-]+)/g;
-  var m;
-  while ((m = re.exec(String(text || "")))) if (out.indexOf(m[1]) < 0) out.push(m[1]);
-  return out;
-}
-// buttons above the lesson: they open the split-screen animation box
-function vizBar(ch) {
-  var kinds = vizKinds(ch.rappel);
-  if (!kinds.length) return null;
-  var ar = ctx.getLang() === "ar";
-  var bar = el("div", "av-bar-top");
-  bar.append(el("span", "av-bar-top-l", ar ? "رسوم متحركة" : "Animations"));
-  kinds.forEach(function (k) {
-    var b = el("button", "pc-btn av-top-btn", algoTitle(k, ctx.getLang()));
-    b.type = "button";
-    b.addEventListener("click", function () {
-      openAlgoViz(k, vizOpts());
-    });
-    bar.append(b);
-  });
-  return bar;
-}
-
 function md(text) {
   var box = el("div", "ch-content");
   box.setAttribute("lang", "fr");
@@ -534,10 +523,7 @@ function md(text) {
       words(s.v);
       continue;
     }
-    if (s.lang === "viz") {
-      box.append(makeAlgoLauncher(s.v.trim(), vizOpts()));
-      continue;
-    }
+    if (s.lang === "viz") continue; // old lessons: the Run button on the code replaces the launcher card
     var known = s.lang === "algo" || s.lang === "python";
     var j = i + 1;
     if (j < segs.length && !segs[j].code && !segs[j].v.trim()) j++;
@@ -2122,8 +2108,6 @@ function renderView(view, ch) {
   main.append(slot, hero);
 
   if (tab === "course") {
-    var vb = vizBar(ch);
-    if (vb) main.append(vb);
     main.append(lessonBlock(ch, true));
   }
   else if (tab === "notes") main.append(notesSection(ch, false));
