@@ -34,7 +34,7 @@ var UI = {
     target: "Chercher x =",
     badge: "Animation",
     pick: "Choisir un algorithme",
-    libTitle: "Algorithmes",
+    libTitle: "Visualiser",
     groups: { tris: "Tris", recherche: "Recherche", tableaux: "Tableaux" },
   },
   ar: {
@@ -60,7 +60,7 @@ var UI = {
     target: "نبحث عن x =",
     badge: "رسم متحرك",
     pick: "اختر خوارزمية",
-    libTitle: "الخوارزميات",
+    libTitle: "عرض مرئي",
     groups: { tris: "الترتيب", recherche: "البحث", tableaux: "الجداول" },
   },
 };
@@ -889,7 +889,7 @@ export function openAlgoViz(kind, opts) {
   var close = el("button", "av-modal-x");
   close.type = "button";
   close.setAttribute("aria-label", "×");
-  close.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+  close.innerHTML = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg>';
   var prevOverflow = document.body.style.overflow;
   function shut() {
     ov.remove();

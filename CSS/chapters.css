@@ -2950,22 +2950,26 @@ html[dir="rtl"] .note-band {
   }
 }
 
-/* close button: same look as the profile box close (dark translucent disc), pinned to the card corner */
+/* close button: exactly the profile box close (dark translucent disc), pinned to the card corner */
 .av-modal-x {
   position: absolute;
   top: 14px;
   inset-inline-end: 14px;
-  width: 38px;
-  height: 38px;
   z-index: 5;
-  border: 0;
-  background: rgba(3, 44, 123, 0.82);
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(1, 9, 45, 0.4);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 2px 8px rgba(1, 9, 45, 0.15);
   color: #fff;
-  box-shadow: 0 4px 12px rgba(1, 9, 45, 0.25);
 }
 .av-modal-x:hover {
-  background: #032c7b;
+  background: rgba(1, 9, 45, 0.6);
   color: #fff;
+  border-color: transparent;
 }
 /* picker + language tabs: one row, taller, together as wide as the code window */
 .av-lhead {
@@ -3079,5 +3083,62 @@ html[dir="rtl"] .note-band {
 @media (min-width: 801px) {
   .ch-back.ch-algo-float {
     display: none;
+  }
+}
+
+/* v65: back row = back on the left, visualiser on the right, same height; icon only when the row is narrow */
+.ch-tabs,
+.ch-back-slot {
+  container-type: inline-size;
+  width: 100%;
+  justify-content: space-between;
+  align-items: stretch;
+}
+@media (min-width: 801px) {
+  .ch-back-slot,
+  .ch-tabs {
+    width: 100%;
+  }
+}
+.ch-tabs .ch-back,
+.ch-back-slot .ch-back {
+  align-self: stretch;
+}
+.ch-back > span:not(.ch-back-ico) {
+  white-space: nowrap;
+}
+@container (max-width: 460px) {
+  .ch-back.ch-algo {
+    width: 42px;
+    padding: 0;
+    justify-content: center;
+    gap: 0;
+  }
+  .ch-back.ch-algo > span:not(.ch-back-ico) {
+    display: none;
+  }
+}
+/* the round pinned buttons never sit on top of the animation box */
+body:has(.av-modal) .ch-back.ch-back-float {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+/* phone: the picker keeps one line */
+.av-pick-b > span:first-child {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@media (max-width: 800px) {
+  .av-lhead .av-pick-b {
+    font-size: 14px;
+    padding-inline-start: 14px;
+    gap: 6px;
+  }
+  .av-lhead .av-pick-i {
+    flex: 0 0 auto;
+    width: 30px;
+    height: 30px;
   }
 }

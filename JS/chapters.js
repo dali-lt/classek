@@ -9,7 +9,7 @@
 
    The page chrome is in the student's language (EN / AR); the course content is French. */
 
-import { makeAlgoLauncher, openAlgoViz, openAlgoLibrary, libraryLabel, algoTitle, hasAlgoViz } from "./algoviz.js?v=64";
+import { makeAlgoLauncher, openAlgoViz, openAlgoLibrary, libraryLabel, algoTitle, hasAlgoViz } from "./algoviz.js?v=65";
 
 var STR = {
   fr: {
@@ -2313,8 +2313,9 @@ function algoButton(float) {
   var b = el("button", "ch-back ch-algo" + (float ? " ch-back-float ch-algo-float" : ""));
   b.type = "button";
   b.append(icon(FAB_ICON, "ch-back-ico"), el("span", "", label));
-  b.setAttribute("aria-label", label);
-  b.title = label;
+  var hint = ctx.getLang() === "ar" ? "عرض خوارزمية بالرسم المتحرك" : "Visualiser un algorithme pas à pas";
+  b.setAttribute("aria-label", hint);
+  b.title = hint;
   b.addEventListener("click", function () {
     openAlgoLibrary(vizOpts());
   });
@@ -2333,9 +2334,9 @@ function syncFab(show) {
   var old = document.getElementById("avFab");
   if (old) old.remove(); // the old round button in the corner no longer exists
   var fa = getFloatAlgo();
-  var label = libraryLabel(ctx.getLang());
-  fa.setAttribute("aria-label", label);
-  fa.title = label;
+  var hint = ctx.getLang() === "ar" ? "عرض خوارزمية بالرسم المتحرك" : "Visualiser un algorithme pas à pas";
+  fa.setAttribute("aria-label", hint);
+  fa.title = hint;
   syncBackButton();
 }
 
