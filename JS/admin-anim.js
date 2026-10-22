@@ -167,6 +167,67 @@ function parseVariants(text, mode) {
   return out;
 }
 
+/* ---------- JSON file -> form fields ----------
+   One animation per file. Every field is optional except python and algo; text fields accept a string or an array of lines.
+   {
+     "title_fr": "Factorielle (tableau)", "title_ar": "...",
+     "group": "tris" | "recherche" | "tableaux" | "autre-nom", "group_fr": "...", "group_ar": "...",   (group_fr/ar only for a new group)
+     "mode": "sort" | "search" | "other",
+     "python": ["def f(T, n):", "    ..."],   "algo": ["Procédure f (@T : Tab, n : Entier)", "DEBUT", "..."],
+     "map": [0, 0, 1, ...],                   (optional: Python line, 0-based, for each Algorithme line; guessed if missing)
+     "index_vars": "i, j",  "zone": "d, f",   (optional)
+     "variants": ["5 3 8 1 9 2", "9 8 7 6 5 4"]   or   ["4 9 2 7 | x=7"]   or   [{ "input": [4, 9, 2], "target": 9 }],
+     "detail": false
+   } */
+function asText(v) {
+  return Array.isArray(v) ? v.join("\n") : v == null ? "" : String(v);
+}
+function asList(v) {
+  return Array.isArray(v)
+    ? v.map(String)
+    : String(v == null ? "" : v)
+        .split(/[ ,]+/)
+        .filter(Boolean);
+}
+export function normalizeAnimJson(raw) {
+  if (Array.isArray(raw)) raw = raw[0];
+  if (!raw || typeof raw !== "object") throw new Error("Le fichier doit contenir un objet JSON (une animation).");
+  var mode = raw.mode == null ? "other" : String(raw.mode);
+  if (["sort", "search", "other"].indexOf(mode) < 0) throw new Error("« mode » doit être sort, search ou other (reçu : " + mode + ").");
+  var py = asText(raw.python);
+  var algo = asText(raw.algo);
+  if (!py.trim()) throw new Error("Il manque « python » dans le fichier.");
+  if (!algo.trim()) throw new Error("Il manque « algo » dans le fichier.");
+  var vtext = "";
+  if (typeof raw.variantsText === "string" && raw.variantsText.trim()) vtext = raw.variantsText;
+  else if (Array.isArray(raw.variants))
+    vtext = raw.variants
+      .map(function (v) {
+        if (typeof v === "string") return v;
+        if (Array.isArray(v)) return v.join(" ");
+        if (v && Array.isArray(v.input)) return v.input.join(" ") + (v.target != null ? " | x=" + v.target : "");
+        return "";
+      })
+      .filter(Boolean)
+      .join("\n");
+  else vtext = asText(raw.variants);
+  return {
+    title_fr: asText(raw.title_fr || raw.title).trim(),
+    title_ar: asText(raw.title_ar).trim(),
+    group: asText(raw.group).trim(),
+    group_fr: asText(raw.group_fr).trim(),
+    group_ar: asText(raw.group_ar).trim(),
+    mode: mode,
+    python: py,
+    algo: algo,
+    map: Array.isArray(raw.map) ? raw.map.map(Number) : null,
+    index_vars: asList(raw.index_vars),
+    zone: asList(raw.zone),
+    variantsText: vtext,
+    detail: !!raw.detail,
+  };
+}
+
 /* ---------- the tab ---------- */
 export function initAnimAdmin(ctx) {
   var sdk = ctx.sdk;
@@ -247,6 +308,17 @@ export function initAnimAdmin(ctx) {
   btnSave.disabled = true;
   var btnNew = el("button", "an-btn", "Nouveau");
   btnNew.type = "button";
+  var btnImport = el("button", "an-btn", "Importer un fichier JSON");
+  btnImport.type = "button";
+  var btnExport = el("button", "an-btn", "Exporter en JSON");
+  btnExport.type = "button";
+  var fileIn = el("input");
+  fileIn.type = "file";
+  fileIn.accept = ".json,application/json";
+  fileIn.hidden = true;
+  var io = el("div", "an-actions");
+  io.append(btnImport, btnExport, fileIn);
+  var ioHint = el("p", "up-hint an-hint", "Remplis le formulaire à la main, ou charge un fichier .json qui le remplit. « Exporter en JSON » te donne un modèle à copier.");
   var actions = el("div", "an-actions");
   actions.append(btnNew, btnGen, btnSave);
 
@@ -267,7 +339,7 @@ export function initAnimAdmin(ctx) {
 
   var head = el("div", "up-field");
   head.append(el("span", "up-label", "Animations enregistrées"), listBox);
-  pane.append(head, el("span", "up-label", "Ajouter ou modifier une animation"), form);
+  pane.append(head, el("span", "up-label", "Ajouter ou modifier une animation"), io, ioHint, form);
 
   var current = { id: "", steps: null, doc: null };
   function setStatus(msg, kind) {
@@ -349,6 +421,83 @@ export function initAnimAdmin(ctx) {
     fill("sort");
     resetPreview();
     setStatus("");
+  });
+
+  // fills every field of the form from a normalised animation (see normalizeAnimJson)
+  function loadIntoForm(f) {
+    var group = f.group || (f.mode === "sort" ? "tris" : f.mode === "search" ? "recherche" : "tableaux");
+    var known = GROUPS.some(function (g) {
+      return g[0] === group;
+    });
+    fTitleFr.value = f.title_fr;
+    fTitleAr.value = f.title_ar;
+    fGroup.value = known ? group : "__new";
+    gRow.hidden = known;
+    fGroupFr.value = known ? "" : f.group_fr || group;
+    fGroupAr.value = known ? "" : f.group_ar || "";
+    fMode.value = f.mode;
+    fPy.value = f.python;
+    fAlgo.value = f.algo;
+    fIdx.value = (f.index_vars.length ? f.index_vars : detectIndexVars(f.python)).join(", ");
+    fZone.value = f.zone.join(", ");
+    fVar.value = f.variantsText;
+    fDetail.checked = f.detail;
+    var al = lines(f.algo);
+    renderMap(f.map && f.map.length === al.length ? f.map : guessMap(al, lines(f.python)));
+    resetPreview();
+  }
+  btnImport.addEventListener("click", function () {
+    fileIn.click();
+  });
+  fileIn.addEventListener("change", async function () {
+    var file = fileIn.files && fileIn.files[0];
+    if (!file) return;
+    try {
+      var raw = JSON.parse(await file.text());
+      var many = Array.isArray(raw) && raw.length > 1;
+      var f = normalizeAnimJson(raw);
+      current = { id: "", steps: null, doc: null };
+      loadIntoForm(f);
+      setStatus("« " + (f.title_fr || file.name) + " » chargé depuis le fichier" + (many ? " (1re animation du fichier seulement)" : "") + " : vérifie, puis Générer l’aperçu.", "ok");
+    } catch (e) {
+      setStatus("Fichier JSON refusé : " + ((e && e.message) || e), "error");
+    }
+    fileIn.value = "";
+  });
+  btnExport.addEventListener("click", function () {
+    var newGroup = fGroup.value === "__new";
+    var out = {
+      title_fr: fTitleFr.value.trim(),
+      title_ar: fTitleAr.value.trim(),
+      group: newGroup ? slug(fGroupFr.value) || "autres" : fGroup.value,
+    };
+    if (newGroup) {
+      out.group_fr = fGroupFr.value.trim();
+      out.group_ar = fGroupAr.value.trim();
+    }
+    out.mode = fMode.value;
+    out.python = lines(fPy.value);
+    out.algo = lines(fAlgo.value);
+    out.map = readMap();
+    out.index_vars = fIdx.value.split(/[ ,]+/).filter(Boolean);
+    out.zone = fZone.value.split(/[ ,]+/).filter(Boolean);
+    out.variants = fVar.value
+      .split("\n")
+      .map(function (x) {
+        return x.trim();
+      })
+      .filter(Boolean);
+    out.detail = fDetail.checked;
+    var blob = new Blob([JSON.stringify(out, null, 2)], { type: "application/json" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = (fname() || "animation") + ".json";
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(function () {
+      URL.revokeObjectURL(a.href);
+    }, 1000);
   });
 
   function collect() {
@@ -525,24 +674,8 @@ export function initAnimAdmin(ctx) {
       edit.type = "button";
       edit.addEventListener("click", function () {
         current = { id: d.id, steps: null, doc: null };
-        fTitleFr.value = d.title_fr || "";
-        fTitleAr.value = d.title_ar || "";
-        var known = GROUPS.some(function (g) {
-          return g[0] === d.group;
-        });
-        fGroup.value = known ? d.group : "__new";
-        gRow.hidden = known;
-        fGroupFr.value = d.group_fr || "";
-        fGroupAr.value = d.group_ar || "";
-        fMode.value = d.mode || "other";
-        fPy.value = (d.python || []).join("\n");
-        fAlgo.value = (d.algo || []).join("\n");
-        fIdx.value = (d.index_vars || []).join(", ");
-        fZone.value = (d.zone || []).join(", ");
-        fVar.value = d.variantsText || "";
-        fDetail.checked = !!d.detail;
-        renderMap(d.map || []);
-        resetPreview();
+        loadIntoForm(normalizeAnimJson(d));
+        if (d.map && d.map.length) renderMap(d.map);
         setStatus("« " + (d.title_fr || d.id) + " » chargée : modifie puis Générer l’aperçu.");
         form.scrollIntoView({ behavior: "smooth", block: "start" });
       });

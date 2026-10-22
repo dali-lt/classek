@@ -628,7 +628,7 @@
       async function openAnim() {
         try {
           if (!animUi) {
-            var m = await import("./JS/admin-anim.js?v=67");
+            var m = await import("./JS/admin-anim.js?v=68");
             animUi = m.initAnimAdmin({ sdk: sdk, db: db, pane: $("animPane") });
           } else if (animUi.reload) animUi.reload();
         } catch (e) {
