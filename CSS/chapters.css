@@ -3194,3 +3194,29 @@ body:has(.av-modal) .ch-back.ch-back-float {
   background: #aee37b;
   color: #032c7b;
 }
+
+/* lesson: the key idea of each section is readable without opening it ("À retenir : …" line, or the first sentence) */
+.lesson-keep {
+  display: block;
+  margin-top: 4px;
+  padding-inline-start: 18px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+.lesson-keep-tag {
+  display: inline-block;
+  margin-inline-end: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-accent) 38%, transparent);
+  color: var(--color-accent-ink);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+/* the first-sentence fallback only helps while the section is closed: once open, the text is right below */
+.lesson-sec[open] > summary > .lesson-keep.is-auto {
+  display: none;
+}

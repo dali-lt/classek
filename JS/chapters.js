@@ -1195,6 +1195,41 @@ function lessonSections(text) {
     });
 }
 
+// "À retenir : …" written inside a section of the lesson: it is shown under the section title (also when the
+// section is closed) and removed from the body. Accepted: "À retenir : …", "**À retenir :** …", "> À retenir : …"
+var KEEP_RE = /^\s*(?:>\s*)?(?:\*\*)?\s*[ÀA]\s+retenir\s*(?:\*\*)?\s*:\s*(?:\*\*)?\s*(\S.*?)\s*$/i;
+function splitKeep(body) {
+  var lines = String(body || "").split("\n");
+  var inFence = false;
+  for (var i = 0; i < lines.length; i++) {
+    if (/^```/.test(lines[i])) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) continue;
+    var m = KEEP_RE.exec(lines[i]);
+    if (m) {
+      lines.splice(i, 1);
+      return { keep: m[1].replace(/\*\*\s*$/, "").trim(), rest: lines.join("\n").trim() };
+    }
+  }
+  return { keep: "", rest: String(body || "") };
+}
+// no "À retenir" written: the first sentence of the section, only if the section starts with a plain sentence
+function autoKeep(body) {
+  var lines = String(body || "").split("\n");
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i].trim();
+    if (!line) continue;
+    if (/^(```|[-*+]\s|\d+[.)]\s|\||#|>)/.test(line) || /:$/.test(line)) return "";
+    line = line.replace(/\*\*/g, "").replace(/`/g, "");
+    var cut = /^(.{25,}?[.!?])\s/.exec(line);
+    var sentence = cut ? cut[1] : line;
+    return sentence.length > 110 ? sentence.slice(0, 107).trimEnd() + "…" : sentence;
+  }
+  return "";
+}
+
 // closed by default: the student opens the lesson (and then each section) only if they want it
 function lessonBlock(ch, always) {
   // always: the Course tab of the chapter page, where the lesson is simply open (no "open" button)
@@ -1235,7 +1270,19 @@ function lessonBlock(ch, always) {
       d.setAttribute("lang", "fr");
       d.setAttribute("dir", "ltr");
       d.open = sectionOpen[k] !== undefined ? !!sectionOpen[k] : !!always && i === firstNamed;
-      d.append(el("summary", "", s.title), md(s.body));
+      var kp = splitKeep(s.body);
+      var sum = el("summary", "");
+      sum.append(el("span", "lesson-sec-t", s.title));
+      if (kp.keep) {
+        var kk = el("small", "lesson-keep");
+        kk.append(el("span", "lesson-keep-tag", "À retenir"));
+        inline(kk, kp.keep);
+        sum.append(kk);
+      } else {
+        var auto = autoKeep(s.body);
+        if (auto) sum.append(el("small", "lesson-keep is-auto", auto));
+      }
+      d.append(sum, md(kp.rest));
       d.addEventListener("toggle", function () {
         sectionOpen[k] = d.open;
         if (!d.open) return;
