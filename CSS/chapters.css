@@ -2849,3 +2849,209 @@ html[dir="rtl"] .note-band {
   color: rgba(234, 242, 255, 0.35);
   user-select: none;
 }
+
+/* animation box: picker + language tabs share one row above the code; close button stays put; round blue buttons like the back arrow */
+.av-modal-card {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.av-holder {
+  overflow: auto;
+  min-height: 0;
+}
+.av-modal-x {
+  position: fixed;
+  top: max(24px, calc((100vh - var(--av-h, 100vh)) / 2 + 14px));
+  inset-inline-end: max(24px, calc((100vw - 1120px) / 2 + 14px));
+  width: 46px;
+  height: 46px;
+  z-index: 430;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  box-shadow: 0 6px 18px rgba(1, 9, 45, 0.18);
+}
+.av-modal-x:hover {
+  background: var(--color-light-blue);
+  border-color: #0464de;
+  color: #032c7b;
+}
+.av-lhead,
+.av-rhead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  margin-bottom: 12px;
+}
+.av-lhead .av-pick {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.av-lhead .av-pick-b {
+  width: 100%;
+  justify-content: space-between;
+  padding: 9px 9px 9px 20px;
+  font-size: 16px;
+}
+.av-lhead .code-tabs {
+  flex: 0 0 auto;
+  margin: 0;
+  align-self: auto;
+}
+.av-lhead .test-chip {
+  flex: 1 1 auto;
+  display: inline-flex;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: #0464de;
+  color: #fff;
+  font-weight: 800;
+}
+.av-rhead {
+  justify-content: flex-end;
+  padding-inline-end: 56px;
+}
+.av-fab-b {
+  width: 56px;
+  height: 56px;
+  border: 1px solid #0464de;
+  box-shadow: 0 6px 18px rgba(1, 9, 45, 0.18);
+}
+.av-fab-b:hover {
+  transform: none;
+  border-color: #032c7b;
+}
+.av-fab-l {
+  background: #0464de;
+  box-shadow: 0 6px 18px rgba(1, 9, 45, 0.18);
+}
+.av-launch .pc-btn,
+.av-top-btn {
+  min-height: 38px;
+  border-radius: 999px;
+  box-shadow: 0 6px 18px rgba(1, 9, 45, 0.12);
+}
+@media (max-width: 800px) {
+  .av-lhead {
+    flex-wrap: wrap;
+  }
+  .av-lhead .av-pick {
+    flex: 1 1 100%;
+  }
+  .av-rhead {
+    padding-inline-end: 0;
+    min-height: 0;
+    margin: 0;
+  }
+  .av-modal-x {
+    top: 14px;
+    inset-inline-end: 14px;
+  }
+}
+
+/* close button: same round fixed look as the other pinned buttons, pinned to the card (does not scroll with the content) */
+.av-modal-x {
+  position: absolute;
+  top: 12px;
+  inset-inline-end: 12px;
+  width: 46px;
+  height: 46px;
+  z-index: 5;
+  border: 1px solid #0464de;
+  background: #0464de;
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(1, 9, 45, 0.18);
+}
+.av-modal-x:hover {
+  background: #032c7b;
+  border-color: #032c7b;
+  color: #fff;
+}
+/* picker + language tabs: one row, taller, together as wide as the code window */
+.av-lhead {
+  min-height: 54px;
+  gap: 10px;
+}
+.av-lhead .av-pick-b {
+  min-height: 54px;
+  font-size: 17px;
+  padding: 8px 10px 8px 22px;
+}
+.av-lhead .av-pick-i {
+  width: 34px;
+  height: 34px;
+}
+.av-lhead .code-tabs {
+  min-height: 54px;
+  align-items: stretch;
+}
+.av-lhead .code-tab {
+  display: inline-flex;
+  align-items: center;
+  font-size: 14px;
+  padding: 0 18px;
+}
+.av-rhead {
+  min-height: 54px;
+}
+@media (max-width: 800px) {
+  .av-lhead {
+    flex-wrap: nowrap;
+  }
+  .av-lhead .av-pick {
+    flex: 1 1 auto;
+  }
+  .av-lhead .av-pick-b {
+    min-height: 48px;
+    font-size: 15px;
+    padding-inline-start: 16px;
+  }
+  .av-lhead .code-tabs {
+    min-height: 48px;
+  }
+  .av-lhead .code-tab {
+    padding: 0 12px;
+    font-size: 13px;
+  }
+  .av-modal-x {
+    top: 10px;
+    inset-inline-end: 10px;
+  }
+}
+/* animation buttons: the back-button shape, in blue */
+.av-launch .pc-btn,
+.av-top-btn,
+.ex-viz {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 6px 16px 6px 12px;
+  border: 1px solid #0464de;
+  border-radius: 999px;
+  background: #0464de;
+  color: #fff;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  box-shadow: none;
+  cursor: pointer;
+}
+.av-launch .pc-btn:hover,
+.av-top-btn:hover,
+.ex-viz:hover {
+  background: #032c7b;
+  border-color: #032c7b;
+}
+.av-top-btn {
+  justify-content: center;
+}
+@media (max-width: 800px) {
+  .av-rhead {
+    min-height: 46px;
+    justify-content: flex-start;
+    padding-inline-end: 58px;
+    font-size: 12px;
+  }
+}

@@ -570,14 +570,15 @@ export function makeAlgoViz(kind, opts) {
     wrap.append(btn, menu);
     return wrap;
   }
-  var head = el("div", "av-head");
-  head.append(opts.onPick ? buildPicker() : el("span", "test-chip", u("title")[kind]));
   var counters = el("span", "av-counters");
-  head.append(counters);
-  box.append(head);
+  var lhead = el("div", "av-lhead");
+  lhead.append(opts.onPick ? buildPicker() : el("span", "test-chip", u("title")[kind]));
   var split = el("div", "av-split");
   var left = el("div", "av-left");
   var right = el("div", "av-right");
+  var rhead = el("div", "av-rhead");
+  rhead.append(counters);
+  right.append(rhead);
 
   var stage = el("div", "av-stage");
   var targetBox = el("span", "av-target");
@@ -659,8 +660,9 @@ export function makeAlgoViz(kind, opts) {
   var dots = el("div", "av-dots");
   dots.append(el("i"), el("i"), el("i"));
   win.append(dots, pre);
-  codeWrap.append(tabs, win);
-  left.append(codeWrap);
+  lhead.append(tabs);
+  codeWrap.append(win);
+  left.append(lhead, codeWrap);
   split.append(left, right);
   box.append(split);
 
@@ -908,7 +910,8 @@ export function openAlgoViz(kind, opts) {
   });
   document.addEventListener("keydown", onKey);
   show(kind || LIB[0].kinds[0]);
-  card.append(close, holder);
+  card.append(holder);
+  card.append(close);
   ov.append(card);
   document.body.append(ov);
   document.body.style.overflow = "hidden";
@@ -927,8 +930,10 @@ export function makeAlgoLauncher(kind, opts) {
   var row = el("div", "av-launch");
   var txt = el("div", "av-launch-t");
   txt.append(el("b", "", algoTitle(kind, lang)), el("small", "", lang === "ar" ? "رسم متحرك خطوة بخطوة" : "Animation pas à pas"));
-  var b = el("button", "pc-btn av-launch-btn", lang === "ar" ? "فتح الرسم" : "Ouvrir l’animation");
+  var b = el("button", "pc-btn av-launch-btn");
   b.type = "button";
+  b.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l12-7.5z"/></svg>';
+  b.append(el("span", "", lang === "ar" ? "فتح الرسم" : "Ouvrir l’animation"));
   b.addEventListener("click", function () {
     openAlgoViz(kind, opts);
   });
