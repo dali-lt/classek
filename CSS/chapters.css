@@ -3101,23 +3101,40 @@ html[dir="rtl"] .note-band {
 .ch-tabs .ch-back {
   align-self: stretch;
 }
-/* chapter page: the visualiser button sits under the back button */
+/* chapter page: with text, back (left) and visualiser (right) share a row; as round icons (page scrolled) they stack */
 .ch-back-slot {
+  container-type: inline-size;
+  width: 100%;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: stretch;
+  gap: 8px;
+}
+.ch-back-slot .ch-back {
+  align-self: stretch;
+}
+.ch-back-slot:has(.is-compact) {
+  container-type: normal;
+  width: fit-content;
   flex-direction: column;
   align-items: flex-start;
-  gap: 8px;
+}
+.ch-back-slot:has(.is-compact) .ch-back {
+  align-self: flex-start;
 }
 .ch-back > span:not(.ch-back-ico) {
   white-space: nowrap;
 }
 @container (max-width: 460px) {
-  .ch-tabs .ch-back.ch-algo {
+  .ch-tabs .ch-back.ch-algo,
+  .ch-back-slot .ch-back.ch-algo {
     width: 42px;
     padding: 0;
     justify-content: center;
     gap: 0;
   }
-  .ch-tabs .ch-back.ch-algo > span:not(.ch-back-ico) {
+  .ch-tabs .ch-back.ch-algo > span:not(.ch-back-ico),
+  .ch-back-slot .ch-back.ch-algo > span:not(.ch-back-ico) {
     display: none;
   }
 }
