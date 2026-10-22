@@ -9,7 +9,7 @@
 
    The page chrome is in the student's language (EN / AR); the course content is French. */
 
-import { makeAlgoLauncher, openAlgoViz, openAlgoLibrary, libraryLabel, algoTitle, hasAlgoViz } from "./algoviz.js?v=63";
+import { makeAlgoLauncher, openAlgoViz, openAlgoLibrary, libraryLabel, algoTitle, hasAlgoViz } from "./algoviz.js?v=64";
 
 var STR = {
   fr: {
@@ -1058,6 +1058,7 @@ function setBackRow(host, show) {
   back.setAttribute("aria-label", t("allSubjects"));
   back.addEventListener("click", closeToHome);
   row.append(back);
+  if (readRoute().s === "prog") row.append(algoButton());
   backTargets.list = { label: t("allSubjects"), fn: closeToHome };
   syncBackButton();
 }
@@ -1973,6 +1974,11 @@ function syncBackButton() {
   }
   fb.classList.toggle("is-on", on);
   fb.tabIndex = on ? 0 : -1;
+  if (floatAlgo) {
+    var showA = on && algoShow;
+    floatAlgo.classList.toggle("is-on", showA);
+    floatAlgo.tabIndex = showA ? 0 : -1;
+  }
   // wide screens: the back button stays at the top while scrolling and shrinks to its arrow
   var compact = window.scrollY > 24;
   document.querySelectorAll(".ch-back:not(.ch-back-float)").forEach(function (b) {
@@ -2112,6 +2118,7 @@ function renderView(view, ch) {
   };
   var slot = el("div", "ch-back-slot");
   slot.append(back);
+  if (ch.subject === "prog") slot.append(algoButton());
   main.append(slot, hero);
 
   if (tab === "course") {
@@ -2298,40 +2305,38 @@ function goSubjects() {
 
 var FAB_ICON =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="8" height="11" rx="2"/><rect x="13" y="9" width="8" height="11" rx="2"/><path d="M7 19h3"/></svg>';
-// round button, always on screen inside Programmation: opens the algorithm library
-function syncFab(show) {
-  var f = document.getElementById("avFab");
-  if (!show) {
-    if (f) f.remove();
-    return;
-  }
+// the algorithms button: lives in the back row of every Programmation page (and as a round button once the page scrolls)
+var algoShow = false;
+var floatAlgo = null;
+function algoButton(float) {
   var label = libraryLabel(ctx.getLang());
-  if (!f) {
-    f = el("div", "av-fab");
-    f.id = "avFab";
-    var b = el("button", "av-fab-b");
-    b.type = "button";
-    b.innerHTML = FAB_ICON; // static, trusted SVG
-    b.addEventListener("click", function () {
-      openAlgoLibrary(vizOpts());
-    });
-    f.append(b, el("span", "av-fab-l"));
-    document.body.append(f);
-    var seen = false;
-    try {
-      seen = window.localStorage.getItem("cl.fabSeen") === "1";
-    } catch (e) {}
-    if (seen) f.classList.add("is-quiet");
-    else
-      setTimeout(function () {
-        f.classList.add("is-quiet");
-        try {
-          window.localStorage.setItem("cl.fabSeen", "1");
-        } catch (e) {}
-      }, 7000);
-  }
-  f.querySelector(".av-fab-b").setAttribute("aria-label", label);
-  f.querySelector(".av-fab-l").textContent = label;
+  var b = el("button", "ch-back ch-algo" + (float ? " ch-back-float ch-algo-float" : ""));
+  b.type = "button";
+  b.append(icon(FAB_ICON, "ch-back-ico"), el("span", "", label));
+  b.setAttribute("aria-label", label);
+  b.title = label;
+  b.addEventListener("click", function () {
+    openAlgoLibrary(vizOpts());
+  });
+  return b;
+}
+function getFloatAlgo() {
+  if (floatAlgo) return floatAlgo;
+  floatAlgo = algoButton(true);
+  floatAlgo.querySelector("span:not(.ch-back-ico)").remove();
+  floatAlgo.tabIndex = -1;
+  document.body.append(floatAlgo);
+  return floatAlgo;
+}
+function syncFab(show) {
+  algoShow = !!show;
+  var old = document.getElementById("avFab");
+  if (old) old.remove(); // the old round button in the corner no longer exists
+  var fa = getFloatAlgo();
+  var label = libraryLabel(ctx.getLang());
+  fa.setAttribute("aria-label", label);
+  fa.title = label;
+  syncBackButton();
 }
 
 function render() {
