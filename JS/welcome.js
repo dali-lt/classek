@@ -10,6 +10,8 @@ var LANG_KEY = "classledger:lang";
 var PICK_KEY = "classledger:picked-role";
 var NOTICE_KEY = "classledger:notice"; // set by the student page when another device signed this one out
 var HOME = { teacher: "teacher", student: "student" };
+// New accounts are students for now (only the student space is open). Set to true to bring back the teacher / student choice at sign-up.
+var TEACHER_SIGNUP = false;
 
 var STR = {
   fr: {
@@ -233,6 +235,12 @@ function render() {
     create.append(icon(ICON_USER_PLUS), el("span", "", t("createBtn")));
     create.type = "button";
     create.addEventListener("click", function () {
+      if (!TEACHER_SIGNUP) {
+        state.picked = "student";
+        savePick("student");
+        if (handlers.signIn) handlers.signIn("create");
+        return;
+      }
       state.view = "create";
       state.picked = null;
       render();
