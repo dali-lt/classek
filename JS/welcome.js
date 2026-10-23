@@ -12,32 +12,32 @@ var NOTICE_KEY = "classledger:notice"; // set by the student page when another d
 var HOME = { teacher: "teacher", student: "student" };
 
 var STR = {
-  en: {
-    title: "Welcome! Let’s get to it.",
-    sub: "Sign in, or create a new account.",
-    createTitle: "Create your account",
-    createSub: "Are you a teacher or a student?",
-    signInBtn: "Sign in with Google",
-    createBtn: "Create account",
-    back: "Back",
-    chooseTitle: "One last step",
-    chooseSub: "Tell us who you are so we show you the right space.",
-    roleTeacher: "I’m a teacher",
-    roleTeacherHint: "Manage students, calendar and payments",
-    roleStudent: "I’m a student",
-    roleStudentHint: "Practice exercises and track your progress",
-    google: "Continue with Google",
-    cont: "Continue",
-    other: "Use another account",
-    loading: "Just a moment…",
-    noConfig: "Cloud sign-in isn’t set up yet.",
-    sdkFail: "Couldn’t reach Firebase. Check your connection.",
-    signInFail: "Sign-in failed.",
+  fr: {
+    title: "Bienvenue ! On s’y met.",
+    sub: "Connecte-toi ou crée un nouveau compte.",
+    createTitle: "Crée ton compte",
+    createSub: "Tu es enseignant ou élève ?",
+    signInBtn: "Se connecter avec Google",
+    createBtn: "Créer un compte",
+    back: "Retour",
+    chooseTitle: "Dernière étape",
+    chooseSub: "Dis-nous qui tu es pour afficher le bon espace.",
+    roleTeacher: "Je suis enseignant",
+    roleTeacherHint: "Gérer élèves, calendrier et paiements",
+    roleStudent: "Je suis élève",
+    roleStudentHint: "T’entraîner avec des exercices et suivre ta progression",
+    google: "Continuer avec Google",
+    cont: "Continuer",
+    other: "Utiliser un autre compte",
+    loading: "Un instant…",
+    noConfig: "La connexion cloud n’est pas encore configurée.",
+    sdkFail: "Impossible de joindre Firebase. Vérifie ta connexion.",
+    signInFail: "Échec de la connexion.",
     domainHint:
-      "This website address isn’t authorized yet. Add it in Firebase → Authentication → Settings → Authorized domains.",
-    rulesHint: "The cloud refused access. Check the Firestore security rules.",
-    saveFail: "Couldn’t save your choice. Try again.",
-    remoteOut: "You were signed out from another device.",
+      "Cette adresse n’est pas encore autorisée. Ajoute-la dans Firebase → Authentication → Settings → Authorized domains.",
+    rulesHint: "Le cloud a refusé l’accès. Vérifie les règles de sécurité Firestore.",
+    saveFail: "Impossible d’enregistrer ton choix. Réessaie.",
+    remoteOut: "Tu as été déconnecté depuis un autre appareil.",
   },
   ar: {
     title: "مرحبا! يلا نبداو",
@@ -99,9 +99,9 @@ var handlers = {}; // filled in once Firebase is ready
 
 function readLang() {
   try {
-    return localStorage.getItem(LANG_KEY) === "ar" ? "ar" : "en";
+    return localStorage.getItem(LANG_KEY) === "ar" ? "ar" : "fr";
   } catch (e) {
-    return "en";
+    return "fr";
   }
 }
 function readPick() {
@@ -242,7 +242,7 @@ function render() {
 }
 
 function setLang(next, persist) {
-  lang = next === "ar" ? "ar" : "en";
+  lang = next === "ar" ? "ar" : "fr";
   if (persist) {
     try {
       localStorage.setItem(LANG_KEY, lang);
