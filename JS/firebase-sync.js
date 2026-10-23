@@ -1,4 +1,4 @@
-/* ClassLedger cloud sync (optional).
+/* Classek cloud sync (optional).
    Google sign-in + Firestore. The app keeps working from localStorage; this module only
    mirrors the data to the signed-in user's own space in Firebase:
      users/{uid}/students/{studentId}   one document per student
@@ -131,7 +131,7 @@ async function main() {
     // __CLASSLEDGER_TEST_SDK__ lets the tests plug in a fake Firebase
     sdk = window.__CLASSLEDGER_TEST_SDK__ || (await loadSdk());
   } catch (e) {
-    console.warn("ClassLedger cloud sync unavailable:", e);
+    console.warn("Classek cloud sync unavailable:", e);
     return;
   }
 
@@ -781,5 +781,5 @@ async function main() {
 }
 
 main().catch(function (e) {
-  console.warn("ClassLedger cloud sync failed to start:", e);
+  console.warn("Classek cloud sync failed to start:", e);
 });

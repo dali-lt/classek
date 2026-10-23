@@ -1,4 +1,4 @@
-/* Firebase web config for ClassLedger.
+/* Firebase web config for Classek.
    Paste the values from: Firebase console -> Project settings -> Your apps -> Web app -> SDK setup and configuration.
    These values are NOT secret: access is protected by the Firestore security rules (firestore.rules).
    While apiKey still starts with "PASTE", cloud sync stays off and the app works locally as before. */

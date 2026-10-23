@@ -1,13 +1,13 @@
-# ClassLedger
+# Classek
 
-A lightweight platform for private tutors and their students.
+Classek ("ta classe", in Tunisian Arabic) is a learning space for Tunisian Bac informatique students: courses, exercises with solutions, algorithm animations, and an ideas box so students help shape the site. It also includes a teacher tool (students, calendar, payments).
 
 - **For teachers**: manage students, groups, a calendar and monthly payments in one place.
 - **For students**: a learning space with a placement test, chapters and exercises (informatique, Bac level), growing step by step.
 
 Built with plain **HTML, CSS and JavaScript** (no framework, no build step) and **Firebase** for accounts and cloud storage.
 
-Live site: https://dali-lt.github.io/classledger
+Live site: https://dali-lt.github.io/classek
 
 ## Features
 
@@ -27,7 +27,7 @@ Live site: https://dali-lt.github.io/classledger
 - Chapters list (exercises and solutions are being added)
 
 ### General
-- **Bilingual UI**: English and Arabic with one click (dates and level names adapt)
+- **Bilingual UI**: French and Arabic (Tunisian dialect) with one click (dates and level names adapt; the teacher app also offers English)
 - **Accounts**: Google sign-in, account page, sign out, delete account
 - **Cloud sync**: data is saved to the cloud and follows you across devices
 - **Responsive design**: works on desktop and mobile

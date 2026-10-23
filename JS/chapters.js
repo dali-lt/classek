@@ -1,4 +1,4 @@
-/* ClassLedger student chapters: chapter list, chapter page, exercises, solutions, progress.
+/* Classek student chapters: chapter list, chapter page, exercises, solutions, progress.
 
    Firestore layout (content is written by the admin only, see firestore.rules):
      chapters/{chapterId}                                   level, subject, topic, title, title_ar, order, published, rappel, exerciseCount

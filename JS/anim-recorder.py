@@ -1,4 +1,4 @@
-# ClassLedger animation recorder (runs in the browser with Pyodide, admin page only).
+# Classek animation recorder (runs in the browser with Pyodide, admin page only).
 # It runs the Python function of a lesson on an array, watches every line, and turns what happened into the
 # steps the animation player understands: { a, cmp, swap, mark, done, held, hole, target, tags, out, eq, sign, line, msg, c, s }
 import ast, re, sys, json

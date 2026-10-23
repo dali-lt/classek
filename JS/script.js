@@ -225,7 +225,7 @@
       importData: "Import data",
       importConfirm: "Import {count} students and replace the current data?",
       importSuccess: "Data imported successfully.",
-      importError: "This file is not a valid ClassLedger backup.",
+      importError: "This file is not a valid Classek backup.",
       importLoadingTitle: "Importing…",
       importLoadingText: "Checking your backup file.",
       importDoneTitle: "Import complete",
@@ -494,7 +494,7 @@
       importData: "إدخال البيانات",
       importConfirm: "باش تدخل {count} تلامذة وتعوّض البيانات الحالية؟",
       importSuccess: "تم إدخال البيانات بنجاح.",
-      importError: "الملف هذا موش نسخة احتياطية صالحة لـ ClassLedger.",
+      importError: "الملف هذا موش نسخة احتياطية صالحة لـ Classek.",
       importLoadingTitle: "جاري الإدخال…",
       importLoadingText: "نثبّت في ملف النسخة الاحتياطية.",
       importDoneTitle: "تم الإدخال",
@@ -1315,7 +1315,7 @@
     var ok = true;
     try {
       var backup = {
-        app: "ClassLedger",
+        app: "Classek",
         version: 5,
         exportedAt: new Date().toISOString(),
         students: students,
@@ -1329,7 +1329,7 @@
       var url = URL.createObjectURL(blob);
       var link = document.createElement("a");
       link.href = url;
-      link.download = "classledger-backup-" + toDateKey(new Date()) + ".json";
+      link.download = "classek-backup-" + toDateKey(new Date()) + ".json";
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -1460,7 +1460,7 @@
         var importedStudents = backup && backup.students;
         var valid =
           backup &&
-          backup.app === "ClassLedger" &&
+          (backup.app === "Classek" || backup.app === "ClassLedger") &&
           Array.isArray(importedStudents) &&
           importedStudents.every(function (student) {
             return (

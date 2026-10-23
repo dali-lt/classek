@@ -1,4 +1,4 @@
-/* ClassLedger teacher page: phone menu (fixed button + side drawer).
+/* Classek teacher page: phone menu (fixed button + side drawer).
    On phones the nav pills, language switch and account icon of the top bar move into the drawer. */
 (function () {
   var btn = document.getElementById("tMenuBtn");

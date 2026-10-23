@@ -1,4 +1,4 @@
-/* ClassLedger welcome page: Google sign-in, then teacher / student routing.
+/* Classek welcome page: Google sign-in, then teacher / student routing.
 
    The role lives in users/{uid}/meta/account (written once, at first sign-in).
    Accounts created before this page existed have no role document: they are
@@ -16,7 +16,7 @@ var TEACHER_SIGNUP = false;
 var STR = {
   fr: {
     title: "Bienvenue ! On s’y met.",
-    sub: "Connecte-toi ou crée un nouveau compte.",
+    sub: "Connecte-toi ou crée un compte. Ici, ton avis compte : propose un exercice, une couleur, une correction.",
     createTitle: "Crée ton compte",
     createSub: "Tu es enseignant ou élève ?",
     signInBtn: "Se connecter avec Google",
@@ -43,7 +43,7 @@ var STR = {
   },
   ar: {
     title: "مرحبا! يلا نبداو",
-    sub: "ادخل بحسابك، ولا اعمل حساب جديد.",
+    sub: "ادخل بحسابك ولا اعمل حساب جديد. هنا رأيك يهمّ: اقترح تمرين، لون ولا تصحيح.",
     createTitle: "إنشاء حساب",
     createSub: "أنت أستاذ ولا تلميذ؟",
     signInBtn: "الدخول بحساب Google",
@@ -398,5 +398,5 @@ async function main() {
 }
 
 main().catch(function (e) {
-  console.warn("ClassLedger welcome page failed to start:", e);
+  console.warn("Classek welcome page failed to start:", e);
 });

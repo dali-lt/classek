@@ -1,4 +1,4 @@
-/* ClassLedger algorithm animations (used by chapters.js).
+/* Classek algorithm animations (used by chapters.js).
    In a lesson, a fenced block  ```viz  followed by one name (tri-bulles | tri-selection | tri-insertion)
    becomes a step-by-step animation next to the pseudo-code. Everything runs in the browser, nothing to host.
 

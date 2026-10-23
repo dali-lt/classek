@@ -1,4 +1,4 @@
-/* ClassLedger student space.
+/* Classek student space.
    Guards the page: signed out -> ./ , teacher -> teacher.
    The profile card ("My account") reuses the teacher app's modal look (style.css)
    and saves to users/{uid}/meta/profile. */
@@ -2879,6 +2879,6 @@ async function main() {
 }
 
 main().catch(function (e) {
-  console.warn("ClassLedger student page failed to start:", e);
+  console.warn("Classek student page failed to start:", e);
   window.location.replace("./");
 });
