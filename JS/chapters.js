@@ -1,4 +1,4 @@
-/* Classek student chapters: chapter list, chapter page, exercises, solutions, progress.
+/* ClassLedger student chapters: chapter list, chapter page, exercises, solutions, progress.
 
    Firestore layout (content is written by the admin only, see firestore.rules):
      chapters/{chapterId}                                   level, subject, topic, title, title_ar, order, published, rappel, exerciseCount
@@ -483,6 +483,32 @@ function vizOpts() {
     setCodeLang: setCodeLang,
   };
 }
+// ```svg blocks of a lesson: the drawing is parsed, cleaned (no script, no link, no external url) and shown inline,
+// so it follows the site colours (use style="fill:var(--color-primary)" etc.) and the light/dark mode
+function svgFigure(src) {
+  var fig = el("figure", "ch-fig");
+  try {
+    var doc = new DOMParser().parseFromString(String(src || ""), "image/svg+xml");
+    var svg = doc.documentElement;
+    if (!svg || svg.nodeName.toLowerCase() !== "svg" || doc.querySelector("parsererror")) return fig;
+    svg.querySelectorAll("script, foreignObject, iframe, use, image, a, style").forEach(function (n) {
+      n.remove();
+    });
+    svg.querySelectorAll("*").forEach(function (n) {
+      Array.prototype.slice.call(n.attributes).forEach(function (a) {
+        if (/^on/i.test(a.name) || /^(xlink:)?href$/i.test(a.name) || /javascript:|url\(|expression\(/i.test(a.value)) n.removeAttribute(a.name);
+      });
+    });
+    svg.removeAttribute("width");
+    svg.removeAttribute("height");
+    svg.setAttribute("role", "img");
+    fig.append(document.importNode(svg, true));
+  } catch (e) {
+    /* a broken drawing is simply not shown */
+  }
+  return fig;
+}
+
 function md(text) {
   var box = el("div", "ch-content");
   box.setAttribute("lang", "fr");
@@ -524,6 +550,10 @@ function md(text) {
       continue;
     }
     if (s.lang === "viz") continue; // old lessons: the Run button on the code replaces the launcher card
+    if (s.lang === "svg") {
+      box.append(svgFigure(s.v));
+      continue;
+    }
     var known = s.lang === "algo" || s.lang === "python";
     var j = i + 1;
     if (j < segs.length && !segs[j].code && !segs[j].v.trim()) j++;
@@ -1269,7 +1299,7 @@ function lessonBlock(ch, always) {
       var d = el("details", "lesson-sec");
       d.setAttribute("lang", "fr");
       d.setAttribute("dir", "ltr");
-      d.open = sectionOpen[k] !== undefined ? !!sectionOpen[k] : !!always && i === firstNamed;
+      d.open = sectionOpen[k] !== undefined ? !!sectionOpen[k] : false; // closed by default: the À retenir line is enough to skim
       var kp = splitKeep(s.body);
       var sum = el("summary", "");
       sum.append(el("span", "lesson-sec-t", s.title));

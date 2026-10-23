@@ -1,4 +1,4 @@
-/* Classek: student chapters (list, chapter page, exercises).
+/* ClassLedger: student chapters (list, chapter page, exercises).
    Reuses the tokens from style.css and the components from welcome.css / test.css:
    .student-hero, .student-section, .student-chapters, .student-empty, .domain-bar,
    .test-chip, .test-code, .pc-btn, .lang-switch / .lang-btn. */
@@ -3219,4 +3219,17 @@ body:has(.av-modal) .ch-back.ch-back-float {
 /* the first-sentence fallback only helps while the section is closed: once open, the text is right below */
 .lesson-sec[open] > summary > .lesson-keep.is-auto {
   display: none;
+}
+
+/* a drawing (```svg) inside a lesson */
+.ch-fig {
+  display: flex;
+  justify-content: center;
+  margin: 12px 0;
+}
+.ch-fig svg {
+  display: block;
+  width: 100%;
+  max-width: 560px;
+  height: auto;
 }
