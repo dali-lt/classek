@@ -1,4 +1,4 @@
-/* ClassLedger: student chapters (list, chapter page, exercises).
+/* Classek: student chapters (list, chapter page, exercises).
    Reuses the tokens from style.css and the components from welcome.css / test.css:
    .student-hero, .student-section, .student-chapters, .student-empty, .domain-bar,
    .test-chip, .test-code, .pc-btn, .lang-switch / .lang-btn. */
@@ -1370,15 +1370,30 @@ input.note-input {
   font-size: 13px;
   font-weight: 800;
 }
-/* phones have no Tab key: indent / outdent buttons, shown on touch screens only */
+/* under the answer box while writing: symbols missing from the keyboard (← ≠ ≤ ≥); indent / outdent too on touch screens */
 .ex-tools {
   display: none;
+  flex-wrap: wrap;
   gap: 8px;
+  margin-top: 8px;
+}
+.ex-box:focus-within .ex-tools {
+  display: flex;
+}
+.ex-tool.is-touch {
+  display: none;
 }
 @media (pointer: coarse) {
-  .ex-tools {
-    display: flex;
+  .ex-tool.is-touch {
+    display: inline-flex;
+    align-items: center;
   }
+}
+.ex-tool.is-sym {
+  min-width: 40px;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1;
 }
 .ex-tool {
   min-height: 34px;
@@ -3219,17 +3234,4 @@ body:has(.av-modal) .ch-back.ch-back-float {
 /* the first-sentence fallback only helps while the section is closed: once open, the text is right below */
 .lesson-sec[open] > summary > .lesson-keep.is-auto {
   display: none;
-}
-
-/* a drawing (```svg) inside a lesson */
-.ch-fig {
-  display: flex;
-  justify-content: center;
-  margin: 12px 0;
-}
-.ch-fig svg {
-  display: block;
-  width: 100%;
-  max-width: 560px;
-  height: auto;
 }

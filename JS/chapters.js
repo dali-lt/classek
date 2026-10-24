@@ -75,6 +75,10 @@ var STR = {
     savedAns: "Enregistré",
     saveAnsFail: "Impossible d’enregistrer ta réponse. Nouvel essai en cours.",
     hintsUsed: "Indices {n}/{total}",
+    symArrow: "Affectation (←)",
+    symNe: "Différent de (≠)",
+    symLe: "Inférieur ou égal (≤)",
+    symGe: "Supérieur ou égal (≥)",
     indent: "Indenter",
     outdent: "Désindenter",
     showSolution: "Afficher la solution",
@@ -180,6 +184,10 @@ var STR = {
     savedAns: "تمّ الحفظ",
     saveAnsFail: "ما نجمناش نحفظو جوابك. باش نعاودو المحاولة.",
     hintsUsed: "تلميحات {n}/{total}",
+    symArrow: "إسناد (←)",
+    symNe: "مختلف عن (≠)",
+    symLe: "أصغر أو يساوي (≤)",
+    symGe: "أكبر أو يساوي (≥)",
     indent: "إزاحة",
     outdent: "تراجع",
     showSolution: "شوف الحل",
@@ -1275,7 +1283,7 @@ function lessonBlock(ch, always) {
       var d = el("details", "lesson-sec");
       d.setAttribute("lang", "fr");
       d.setAttribute("dir", "ltr");
-      d.open = sectionOpen[k] !== undefined ? !!sectionOpen[k] : !!always && i === firstNamed;
+      d.open = sectionOpen[k] !== undefined ? !!sectionOpen[k] : false; // every section starts closed: the student opens the one they want
       var kp = splitKeep(s.body);
       var sum = el("summary", "");
       sum.append(el("span", "lesson-sec-t", s.title));
@@ -1461,16 +1469,36 @@ function answerBox(ch, ex, boxId, placeholder, onInput, rows) {
   ta.addEventListener("blur", function () {
     flushSave(ch.id, ex.id);
   });
-  // phones have no Tab key: two small buttons (shown on touch screens only)
+  // under the box while writing: symbols that are not on the keyboard (algorithm arrow, comparisons),
+  // and, on touch screens that have no Tab key, indent / outdent
   var tools = el("div", "ex-tools");
+  [
+    ["←", "symArrow"],
+    ["≠", "symNe"],
+    ["≤", "symLe"],
+    ["≥", "symGe"],
+  ].forEach(function (b) {
+    var btn = el("button", "ex-tool is-sym", b[0]);
+    btn.type = "button";
+    btn.title = t(b[1]);
+    btn.setAttribute("aria-label", t(b[1]));
+    btn.addEventListener("pointerdown", function (e) {
+      e.preventDefault(); // keep the keyboard open and the caret where it is
+    });
+    btn.addEventListener("click", function () {
+      ta.focus();
+      editText(ta, b[0]);
+    });
+    tools.append(btn);
+  });
   [
     ["indent", 1],
     ["outdent", -1],
   ].forEach(function (b) {
-    var btn = el("button", "ex-tool", (b[1] > 0 ? "⇥ " : "⇤ ") + t(b[0]));
+    var btn = el("button", "ex-tool is-touch", (b[1] > 0 ? "⇥ " : "⇤ ") + t(b[0]));
     btn.type = "button";
     btn.addEventListener("pointerdown", function (e) {
-      e.preventDefault(); // keep the keyboard open and the caret where it is
+      e.preventDefault();
     });
     btn.addEventListener("click", function () {
       ta.focus();
