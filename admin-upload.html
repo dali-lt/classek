@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="CSS/style.css?v=49" />
     <link rel="stylesheet" href="CSS/welcome.css" />
     <link rel="stylesheet" href="CSS/chapters.css" />
-    <link rel="stylesheet" href="CSS/admin-upload.css?v=49" />
+    <link rel="stylesheet" href="CSS/admin-upload.css?v=70" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -47,8 +47,10 @@
           </div>
           <div id="uploadPane" class="up-pane">
           <div class="up-field">
-            <span class="up-label" id="typeLabel">Content type</span>
-            <div class="up-types" id="types" role="group" aria-labelledby="typeLabel"></div>
+            <div class="up-typerow">
+              <label class="up-label" id="typeLabel" for="types">Content type</label>
+              <select class="up-select" id="types"></select>
+            </div>
             <p class="up-hint" id="typeHint"></p>
           </div>
 
@@ -245,7 +247,7 @@
 
       function renderTypes() {
         $("types").innerHTML = TYPES.map(function (t) {
-          return '<button type="button" data-type="' + t.id + '" aria-pressed="' + (t.id === typeId) + '">' + esc(t.label) + "</button>";
+          return '<option value="' + t.id + '"' + (t.id === typeId ? " selected" : "") + ">" + esc(t.label) + "</option>";
         }).join("");
         var type = curType();
         $("typeHint").textContent = type.kind === "test"
@@ -254,10 +256,10 @@
         $("visField").hidden = type.kind === "test";
         $("dropSmall").textContent = type.kind === "test" ? "One .json placement test file" : "One or many .json chapter files";
       }
-      $("types").addEventListener("click", function (e) {
-        var b = e.target.closest("button[data-type]");
-        if (!b || busy || b.dataset.type === typeId) return;
-        typeId = b.dataset.type;
+      $("types").addEventListener("change", function (e) {
+        var v = e.target.value;
+        if (busy || v === typeId) { e.target.value = typeId; return; }
+        typeId = v;
         try { localStorage.setItem("cl-admin-type", typeId); } catch (er) {}
         renderTypes();
         rebuild(false);
@@ -636,7 +638,7 @@
       async function openAnim() {
         try {
           if (!animUi) {
-            var m = await import("./JS/admin-anim.js?v=68");
+            var m = await import("./JS/admin-anim.js?v=70");
             animUi = m.initAnimAdmin({ sdk: sdk, db: db, pane: $("animPane") });
           } else if (animUi.reload) animUi.reload();
         } catch (e) {
