@@ -3,7 +3,8 @@
    The profile card ("My account") reuses the teacher app's modal look (style.css)
    and saves to users/{uid}/meta/profile. */
 
-import { Chapters } from "./chapters.js?v=67";
+import { Chapters } from "./chapters.js?v=68";
+import * as Cy from "./cycle.js?v=68";
 import {
   MAX_SHOWN,
   parseDevice,
@@ -160,6 +161,39 @@ var STR = {
     pChipTime: "Environ 5 min",
     pChipNoGrade: "Sans note",
     pDone: "Terminé",
+    bPill: "Bilan · {n}/7 jours",
+    bPillReady: "7/7 jours",
+    bGo: "Commencer le bilan",
+    bNote: "Un exercice terminé = un jour compté. Au 7ᵉ jour, ton bilan arrive.",
+    bNoteReady: "Une dizaine de questions. Il t’attend : ton compteur ne bouge pas tant que tu ne l’as pas passé.",
+    bCardTitle: "Ton niveau et tes bilans",
+    bCardLast: "Dernier bilan : {c}/{t}{d}",
+    bCardReady: "Ton bilan est prêt à passer",
+    bPlacement: "Test de niveau",
+    bTitle: "Bilan de la semaine",
+    bResultTitle: "Bilan n°{n}",
+    bIntroTitle: "C’est l’heure du bilan",
+    bIntro: "Des questions sur ce que tu as travaillé cette semaine, avec quelques-unes d’avant pour voir ce qui est resté. Pas de pression : le but est de mesurer ton progrès.",
+    bChipChap: "{n} chapitre(s)",
+    bLater: "Plus tard",
+    bStart: "Commencer",
+    bLoading: "Préparation du bilan…",
+    bNoQuestions: "Pas encore de questions pour tes chapitres. Reviens bientôt !",
+    bMix: "Mélange",
+    bFirst: "Premier bilan : c’est ton point de départ.",
+    bUpTxt: "▲ +{d} pts par rapport au bilan précédent",
+    bDownTxt: "▼ −{d} pts par rapport au bilan précédent",
+    bSameTxt: "= Même score que le bilan précédent",
+    bEvo: "Ton évolution par chapitre",
+    bPrevMark: "Le trait noir = ton bilan précédent",
+    bRevoir: "À revoir",
+    bRevoirGo: "Revoir ›",
+    bPts: "pts",
+    bRecoUp: "Tu progresses : continue sur cette lancée.",
+    bRecoFlat: "Stable. Reprends les chapitres à revoir pour monter d’un cran.",
+    bRecoDown: "Un petit recul, c’est normal. Revois les points ci-dessous, puis relance une semaine.",
+    bRecoFirst: "Voilà ta base. Au prochain bilan, tu verras ton évolution.",
+    bNewWeek: "Nouvelle semaine : 0 / 7",
     pLoadFail: "Impossible de charger les questions. Réessaie.",
     pSaveFail: "Ton résultat n’a pas pu être enregistré, mais le voici.",
     pCardTodoTitle: "Passe le test de niveau",
@@ -307,6 +341,39 @@ var STR = {
     pChipTime: "تقريبا 5 دقايق",
     pChipNoGrade: "بلا نقطة",
     pDone: "تمّ",
+    bPill: "تقييم · {n}/7 أيام",
+    bPillReady: "7/7 أيام",
+    bGo: "ابدا التقييم",
+    bNote: "تمرين كامل = يوم محسوب. في اليوم السابع يطلعلك التقييم.",
+    bNoteReady: "نحو 10 أسئلة. التقييم ينتظر فيك، والعداد ما يتحركش حتى تعدّيه.",
+    bCardTitle: "مستواك وتقييماتك",
+    bCardLast: "آخر تقييم: {c}/{t}{d}",
+    bCardReady: "تقييمك جاهز",
+    bPlacement: "اختبار المستوى",
+    bTitle: "تقييم الأسبوع",
+    bResultTitle: "التقييم رقم {n}",
+    bIntroTitle: "حان وقت التقييم",
+    bIntro: "أسئلة على الي خدمتو في الأسبوع هذا، وبعضها من دروس قبل باش نشوفو شنوة ثبت. بلا ضغط: الهدف نقيسو تقدمك.",
+    bChipChap: "{n} دروس",
+    bLater: "بعد شوية",
+    bStart: "ابدا",
+    bLoading: "نحضّرو في التقييم…",
+    bNoQuestions: "مازال ما فماش أسئلة لدروسك. ارجع قريب!",
+    bMix: "مزيج",
+    bFirst: "أول تقييم: هو نقطة البداية متاعك.",
+    bUpTxt: "▲ +{d} نقطة مقارنة بالتقييم الي قبل",
+    bDownTxt: "▼ −{d} نقطة مقارنة بالتقييم الي قبل",
+    bSameTxt: "= نفس النتيجة متاع التقييم الي قبل",
+    bEvo: "تطورك حسب الدرس",
+    bPrevMark: "الخط الأسود = التقييم الي قبل",
+    bRevoir: "للمراجعة",
+    bRevoirGo: "راجع ›",
+    bPts: "ن",
+    bRecoUp: "تتقدم، كمّل هكا.",
+    bRecoFlat: "ثابت. راجع الدروس الي للمراجعة باش تطلع.",
+    bRecoDown: "تراجع صغير عادي. راجع النقاط الي تحت وبدّل أسبوع جديد.",
+    bRecoFirst: "هذي قاعدتك. في التقييم الجاي تشوف تطورك.",
+    bNewWeek: "أسبوع جديد: 0 / 7",
     pLoadFail: "ما نجمناش نحمّلو الأسئلة. عاود جرّب.",
     pSaveFail: "ما نجمناش نحفظو نتيجتك، أما هاهي.",
     pCardTodoTitle: "اعمل اختبار تحديد المستوى",
@@ -488,6 +555,37 @@ function genderText(v) {
   return v === "female" ? t("genderFemale") : v === "male" ? t("genderMale") : "";
 }
 
+/* ---------------- study cycle: 7 study days, then the weekly bilan ---------------- */
+var cycle = null; // { no, days[], chapters{}, recent[] } from users/{uid}/progress/cycle
+var bilans = { items: [] }; // users/{uid}/progress/bilans
+var cycleOk = false; // false until the cloud copy is read: never count (or save) before that, so nothing gets overwritten
+var saveCycle = null;
+var saveBilans = null;
+
+function recordStudyDay(chId) {
+  if (!cycleOk || !saveCycle) return;
+  var r = Cy.countDay(cycle, Cy.tunisDate(new Date()), chId);
+  if (!r.changed) return;
+  cycle = r.cycle;
+  paintWeek();
+  renderPlacementCard();
+  saveCycle(cycle).catch(function (e) {
+    console.warn("Couldn’t save the study days:", e);
+  });
+}
+function ymd(d) {
+  var p = function (n) {
+    return (n < 10 ? "0" : "") + n;
+  };
+  return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
+}
+function lastBilan() {
+  return bilans.items.length ? bilans.items[bilans.items.length - 1] : null;
+}
+function deltaText(d) {
+  return d === null || d === 0 ? "" : " · " + (d > 0 ? "▲ +" : "▼ −") + Math.abs(d) + " " + t("bPts");
+}
+
 /* ---------------- week strip (today highlighted) ---------------- */
 function paintWeek() {
   var host = $("sWeek");
@@ -498,6 +596,9 @@ function paintWeek() {
   mon.setDate(mon.getDate() - 3); // today always sits in the middle: 3 days before, 3 after
   var wd = new Intl.DateTimeFormat(loc, { weekday: "short" });
   host.textContent = "";
+  var studied = cycleOk ? Cy.studiedDates(cycle) : {};
+  var ready = cycleOk && Cy.isReady(cycle);
+  host.classList.toggle("is-ready", ready);
   var cap = el("div", "week-cap");
   cap.textContent = new Intl.DateTimeFormat(loc, { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(now);
   var row = el("div", "week-row");
@@ -507,9 +608,27 @@ function paintWeek() {
     var cell = el("div", "week-day" + (isToday ? " is-today" : ""));
     if (isToday) cell.setAttribute("aria-current", "date");
     cell.append(el("span", "week-name", wd.format(d)), el("span", "week-num", String(d.getDate())));
+    cell.append(el("span", "wk-mark" + (studied[ymd(d)] ? " is-on" : "")));
     row.append(cell);
   }
+  if (cycleOk) {
+    var n = cycle.days.length;
+    var top = el("div", "wk-top");
+    var pill = el("span", "wk-pill");
+    var dots = el("span", "wk-dots");
+    for (var k = 0; k < Cy.CYCLE_DAYS; k++) dots.append(el("i", k < n ? "is-on" : ""));
+    pill.append(el("span", "", ready ? t("bPillReady") : tf("bPill", { n: n })), dots);
+    top.append(pill);
+    if (ready) {
+      var go = el("button", "wk-go", t("bGo"));
+      go.type = "button";
+      go.addEventListener("click", openBilan);
+      top.append(go);
+    }
+    host.append(top);
+  }
   host.append(cap, row);
+  if (cycleOk) host.append(el("p", "wk-note", ready ? t("bNoteReady") : t("bNote")));
 }
 document.addEventListener("visibilitychange", function () {
   if (!document.hidden) paintWeek();
@@ -1235,6 +1354,7 @@ async function loadTestData() {
   }
 }
 function domainLabel(key) {
+  if (test && test.kind === "bilan") return (test.labels && test.labels[key]) || (key === "mix" ? t("bMix") : key);
   var d = testData && testData.domains && testData.domains[key];
   if (d && lang === "ar" && d.label_ar) return d.label_ar;
   return d && d.label ? d.label : key;
@@ -1397,16 +1517,27 @@ function renderPlacementCard() {
     var head = el("div", "pc-head");
     head.append(ico(I_CHART, "pc-ico"));
     var ht = el("div", "pc-head-text");
-    ht.append(el("h3", "", t("pCardDoneTitle")), el("p", "", t("pCardDoneSub")));
+    var lastB = lastBilan();
+    var cardSub = t("pCardDoneSub");
+    if (cycleOk && Cy.isReady(cycle)) cardSub = t("bCardReady");
+    else if (lastB) cardSub = tf("bCardLast", { c: lastB.correct, t: lastB.total, d: deltaText(Cy.deltaPoints(lastB, lastB.prev)) });
+    ht.append(el("h3", "", cycleOk ? t("bCardTitle") : t("pCardDoneTitle")), el("p", "", cardSub));
     head.append(ht);
     text.append(head);
     var view = pBtn("", "is-ghost is-mini", function () {
-      viewResults();
+      if (lastB) viewBilan(lastB);
+      else viewResults();
     });
     view.setAttribute("aria-label", t("pViewResults"));
     view.title = t("pViewResults");
     view.append(ico(I_EYE, "tc-ico"), el("span", "pc-btn-label", t("pViewResults")));
     actions.append(view);
+    if (lastB) {
+      var plc = pBtn(t("bPlacement"), "is-ghost is-mini", function () {
+        viewResults();
+      });
+      actions.append(plc);
+    }
   } else {
     var halo = el("div", "pc-alert");
     halo.append(ico(I_BELL, "pc-bell"));
@@ -1463,7 +1594,7 @@ async function closeTest() {
   stopTimer();
   $("tOverlay").classList.remove("open");
   // closing before finishing counts as "skip for now": the test won't pop up again by itself
-  if (!placement && savePlacement) {
+  if (!placement && savePlacement && !(test && test.kind === "bilan")) {
     placement = { status: "skipped" };
     try {
       await savePlacement(placement);
@@ -1488,6 +1619,7 @@ function scoreTest() {
   return { correct: right, total: total, domains: domains };
 }
 async function finishTest() {
+  if (test.kind === "bilan") return finishBilan();
   var res = scoreTest();
   test.result = res;
   test.step = "result";
@@ -1623,12 +1755,13 @@ function leaveThen(fn) {
 
 function renderTest(anim) {
   stopTimer();
-  $("tTitle").textContent = test.step === "result" ? t("pResult") : t("pTitle");
+  if (test.kind === "bilan") $("tTitle").textContent = test.step === "result" ? tf("bResultTitle", { n: test.no || 1 }) : t("bTitle");
+  else $("tTitle").textContent = test.step === "result" ? t("pResult") : t("pTitle");
   var body = $("tBody");
   body.textContent = "";
   $("tHead").textContent = "";
   $("tHead").hidden = true;
-  if (test.step === "intro") renderIntroCard(body);
+  if (test.step === "intro") (test.kind === "bilan" ? renderBilanIntro : renderIntroCard)(body);
   else if (test.step === "q") renderQuestionCard(body);
   else renderResultCard(body);
   var deckEl = document.querySelector("#tOverlay .deck");
@@ -1754,7 +1887,7 @@ function renderQuestionCard(body) {
 
   var head = el("div", "tc-head");
   var badge = el("span", "tc-topic");
-  badge.append(ico(topic.icon, "tc-topic-ico"), el("span", "tc-topic-name", topicLabel(q.topic)), el("span", "tc-topic-dom", " · " + domainLabel(domainOf(q))));
+  badge.append(ico(topic.icon, "tc-topic-ico"), el("span", "tc-topic-name", q._tl || topicLabel(q.topic)), el("span", "tc-topic-dom", q._tl ? "" : " · " + (test.kind === "bilan" ? t("bMix") : domainLabel(domainOf(q)))));
   var right = el("span", "tc-right");
   var clock = el("span", "tc-clock");
   clock.append(ico(I_CLOCK, "tc-clock-ico"), el("b", "", ""));
@@ -2017,7 +2150,10 @@ function renderResultCard(body) {
     return pctOf(r.domains[k]);
   });
   var reco;
-  if (keys.length === 1) reco = pcts[0] >= 0.7 ? t("pRecoOneHigh") : t("pRecoOneLow");
+  if (test.kind === "bilan") {
+    var bd = Cy.deltaPoints(r, test.prev);
+    reco = bd === null ? t("bRecoFirst") : bd > 0 ? t("bRecoUp") : bd < 0 ? t("bRecoDown") : t("bRecoFlat");
+  } else if (keys.length === 1) reco = pcts[0] >= 0.7 ? t("pRecoOneHigh") : t("pRecoOneLow");
   else if (pcts.every(function (p) { return p >= 0.7; })) reco = t("pRecoBoth");
   else if (pcts.every(function (p) { return p < 0.5; })) reco = t("pRecoLow");
   else {
@@ -2026,6 +2162,7 @@ function renderResultCard(body) {
   }
   var banner = el("div", "tc-reco");
   banner.append(ico(I_ROCKET, "tc-reco-ico"), el("span", "", reco));
+  if (test.kind === "bilan") renderBilanExtras(body, r);
   body.append(banner);
   if (test.saveFailed) body.append(el("p", "set-msg", t("pSaveFail")));
 
@@ -2058,11 +2195,238 @@ function renderResultCard(body) {
   }
   var actions = el("div", "test-actions");
   actions.append(
-    pBtn(t("pDone"), "", function () {
+    pBtn(test.kind === "bilan" && test.fresh ? t("bNewWeek") : t("pDone"), "", function () {
       $("tOverlay").classList.remove("open");
     }),
   );
   body.append(actions);
+}
+
+/* ---------------- weekly bilan: built on the same deck of cards as the level test ---------------- */
+function bilanTitleOf(ch) {
+  return lang === "ar" && ch.title_ar ? ch.title_ar : ch.title;
+}
+async function openBilan() {
+  if (!cycleOk) return;
+  test = { kind: "bilan", step: "intro", i: 0, perm: {}, picks: {}, timeouts: {}, qs: [], result: null, prev: null, labels: {}, building: true, empty: false, saveFailed: false, loadFailed: false };
+  if (menuIsOpen()) closeMenu();
+  if (modalIsOpen()) closeModal();
+  $("tOverlay").classList.add("open");
+  renderTest("in");
+  var mine = test;
+  try {
+    await Chapters.ensure();
+  } catch (e) {}
+  var snap = Chapters.snapshot();
+  var banks = {};
+  var labels = {};
+  var topics = {};
+  snap.chapters.forEach(function (ch) {
+    if (Array.isArray(ch.quiz) && ch.quiz.length) banks[ch.id] = ch.quiz;
+    labels[ch.id] = bilanTitleOf(ch);
+    topics[ch.id] = ch.topic;
+  });
+  var touched = Object.keys(cycle.chapters).sort(function (a, b) {
+    return cycle.chapters[b] - cycle.chapters[a];
+  });
+  var others = Object.keys(snap.status || {}).filter(function (id) {
+    var st = snap.status[id] || {};
+    return touched.indexOf(id) < 0 && Object.keys(st).some(function (k) {
+      return st[k] === "done";
+    });
+  });
+  var avoid = {};
+  var last = lastBilan();
+  if (last && Array.isArray(last.qids))
+    last.qids.forEach(function (id) {
+      avoid[id] = true;
+    });
+  var qs = Cy.pickBilan({ touched: touched, others: others, banks: banks, avoid: avoid, n: 10 }).map(function (q) {
+    return Object.assign({}, q, { topic: topics[q._chap] || q.topic, _tl: labels[q._chap] });
+  });
+  if (!qs.length && (await loadTestData())) {
+    // no quiz written for these chapters yet: the level-test questions keep the bilan useful
+    qs = buildQuestions(levelCodeOf(profile.level) || "4", currentStage()).map(function (q) {
+      return Object.assign({}, q, { _chap: "mix" });
+    });
+  }
+  if (test !== mine) return; // closed while it was loading
+  test.qs = qs;
+  test.labels = labels;
+  test.building = false;
+  test.empty = !qs.length;
+  renderTest();
+}
+function renderBilanIntro(body) {
+  var hero = el("div", "tc-hero");
+  hero.append(ico(I_CHART, "tc-hero-ico"));
+  body.append(hero, el("h3", "tc-h", t("bIntroTitle")));
+  var actions = el("div", "test-actions");
+  if (test.building) {
+    body.append(el("p", "tc-p", t("bLoading")));
+  } else if (test.empty) {
+    body.append(el("p", "tc-p", t("bNoQuestions")));
+    actions.append(pBtn(t("pDone"), "is-ghost", closeTest));
+    body.append(actions);
+    return;
+  } else {
+    body.append(el("p", "tc-p", t("bIntro")));
+    var seen = {};
+    test.qs.forEach(function (q) {
+      seen[q._chap] = true;
+    });
+    var chips = el("div", "tc-chips");
+    [
+      [I_CODE, tf("pChipQ", { n: test.qs.length }), "c1"],
+      [I_LAYERS, tf("bChipChap", { n: Object.keys(seen).length }), "c1"],
+      [I_CLOCK, t("pChipTimed"), "c2"],
+    ].forEach(function (c) {
+      var chip = el("span", "tc-chip " + c[2]);
+      chip.append(ico(c[0]), el("span", "", c[1]));
+      chips.append(chip);
+    });
+    body.append(chips);
+  }
+  var start = pBtn(t("bStart"), "", function () {
+    test.qs.forEach(function (q) {
+      test.perm[q.id] = shuffled(q.choices.length);
+    });
+    leaveThen(function () {
+      test.step = "q";
+      test.i = 0;
+      renderTest("in");
+    });
+  });
+  start.append(ico(I_ARROW, "tc-ico tc-flip"));
+  start.disabled = !!test.building;
+  actions.append(pBtn(t("bLater"), "is-ghost", closeTest), start);
+  body.append(actions);
+}
+async function finishBilan() {
+  var res = Cy.scoreByChapter(test.qs, test.picks);
+  var prevItem = lastBilan();
+  test.prev = prevItem ? { correct: prevItem.correct, total: prevItem.total, chapters: prevItem.chapters || {} } : null;
+  test.result = res;
+  test.step = "result";
+  test.fresh = true;
+  test.no = prevItem && prevItem.no ? prevItem.no + 1 : bilans.items.length + 1;
+  var answers = {};
+  test.qs.forEach(function (q) {
+    answers[q.id] = typeof test.picks[q.id] === "number" ? test.picks[q.id] : -1;
+  });
+  var labels = {};
+  Object.keys(res.domains).forEach(function (k) {
+    if (test.labels && test.labels[k]) labels[k] = test.labels[k];
+  });
+  var item = {
+    no: test.no,
+    at: Date.now(),
+    correct: res.correct,
+    total: res.total,
+    chapters: res.domains,
+    labels: labels,
+    qids: test.qs.map(function (q) {
+      return q.id;
+    }),
+    answers: answers,
+    prev: test.prev,
+  };
+  bilans = { items: bilans.items.concat([item]).slice(-12) };
+  cycle = Cy.resetCycle(cycle); // a new week starts now
+  renderTest("in");
+  paintWeek();
+  renderPlacementCard();
+  try {
+    await saveBilans(bilans);
+    await saveCycle(cycle);
+  } catch (e) {
+    console.warn("Couldn’t save the bilan:", e);
+    test.saveFailed = true;
+    renderTest();
+  }
+}
+async function viewBilan(item) {
+  if (!item) return;
+  try {
+    await Chapters.ensure();
+  } catch (e) {}
+  await loadTestData();
+  var byId = {};
+  var snap = Chapters.snapshot();
+  snap.chapters.forEach(function (ch) {
+    (Array.isArray(ch.quiz) ? ch.quiz : []).forEach(function (q) {
+      byId[q.id] = Object.assign({}, q, { _chap: ch.id, _tl: bilanTitleOf(ch), topic: ch.topic || q.topic });
+    });
+  });
+  if (testData)
+    testData.questions.forEach(function (q) {
+      if (!byId[q.id]) byId[q.id] = Object.assign({}, q, { _chap: "mix" });
+    });
+  var qs = (item.qids || [])
+    .map(function (id) {
+      return byId[id];
+    })
+    .filter(Boolean);
+  var picks = {};
+  qs.forEach(function (q) {
+    var v = item.answers ? item.answers[q.id] : undefined;
+    picks[q.id] = typeof v === "number" ? v : -1;
+  });
+  test = { kind: "bilan", step: "result", i: 0, perm: {}, picks: picks, timeouts: {}, qs: qs, result: { correct: item.correct, total: item.total, domains: item.chapters || {} }, prev: item.prev || null, labels: item.labels || {}, no: item.no || 1, fresh: false, saveFailed: false, loadFailed: false };
+  if (menuIsOpen()) closeMenu();
+  $("tOverlay").classList.add("open");
+  renderTest("in");
+}
+function renderBilanExtras(body, r) {
+  var prev = test.prev;
+  var wrap = el("div", "bl-evo");
+  var d = Cy.deltaPoints(r, prev);
+  var line = el("p", "bl-delta " + (d === null ? "is-first" : d > 0 ? "is-up" : d < 0 ? "is-down" : "is-same"));
+  line.textContent = d === null ? t("bFirst") : d > 0 ? tf("bUpTxt", { d: d }) : d < 0 ? tf("bDownTxt", { d: Math.abs(d) }) : t("bSameTxt");
+  wrap.append(line);
+  var keys = orderedKeys(r.domains);
+  wrap.append(el("p", "bl-sec", t("bEvo")));
+  var list = el("div", "bl-list");
+  keys.forEach(function (k) {
+    var p = pctOf(r.domains[k]);
+    var pv = prev && prev.chapters && prev.chapters[k] ? pctOf(prev.chapters[k]) : null;
+    var dir = pv === null ? "" : p > pv ? " is-up" : p < pv ? " is-down" : "";
+    var row = el("div", "bl-row");
+    var head = el("div", "bl-row-head");
+    head.append(el("b", "", domainLabel(k)), el("span", "bl-val" + dir, (dir === " is-up" ? "▲ " : dir === " is-down" ? "▼ " : "") + Math.round(p * 100) + "%"));
+    var bar = el("div", "bl-bar");
+    var fill = el("i", dir.trim());
+    fill.style.width = Math.round(p * 100) + "%";
+    bar.append(fill);
+    if (pv !== null) {
+      var mark = el("b", "bl-mark");
+      mark.style.insetInlineStart = Math.round(pv * 100) + "%";
+      bar.append(mark);
+    }
+    row.append(head, bar);
+    list.append(row);
+  });
+  wrap.append(list);
+  if (prev) wrap.append(el("p", "bl-hint", t("bPrevMark")));
+  var weak = keys.filter(function (k) {
+    return k !== "mix" && r.domains[k].correct < r.domains[k].total;
+  });
+  if (weak.length) {
+    wrap.append(el("p", "bl-sec", t("bRevoir")));
+    weak.forEach(function (k) {
+      var row = el("div", "bl-rev");
+      row.append(el("span", "", domainLabel(k) + " · " + r.domains[k].correct + "/" + r.domains[k].total));
+      var go = el("button", "bl-rev-go", t("bRevoirGo"));
+      go.type = "button";
+      go.addEventListener("click", function () {
+        $("tOverlay").classList.remove("open");
+        window.location.hash = "c=" + encodeURIComponent(k);
+      });
+      row.append(go);
+      wrap.append(row);
+    });
+  }
+  body.append(wrap);
 }
 
 /* ---------------- avatar menu (phone) ---------------- */
@@ -2789,6 +3153,7 @@ async function main() {
         return profileLoaded;
       },
       topicOf: topicOf,
+      onDone: recordStudyDay,
       sendRating: sendRating,
       loadRatings: loadRatings,
       openFeedback: openFeedback,
@@ -2854,6 +3219,25 @@ async function main() {
       placement = { status: "unknown" }; // don't pop the test up when we can't tell
     }
     placementLoaded = true;
+    renderPlacementCard();
+    var cycleRef = sdk.doc(db, "users", u.uid, "progress", "cycle");
+    var bilansRef = sdk.doc(db, "users", u.uid, "progress", "bilans");
+    saveCycle = function (c) {
+      return sdk.setDoc(cycleRef, Object.assign({}, c, { updatedAt: sdk.serverTimestamp() }));
+    };
+    saveBilans = function (b) {
+      return sdk.setDoc(bilansRef, Object.assign({}, b, { updatedAt: sdk.serverTimestamp() }));
+    };
+    try {
+      var cs = await sdk.getDoc(cycleRef);
+      cycle = Cy.normalizeCycle(cs.exists() ? cs.data() : null);
+      var bs = await sdk.getDoc(bilansRef);
+      bilans = Cy.normalizeBilans(bs.exists() ? bs.data() : null);
+      cycleOk = true;
+    } catch (e) {
+      console.warn("Couldn’t load the study days:", e); // no counter this time rather than a wrong one
+    }
+    paintWeek();
     renderPlacementCard();
     try {
       var ps = await sdk.getDoc(profileRef);

@@ -32,6 +32,22 @@ Live site: https://dali-lt.github.io/classek
 - **Cloud sync**: data is saved to the cloud and follows you across devices
 - **Responsive design**: works on desktop and mobile
 
+## Weekly bilan
+
+- A **study day** is a day (Tunisia time) on which the student pressed "J’ai compris" on at least one exercise. Days need not be consecutive.
+- After **7 study days** the home calendar shows a "Commencer le bilan" button. The count waits at 7/7 until the bilan is taken, then restarts at 0.
+- The bilan has about 10 questions: mostly from the chapters worked on during the cycle, plus 2 from older chapters the student already started. Questions not seen in the previous bilan come first.
+- Questions live in the chapter JSON, in a `quiz` list (same shape as the placement test, without `topic`):
+
+```json
+"quiz": [
+  { "id": "ts01", "d": 1, "q": "…", "code": "optional code", "choices": ["…", "…", "…", "…"], "answer": 0, "explain": "…" }
+]
+```
+
+  Upload the chapter again from `admin-upload.html` to publish its quiz. A chapter with no quiz falls back to level-test questions.
+- Firestore: `users/{uid}/progress/cycle` (days, chapters touched, recent dates) and `users/{uid}/progress/bilans` (last 12 results). Both are covered by the existing `progress/{doc}` rule.
+
 ## Project structure
 
 ```
@@ -41,7 +57,7 @@ student.html      Student app (placement test, profile, chapters)
 admin-upload.html Admin-only page to upload a chapter JSON to Firestore
 CSS/              style.css, welcome.css, test.css, chapters.css
 JS/               welcome.js, script.js (teacher app), student.js,
-                  chapters.js, firebase-config.js, firebase-sync.js, sync-core.js
+                  chapters.js, cycle.js (study days + bilan questions), firebase-config.js, firebase-sync.js, sync-core.js
 data/             placement-test.json
 Images/           logos and illustrations
 ```

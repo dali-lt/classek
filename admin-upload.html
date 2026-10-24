@@ -213,6 +213,13 @@
         if (d.level !== type.level || (type.subject && d.subject !== type.subject)) {
           return "file is " + d.level + " / " + d.subject + ", not " + type.label;
         }
+        if (d.quiz !== undefined) {
+          if (!Array.isArray(d.quiz)) return "quiz must be a list of questions";
+          var badQz = d.quiz.filter(function (q) {
+            return !q || !q.id || typeof q.q !== "string" || !Array.isArray(q.choices) || q.choices.length < 2 || typeof q.answer !== "number" || q.answer < 0 || q.answer >= q.choices.length;
+          }).length;
+          if (badQz) return badQz + " quiz question(s) missing id / q / choices / answer";
+        }
         return "";
       }
 
@@ -373,6 +380,7 @@
           weight: data.weight || "",
           published: visible(data),
           rappel: data.rappel || "",
+          quiz: Array.isArray(data.quiz) ? data.quiz : [],
           exerciseCount: data.exercises.length,
           updatedAt: sdk.serverTimestamp(),
         });

@@ -1617,3 +1617,58 @@ html.s-drawer-open .s-menu-btn .notif-dot { display: none; }
 .student-menu button.is-danger:hover { background: #fdeceb; }
 .acct-delete { background: var(--color-danger, #d93025) !important; color: #fff !important; }
 .me-note { margin: 10px 0 0; color: var(--color-text-muted); font-size: 11.5px; line-height: 1.4; text-align: center; }
+
+/* weekly bilan: study-day counter inside the week strip */
+.week-strip { position: relative; }
+.week-strip.is-ready {
+  border: 2px solid var(--brand-lime);
+  background: linear-gradient(0deg, color-mix(in srgb, var(--brand-lime) 14%, var(--color-surface)), var(--color-surface));
+}
+.wk-top {
+  position: absolute;
+  top: 12px;
+  inset-inline-end: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.wk-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--color-light-blue);
+  color: var(--color-primary-dark);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+:root[data-theme="dark"] .wk-pill { color: var(--color-text); }
+.wk-dots { display: inline-flex; gap: 4px; }
+.wk-dots i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-text-muted) 35%, transparent);
+}
+.wk-dots i.is-on { background: var(--brand-lime); box-shadow: inset 0 0 0 1.5px #6fb83a; }
+.wk-go {
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--color-primary);
+  padding: 9px 16px;
+  border-radius: 999px;
+  box-shadow: 0 8px 16px -8px color-mix(in srgb, var(--color-primary) 80%, transparent);
+}
+.wk-go:hover { filter: brightness(1.08); }
+.wk-mark { display: block; width: 6px; height: 6px; margin: 3px auto 0; border-radius: 50%; background: transparent; }
+.wk-mark.is-on { background: var(--brand-lime); box-shadow: inset 0 0 0 1.5px #6fb83a; }
+.wk-note { margin: 10px 6px 0; font-size: 12.5px; color: var(--color-text-muted); }
+@media (max-width: 560px) {
+  .wk-top { position: static; flex-wrap: wrap; justify-content: space-between; margin: 0 6px 10px; }
+  .wk-go { padding: 8px 12px; }
+}
