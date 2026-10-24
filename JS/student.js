@@ -2119,8 +2119,9 @@ function renderResultCard(body) {
         setArc(fillCircle, 0, C, true);
         setArc(restCircle, C, C, false);
       } else {
-        setArc(fillCircle, 0, cut - GAPW / 2, true);
-        setArc(restCircle, cut + GAPW / 2, C, true);
+        // the same gap at both meeting points: where the fill stops and where the ring starts again at the top
+        setArc(fillCircle, GAPW / 2, cut - GAPW / 2, true);
+        setArc(restCircle, cut + GAPW / 2, C - GAPW / 2, true);
       }
     });
   });
@@ -2207,13 +2208,8 @@ function renderResultCard(body) {
     });
     body.append(det);
   }
-  var actions = el("div", "test-actions");
-  actions.append(
-    pBtn(test.kind === "bilan" && test.fresh ? t("bNewWeek") : t("pDone"), "", function () {
-      $("tOverlay").classList.remove("open");
-    }),
-  );
-  body.append(actions);
+  // no "Terminé" button: the cross at the top already closes the result
+  if (test.kind === "bilan" && test.fresh) body.append(el("p", "bl-hint bl-newweek", t("bNewWeek")));
 }
 
 /* ---------------- weekly bilan: built on the same deck of cards as the level test ---------------- */

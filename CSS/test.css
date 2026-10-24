@@ -1893,3 +1893,4 @@ html[dir="rtl"] .lv-mid .lv-overall {
   background: color-mix(in srgb, var(--color-danger) 8%, var(--color-surface));
 }
 .bl-rev-go { border: 0; background: none; font: inherit; font-weight: 700; color: var(--color-primary); cursor: pointer; white-space: nowrap; }
+.bl-newweek { margin: 12px 0 2px; text-align: center; font-weight: 700; color: var(--color-primary); }
