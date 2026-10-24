@@ -196,3 +196,20 @@
 .an-item-t { flex: 1; min-width: 0; display: grid; }
 .an-item-t small { color: var(--color-text-muted); }
 .an-preview-card { border: 1.5px solid var(--color-border); border-radius: 20px; overflow: hidden; background: #fff; }
+
+/* content type: label on the left, dropdown on the right */
+.up-typerow { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.up-select {
+  margin-inline-start: auto; min-width: 200px; max-width: 100%; height: 42px; padding: 0 14px; text-align: right; text-align-last: right;
+  border: 1.5px solid var(--color-border); border-radius: 999px; background: var(--color-surface); color: var(--color-navy);
+  font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+}
+.up-select:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+@media (max-width: 420px) { .up-select { min-width: 0; flex: 1; } }
+
+/* long file lists scroll inside their own area, so the page stays short */
+.up-list { max-height: min(46vh, 360px); overflow-y: auto; padding: 2px 4px 2px 2px; overscroll-behavior: contain; }
+/* breathing room under the card */
+.up-wrap { padding-bottom: 56px; }
+.up-list { align-content: start; grid-auto-rows: min-content; }
+.up-list > li { flex: none; }
