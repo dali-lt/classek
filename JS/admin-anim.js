@@ -1,7 +1,7 @@
 /* Admin: the "Animations" tab. You write the Algorithme and the Python of a function, the page runs the Python
    in the browser (Pyodide), records every step, shows the animation, and saves it in Firestore "animations".
    Students then get it in the Visualiser box and as a Run button on every code block that starts with that function. */
-import { makeAlgoViz, registerAnimations } from "./algoviz.js?v=67";
+import { openAlgoViz, registerAnimations } from "./algoviz.js?v=67";
 
 var PY_BASE = window.PYODIDE_BASE || "https://cdn.jsdelivr.net/pyodide/v0.26.4/full/";
 var pyReady = null;
@@ -35,7 +35,7 @@ function getPython(setStatus) {
 var TEMPLATES = {
   sort: {
     python: ["def tri_exemple(T, n):", "    for i in range(n - 1):", "        for j in range(n - 1 - i):", "            if T[j] > T[j + 1]:", "                T[j], T[j + 1] = T[j + 1], T[j]"].join("\n"),
-    algo: ["Procédure tri_exemple (@T : Tab, n : Entier)", "DEBUT", "   Pour i de 1 à n - 1 Faire", "      Pour j de 0 à n - i - 1 Faire", "         Si T[j] > T[j + 1] Alors", "            échanger T[j] et T[j + 1]", "         FinSi", "      FinPour", "   FinPour", "FIN"].join("\n"),
+    algo: ["Procédure tri_exemple (@T : Tab, n : Entier)", "DEBUT", "   Pour i de 1 à n - 1 Faire", "      Pour j de 1 à n - i Faire", "         Si T[j] > T[j + 1] Alors", "            échanger T[j] et T[j + 1]", "         FinSi", "      FinPour", "   FinPour", "FIN"].join("\n"),
     variants: "5 3 8 1 9 2\n9 8 7 6 5 4\n1 2 3 4 5 6",
   },
   search: {
@@ -45,7 +45,7 @@ var TEMPLATES = {
   },
   other: {
     python: ["def inverser(T, n):", "    for i in range(n // 2):", "        T[i], T[n - 1 - i] = T[n - 1 - i], T[i]"].join("\n"),
-    algo: ["Procédure inverser (@T : Tab, n : Entier)", "DEBUT", "   Pour i de 0 à n div 2 - 1 Faire", "      échanger T[i] et T[n - 1 - i]", "   FinPour", "FIN"].join("\n"),
+    algo: ["Procédure inverser (@T : Tab, n : Entier)", "DEBUT", "   Pour i de 1 à n div 2 Faire", "      échanger T[i] et T[n - i + 1]", "   FinPour", "FIN"].join("\n"),
     variants: "1 2 3 4 5 6\n5 3 8 1 9 2",
   },
 };
@@ -598,7 +598,6 @@ export function initAnimAdmin(ctx) {
     previewBox.textContent = "";
     var tmp = Object.assign({}, doc, { id: "apercu-" + doc.id });
     registerAnimations([tmp]);
-    var holder = el("div", "an-preview-card");
     var opts = {
       el: el,
       codeLine: plainLine,
@@ -610,12 +609,17 @@ export function initAnimAdmin(ctx) {
       },
       setCodeLang: function (l) {
         codeLang = l;
-        holder.textContent = "";
-        holder.append(makeAlgoViz(tmp.id, opts));
       },
     };
-    holder.append(makeAlgoViz(tmp.id, opts));
-    previewBox.append(holder);
+    var again = el("button", "pc-btn av-launch-btn");
+    again.type = "button";
+    again.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l12-7.5z"/></svg>';
+    again.append(el("span", "", "Ouvrir l’aperçu"));
+    again.addEventListener("click", function () {
+      openAlgoViz(tmp.id, opts);
+    });
+    previewBox.append(again);
+    openAlgoViz(tmp.id, opts);
   }
 
   btnSave.addEventListener("click", async function () {
