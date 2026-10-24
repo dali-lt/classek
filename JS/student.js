@@ -600,31 +600,44 @@ function paintWeek() {
   var ready = cycleOk && Cy.isReady(cycle);
   host.classList.toggle("is-ready", ready);
   var cap = el("div", "week-cap");
-  cap.textContent = new Intl.DateTimeFormat(loc, { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(now);
+  var narrow = window.matchMedia("(max-width: 560px)").matches; // on a phone the year goes, so the date and the circles share one line
+  cap.textContent = new Intl.DateTimeFormat(loc, narrow ? { weekday: "long", day: "numeric", month: "long" } : { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(now);
   var row = el("div", "week-row");
   for (var i = 0; i < 7; i++) {
     var d = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + i);
     var isToday = d.toDateString() === now.toDateString();
-    var cell = el("div", "week-day" + (isToday ? " is-today" : ""));
+    var isDone = !!studied[ymd(d)];
+    var isPast = !isToday && d < new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var cell = el("div", "week-day" + (isToday ? " is-today" : "") + (isPast ? " is-past" : "") + (isDone ? " is-done" : ""));
     if (isToday) cell.setAttribute("aria-current", "date");
-    cell.append(el("span", "week-name", wd.format(d)), el("span", "week-num", String(d.getDate())));
-    cell.append(el("span", "wk-mark" + (studied[ymd(d)] ? " is-on" : "")));
+    // the day name above a rounded pill holding the number and, on a study day, a small tick
+    var pd = el("span", "wk-pd");
+    pd.append(el("span", "week-num", String(d.getDate())), el("span", "wk-mark" + (isDone ? " is-on" : "")));
+    cell.append(el("span", "week-name", wd.format(d)), pd);
     row.append(cell);
   }
   if (cycleOk) {
     var n = cycle.days.length;
     var top = el("div", "wk-top");
-    var pill = el("span", "wk-pill");
     var dots = el("span", "wk-dots");
-    for (var k = 0; k < Cy.CYCLE_DAYS; k++) dots.append(el("i", k < n ? "is-on" : ""));
-    pill.append(el("span", "", ready ? t("bPillReady") : tf("bPill", { n: n })), dots);
-    top.append(pill);
+    for (var k = 0; k < Cy.CYCLE_DAYS; k++) dots.append(el("i", (k < n ? "is-on" : "") + (ready && k === Cy.CYCLE_DAYS - 1 ? " is-blink" : "")));
+    var pill;
     if (ready) {
-      var go = el("button", "wk-go", t("bGo"));
-      go.type = "button";
-      go.addEventListener("click", openBilan);
-      top.append(go);
+      // day 7: the last circle blinks, and the circles turn into the start button when the mouse comes over them (always shown as a button on touch screens)
+      pill = el("button", "wk-pill is-ready");
+      pill.type = "button";
+      pill.setAttribute("aria-label", t("bGo"));
+      pill.append(dots, el("span", "wk-label", t("bGo")));
+      pill.addEventListener("click", openBilan);
+    } else {
+      pill = el("span", "wk-pill");
+      var pillText = tf("bPill", { n: n });
+      pill.setAttribute("role", "img");
+      pill.setAttribute("aria-label", pillText); // only the circles show; the words are for screen readers and the tooltip
+      pill.title = pillText;
+      pill.append(dots);
     }
+    top.append(pill);
     host.append(top);
   }
   host.append(cap, row);
@@ -633,6 +646,7 @@ function paintWeek() {
 document.addEventListener("visibilitychange", function () {
   if (!document.hidden) paintWeek();
 });
+window.matchMedia("(max-width: 560px)").addEventListener("change", paintWeek);
 
 
 // the profile picture (or the first letter of the name) as a node; used in the top bar and in the home box

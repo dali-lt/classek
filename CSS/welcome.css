@@ -1624,51 +1624,116 @@ html.s-drawer-open .s-menu-btn .notif-dot { display: none; }
   border: 2px solid var(--brand-lime);
   background: linear-gradient(0deg, color-mix(in srgb, var(--brand-lime) 14%, var(--color-surface)), var(--color-surface));
 }
+/* the 7 circles sit at the top right of the card, the date stays on the left */
 .wk-top {
   position: absolute;
-  top: 12px;
-  inset-inline-end: 16px;
+  top: 14px;
+  inset-inline-end: 14px;
   display: flex;
   align-items: center;
-  gap: 10px;
 }
 .wk-pill {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 14px;
+  border: 0;
   border-radius: 999px;
   background: var(--color-light-blue);
-  color: var(--color-primary-dark);
-  font-size: 12.5px;
-  font-weight: 700;
+  font: inherit;
 }
-:root[data-theme="dark"] .wk-pill { color: var(--color-text); }
-.wk-dots { display: inline-flex; gap: 4px; }
+.wk-dots { display: inline-flex; gap: 6px; }
 .wk-dots i {
-  width: 9px;
-  height: 9px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background: color-mix(in srgb, var(--color-text-muted) 35%, transparent);
 }
 .wk-dots i.is-on { background: var(--brand-lime); box-shadow: inset 0 0 0 1.5px #6fb83a; }
-.wk-go {
-  border: 0;
-  cursor: pointer;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 700;
-  color: #fff;
+/* day 7: the last circle blinks; over the circles, the pill becomes the start button */
+.wk-dots i.is-blink { animation: wk-blink 1.1s ease-in-out infinite; }
+@keyframes wk-blink {
+  0%, 100% { transform: scale(1); box-shadow: inset 0 0 0 1.5px #6fb83a, 0 0 0 0 rgba(174, 227, 123, 0); }
+  50% { transform: scale(1.45); box-shadow: inset 0 0 0 1.5px #6fb83a, 0 0 0 5px rgba(174, 227, 123, 0.45); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wk-dots i.is-blink { animation: none; box-shadow: inset 0 0 0 1.5px #6fb83a, 0 0 0 4px rgba(174, 227, 123, 0.5); }
+}
+.wk-pill.is-ready { cursor: pointer; transition: background 0.15s, color 0.15s; }
+.wk-label { display: none; font-size: 13px; font-weight: 700; white-space: nowrap; }
+.wk-pill.is-ready:hover,
+.wk-pill.is-ready:focus-visible {
   background: var(--color-primary);
-  padding: 9px 16px;
-  border-radius: 999px;
+  color: #fff;
   box-shadow: 0 8px 16px -8px color-mix(in srgb, var(--color-primary) 80%, transparent);
 }
-.wk-go:hover { filter: brightness(1.08); }
-.wk-mark { display: block; width: 6px; height: 6px; margin: 3px auto 0; border-radius: 50%; background: transparent; }
-.wk-mark.is-on { background: var(--brand-lime); box-shadow: inset 0 0 0 1.5px #6fb83a; }
+.wk-pill.is-ready:hover .wk-dots,
+.wk-pill.is-ready:focus-visible .wk-dots { display: none; }
+.wk-pill.is-ready:hover .wk-label,
+.wk-pill.is-ready:focus-visible .wk-label { display: inline; }
+@media (hover: none) {
+  /* no mouse to hover with: show the button itself */
+  .wk-pill.is-ready { background: var(--color-primary); color: #fff; }
+  .wk-pill.is-ready .wk-dots { display: none; }
+  .wk-pill.is-ready .wk-label { display: inline; }
+}
 .wk-note { margin: 10px 6px 0; font-size: 12.5px; color: var(--color-text-muted); }
+.week-strip .week-cap { padding-inline-end: 160px; padding-bottom: 6px; line-height: 34px; }
+
+/* days as rounded pills: name above, number inside, a tick on study days */
+.week-strip .week-row { gap: 8px; }
+.week-strip .week-day,
+.week-strip .week-day.is-today,
+:root[data-theme="dark"] .week-strip .week-day.is-today {
+  background: none;
+  padding: 0;
+  box-shadow: none;
+  gap: 8px;
+  align-content: start;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .week-strip .week-day.is-today { background: none; }
+}
+.week-strip .week-name { font-size: 12px; font-weight: 500; opacity: 1; }
+.week-strip .week-day.is-today .week-name { color: var(--color-text); font-weight: 700; opacity: 1; }
+.wk-pd {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 5px;
+  width: 100%;
+  max-width: 58px;
+  min-height: 68px;
+  padding: 10px 0;
+  border-radius: 999px;
+  background: var(--color-sunken);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 6px 14px -10px rgba(1, 9, 45, 0.35);
+}
+.wk-pd .week-num { font-size: 17px; font-weight: 600; color: var(--color-text); }
+.week-day.is-past:not(.is-done) .wk-pd .week-num { opacity: 0.45; }
+.week-strip .week-day.is-today .wk-pd {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  min-height: 76px;
+  box-shadow: 0 12px 22px -10px color-mix(in srgb, var(--color-primary) 75%, transparent);
+}
+.week-strip .week-day.is-today .wk-pd .week-num { color: #fff; font-weight: 700; }
+.wk-mark { display: block; width: 16px; height: 16px; margin: 0; border-radius: 50%; }
+.wk-mark.is-on { display: grid; place-items: center; background: var(--brand-lime); color: var(--brand-dark-azure); }
+.wk-mark.is-on::after {
+  content: "";
+  width: 8px;
+  height: 4px;
+  border-left: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg) translate(1px, -1px);
+}
+.week-day.is-today .wk-mark.is-on { background: #fff; color: var(--color-primary); }
 @media (max-width: 560px) {
-  .wk-top { position: static; flex-wrap: wrap; justify-content: space-between; margin: 0 6px 10px; }
-  .wk-go { padding: 8px 12px; }
+  .week-strip .week-row { gap: 5px; }
+  .wk-pd { min-height: 62px; }
+  .week-strip .week-day.is-today .wk-pd { min-height: 70px; }
+  .week-strip .week-cap { padding-inline-end: 0; }
 }
