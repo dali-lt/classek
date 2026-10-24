@@ -35,7 +35,7 @@ function getPython(setStatus) {
 var TEMPLATES = {
   sort: {
     python: ["def tri_exemple(T, n):", "    for i in range(n - 1):", "        for j in range(n - 1 - i):", "            if T[j] > T[j + 1]:", "                T[j], T[j + 1] = T[j + 1], T[j]"].join("\n"),
-    algo: ["Procédure tri_exemple (@T : Tab, n : Entier)", "DEBUT", "   Pour i de 1 à n - 1 Faire", "      Pour j de 1 à n - i Faire", "         Si T[j] > T[j + 1] Alors", "            échanger T[j] et T[j + 1]", "         FinSi", "      FinPour", "   FinPour", "FIN"].join("\n"),
+    algo: ["Procédure tri_exemple (@T : Tab, n : Entier)", "DEBUT", "   Pour i de 1 à n - 1 Faire", "      Pour j de 0 à n - i - 1 Faire", "         Si T[j] > T[j + 1] Alors", "            échanger T[j] et T[j + 1]", "         FinSi", "      FinPour", "   FinPour", "FIN"].join("\n"),
     variants: "5 3 8 1 9 2\n9 8 7 6 5 4\n1 2 3 4 5 6",
   },
   search: {
@@ -45,7 +45,7 @@ var TEMPLATES = {
   },
   other: {
     python: ["def inverser(T, n):", "    for i in range(n // 2):", "        T[i], T[n - 1 - i] = T[n - 1 - i], T[i]"].join("\n"),
-    algo: ["Procédure inverser (@T : Tab, n : Entier)", "DEBUT", "   Pour i de 1 à n div 2 Faire", "      échanger T[i] et T[n - i + 1]", "   FinPour", "FIN"].join("\n"),
+    algo: ["Procédure inverser (@T : Tab, n : Entier)", "DEBUT", "   Pour i de 0 à n div 2 - 1 Faire", "      échanger T[i] et T[n - 1 - i]", "   FinPour", "FIN"].join("\n"),
     variants: "1 2 3 4 5 6\n5 3 8 1 9 2",
   },
 };
