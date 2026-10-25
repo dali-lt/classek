@@ -69,6 +69,12 @@ var STR = {
     lessonClose: "Masquer le cours",
     lessonSections: "{n} sections",
     answerLabel: "Ta réponse",
+    liveTitle: "Résultat en direct",
+    liveEmpty: "Le résultat apparaît ici dès que tu écris du code.",
+    tryIt: "Essayer",
+    tryBack: "Revenir à l’exemple",
+    liveReload: "Recharger",
+    liveExpected: "Résultat attendu",
     answerPlaceholder: "Essaie d’abord : écris ta réponse ici pour débloquer la solution.",
     qPlaceholder: "Ta réponse à la question {n}…",
     saving: "Enregistrement…",
@@ -178,6 +184,12 @@ var STR = {
     lessonClose: "خبّي الدرس",
     lessonSections: "{n} أقسام",
     answerLabel: "جوابك",
+    liveTitle: "النتيجة مباشرة",
+    liveEmpty: "النتيجة تظهر هنا كي تبدا تكتب الكود.",
+    tryIt: "جرّب",
+    tryBack: "ارجع للمثال",
+    liveReload: "أعد التحميل",
+    liveExpected: "النتيجة المطلوبة",
     answerPlaceholder: "جرّب الأول: اكتب جوابك هنا باش يتفتح الحل.",
     qPlaceholder: "جوابك على السؤال {n}…",
     saving: "نحفظو…",
@@ -370,7 +382,7 @@ function inline(parent, text) {
 }
 // code blocks: ```algo and ```python written one after the other become one block with two tabs
 // (Algorithme is the default, the choice is remembered); a block with no language stays as it is (traces, outputs)
-var CODE_LABEL = { algo: "Algorithme", python: "Python" };
+var CODE_LABEL = { algo: "Algorithme", python: "Python", html: "HTML", htmlsrc: "HTML", css: "CSS", js: "JavaScript", php: "PHP", sql: "SQL" };
 var codeLang = "algo";
 try {
   var savedLang = window.localStorage.getItem("cl.codeLang");
@@ -491,6 +503,156 @@ function vizOpts() {
     setCodeLang: setCodeLang,
   };
 }
+
+/* ---------------- web code: coloured blocks, and a live result frame for HTML ---------------- */
+var WEB_KW = {
+  js: wordSet("function var let const if else for while return new class this true false null undefined switch case break continue try catch typeof document window alert console"),
+  php: wordSet("echo if else elseif foreach for while function return isset empty true false null include require array die exit as"),
+  sql: wordSet("SELECT FROM WHERE INSERT INTO VALUES UPDATE SET DELETE CREATE TABLE DATABASE ALTER DROP ADD PRIMARY KEY FOREIGN REFERENCES NOT NULL AUTO_INCREMENT DEFAULT UNIQUE JOIN INNER LEFT ON GROUP BY ORDER ASC DESC AVG COUNT SUM MAX MIN AND OR LIKE IN AS DISTINCT HAVING INT VARCHAR CHAR DATE DATETIME DECIMAL LIMIT"),
+};
+function webBlock(code, lang) {
+  var pre = el("pre", "test-code code-web-" + lang);
+  var add = function (cls, txt) {
+    pre.append(cls ? el("span", cls, txt) : document.createTextNode(txt));
+  };
+  var m;
+  if (lang === "html" || lang === "htmlsrc") {
+    var re = /(<!--[\s\S]*?-->)|(<\/?)([A-Za-z][\w-]*)|(>)|("[^"]*"|'[^']*')|([A-Za-z_:][\w:.-]*)(?==)|([\s\S])/g;
+    var inTag = false;
+    while ((m = re.exec(code))) {
+      if (m[1]) add("tk-com", m[1]);
+      else if (m[3]) {
+        add("", m[2]);
+        add("tk-kw", m[3]);
+        inTag = true;
+      } else if (m[4]) {
+        add("", ">");
+        inTag = false;
+      } else if (m[5] && inTag) add("tk-str", m[5]);
+      else if (m[6] && inTag) add("tk-attr", m[6]);
+      else add("", m[0]);
+    }
+  } else if (lang === "css") {
+    var rc = /(\/\*[\s\S]*?\*\/)|("[^"]*"|'[^']*')|(#[0-9a-fA-F]{3,8}\b)|([\w-]+)|([{}])|([\s\S])/g;
+    var depth = 0;
+    while ((m = rc.exec(code))) {
+      if (m[1]) add("tk-com", m[1]);
+      else if (m[2] || m[3]) add("tk-str", m[2] || m[3]);
+      else if (m[5]) {
+        depth += m[5] === "{" ? 1 : -1;
+        add("", m[5]);
+      } else if (m[4]) {
+        if (depth > 0 && /^\s*:/.test(code.slice(rc.lastIndex)) ) add("tk-attr", m[4]);
+        else if (depth === 0) add("tk-kw", m[4]);
+        else add("", m[4]);
+      } else add("", m[0]);
+    }
+  } else {
+    var kw = WEB_KW[lang] || {};
+    var ci = lang === "sql";
+    var rg = lang === "sql" ? /(--[^\n]*|\/\*[\s\S]*?\*\/)|("[^"]*"|'[^']*')|(\$?[A-Za-z_][\w]*)|([\s\S])/g : /(\/\/[^\n]*|\/\*[\s\S]*?\*\/|#[^\n]*)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')|(\$?[A-Za-z_][\w]*)|([\s\S])/g;
+    while ((m = rg.exec(code))) {
+      if (m[1]) add("tk-com", m[1]);
+      else if (m[2]) add("tk-str", m[2]);
+      else if (m[3]) {
+        var w = ci ? m[3].toUpperCase() : m[3];
+        if (kw[w]) add("tk-kw", m[3]);
+        else if (m[3].charAt(0) === "$") add("tk-attr", m[3]);
+        else add("", m[3]);
+      } else add("", m[0]);
+    }
+  }
+  return pre;
+}
+// the page the student's code makes, in a sandboxed frame (its scripts cannot reach this page)
+function liveFrame(getCode, title) {
+  var wrap = el("div", "live-frame");
+  var bar = el("div", "live-bar");
+  bar.append(el("span", "live-title", title || t("liveTitle")));
+  var reload = el("button", "live-reload", t("liveReload"));
+  reload.type = "button";
+  bar.append(reload);
+  var frame = document.createElement("iframe");
+  frame.className = "live-iframe";
+  frame.setAttribute("sandbox", "allow-scripts allow-forms allow-modals");
+  frame.setAttribute("title", t("liveTitle"));
+  var empty = el("p", "live-empty", t("liveEmpty"));
+  var timer = null;
+  function paint() {
+    var code = String(getCode() || "");
+    var blank = !code.trim();
+    empty.hidden = !blank;
+    frame.hidden = blank;
+    frame.srcdoc = blank ? "" : (/<!doctype/i.test(code) ? "" : "<!doctype html>") + code;
+  }
+  reload.addEventListener("click", paint);
+  wrap.append(bar, empty, frame);
+  paint();
+  return {
+    wrap: wrap,
+    update: function () {
+      clearTimeout(timer);
+      timer = setTimeout(paint, 250);
+    },
+  };
+}
+// a lesson example: colourful code, its result under it, and a button to edit it and watch the result change
+function webExample(code, lang) {
+  if (lang === "htmlview") {
+    // result only (the page to reproduce, without its code)
+    var only = el("div", "code-one code-web");
+    var lfv = liveFrame(function () {
+      return code;
+    }, t("liveExpected"));
+    lfv.wrap.classList.add("is-expected");
+    only.append(lfv.wrap);
+    return only;
+  }
+  var box = el("div", "code-one code-web");
+  var head = el("div", "code-web-head");
+  head.append(el("span", "code-label", CODE_LABEL[lang]));
+  var pre = webBlock(code, lang);
+  var holder = el("div", "code-web-code");
+  holder.append(pre);
+  var current = code;
+  var live = lang === "html" ? liveFrame(function () {
+    return current;
+  }) : null;
+  if (live) {
+    var tryBtn = el("button", "code-try", t("tryIt"));
+    tryBtn.type = "button";
+    var editing = false;
+    tryBtn.addEventListener("click", function () {
+      editing = !editing;
+      holder.textContent = "";
+      if (editing) {
+        var ta = el("textarea", "ex-answer code-try-ta");
+        ta.value = current;
+        ta.spellcheck = false;
+        ta.setAttribute("dir", "ltr");
+        ta.rows = Math.min(16, Math.max(4, current.split("\n").length + 1));
+        codeEditor(ta);
+        ta.addEventListener("input", function () {
+          current = ta.value;
+          live.update();
+        });
+        holder.append(ta);
+        ta.focus();
+        tryBtn.textContent = t("tryBack");
+      } else {
+        current = code;
+        holder.append(webBlock(code, lang));
+        live.update();
+        tryBtn.textContent = t("tryIt");
+      }
+    });
+    head.append(tryBtn);
+  }
+  box.append(head, holder);
+  if (live) box.append(live.wrap);
+  return box;
+}
+var WEB_FENCE = { html: 1, htmlsrc: 1, htmlview: 1, css: 1, js: 1, php: 1, sql: 1 };
 function md(text) {
   var box = el("div", "ch-content");
   box.setAttribute("lang", "fr");
@@ -532,6 +694,10 @@ function md(text) {
       continue;
     }
     if (s.lang === "viz") continue; // old lessons: the Run button on the code replaces the launcher card
+    if (WEB_FENCE[s.lang]) {
+      box.append(webExample(s.v, s.lang));
+      continue;
+    }
     var known = s.lang === "algo" || s.lang === "python";
     var j = i + 1;
     if (j < segs.length && !segs[j].code && !segs[j].v.trim()) j++;
@@ -1472,16 +1638,20 @@ function answerBox(ch, ex, boxId, placeholder, onInput, rows) {
   // under the box while writing: symbols that are not on the keyboard (algorithm arrow, comparisons),
   // and, on touch screens that have no Tab key, indent / outdent
   var tools = el("div", "ex-tools");
-  [
-    ["←", "symArrow"],
-    ["≠", "symNe"],
-    ["≤", "symLe"],
-    ["≥", "symGe"],
-  ].forEach(function (b) {
+  var symbols =
+    ex.lang === "html"
+      ? [["<", "<"], [">", ">"], ["</", "</"], ["\"", "\""], ["=", "="], ["/>", "/>"]]
+      : [
+          ["←", "symArrow"],
+          ["≠", "symNe"],
+          ["≤", "symLe"],
+          ["≥", "symGe"],
+        ];
+  symbols.forEach(function (b) {
     var btn = el("button", "ex-tool is-sym", b[0]);
     btn.type = "button";
-    btn.title = t(b[1]);
-    btn.setAttribute("aria-label", t(b[1]));
+    btn.title = ex.lang === "html" ? b[0] : t(b[1]);
+    btn.setAttribute("aria-label", ex.lang === "html" ? b[0] : t(b[1]));
     btn.addEventListener("pointerdown", function (e) {
       e.preventDefault(); // keep the keyboard open and the caret where it is
     });
@@ -1577,7 +1747,8 @@ function exerciseCard(ch, ex, index) {
     card.append(pin, panel);
     return card;
   }
-  var split = splitQuestions(ex.statement);
+  var isWeb = ex.lang === "html";
+  var split = isWeb ? null : splitQuestions(ex.statement);
   var prev = previewOf(ex.statement);
   if (prev) sum.append(el("span", "ex-preview", prev));
   sum.addEventListener("click", function () {
@@ -1659,6 +1830,13 @@ function exerciseCard(ch, ex, index) {
     label.append(bx1.wrap);
     work.append(label);
     boxes.push(bx1.ta);
+    if (isWeb) {
+      var lf = liveFrame(function () {
+        return bx1.ta.value;
+      });
+      bx1.ta.addEventListener("input", lf.update);
+      work.append(lf.wrap);
+    }
   }
   var savedLine = el("small", "ex-saved");
   work.append(savedLine);

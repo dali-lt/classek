@@ -48,6 +48,18 @@ Live site: https://dali-lt.github.io/classek
   Upload the chapter again from `admin-upload.html` to publish its quiz. A chapter with no quiz falls back to level-test questions.
 - Firestore: `users/{uid}/progress/cycle` (days, chapters touched, recent dates) and `users/{uid}/progress/bilans` (last 12 results). Both are covered by the existing `progress/{doc}` rule.
 
+## STI (web) chapters
+
+STI chapters use `"level": "bac"`, `"subject": "sti"` (upload them with the “Bac · STI” type). An exercise with `"lang": "html"` gets a **live result frame** under its answer box (sandboxed, so the student's scripts cannot touch the site) and HTML helper buttons (`<  >  </  "  =  />`).
+
+In the course and in statements/solutions, code fences are coloured by language: `html`, `css`, `js`, `php`, `sql`.
+
+- ` ```html ` shows the code **and its result**, with an “Essayer” button to edit it live.
+- ` ```htmlsrc ` shows the code only (for example a page with errors to correct).
+- ` ```htmlview ` shows the result only, titled “Résultat attendu” (the page to reproduce).
+
+The uploader now also stores each exercise's `lang` and `viz` fields.
+
 ## Project structure
 
 ```

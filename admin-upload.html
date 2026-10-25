@@ -392,6 +392,8 @@
             order: ex.order || 0,
             difficulty: ex.difficulty || "easy",
             statement: ex.statement || "",
+            lang: typeof ex.lang === "string" ? ex.lang : "",
+            viz: typeof ex.viz === "string" ? ex.viz : "",
             hints: hintList(ex),
             hint: hintList(ex)[0] || "",
             think: Number.isFinite(Number(ex.think)) && ex.think !== null && ex.think !== "" ? Number(ex.think) : null,
