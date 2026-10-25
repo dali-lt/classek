@@ -588,6 +588,27 @@ function liveFrame(getCode, title) {
   reload.addEventListener("click", paint);
   wrap.append(bar, empty, frame);
   paint();
+  // some browsers leave a frame blank when it was filled before it reached the page (or while its card was hidden):
+  // fill it again the first time it is really on screen, and again whenever it comes back into view empty-handed
+  if (window.IntersectionObserver) {
+    var seen = false;
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (en.isIntersecting && !seen) {
+          seen = true;
+          paint();
+        }
+      });
+    });
+    io.observe(wrap);
+  }
+  frame.addEventListener("load", function () {
+    loadedOnce = true;
+  });
+  var loadedOnce = false;
+  setTimeout(function () {
+    if (!loadedOnce && wrap.isConnected && String(getCode() || "").trim()) paint(); // nothing came: try once more
+  }, 800);
   return {
     wrap: wrap,
     update: function () {
