@@ -71,10 +71,12 @@ var STR = {
     answerLabel: "Ta réponse",
     liveTitle: "Résultat en direct",
     liveEmpty: "Le résultat apparaît ici dès que tu écris du code.",
-    tryIt: "Essayer",
+    tryIt: "Voir le résultat",
     tryBack: "Revenir à l’exemple",
+    pgClose: "Fermer",
     liveReload: "Recharger",
     liveExpected: "Résultat attendu",
+    liveMine: "Mon résultat",
     answerPlaceholder: "Essaie d’abord : écris ta réponse ici pour débloquer la solution.",
     qPlaceholder: "Ta réponse à la question {n}…",
     saving: "Enregistrement…",
@@ -186,10 +188,12 @@ var STR = {
     answerLabel: "جوابك",
     liveTitle: "النتيجة مباشرة",
     liveEmpty: "النتيجة تظهر هنا كي تبدا تكتب الكود.",
-    tryIt: "جرّب",
+    tryIt: "شوف النتيجة",
     tryBack: "ارجع للمثال",
+    pgClose: "سكّر",
     liveReload: "أعد التحميل",
     liveExpected: "النتيجة المطلوبة",
+    liveMine: "نتيجتي",
     answerPlaceholder: "جرّب الأول: اكتب جوابك هنا باش يتفتح الحل.",
     qPlaceholder: "جوابك على السؤال {n}…",
     saving: "نحفظو…",
@@ -564,13 +568,82 @@ function webBlock(code, lang) {
   }
   return pre;
 }
+var FILE_NAME = { html: "index.html", htmlsrc: "index.html", css: "styles.css", js: "app.js", php: "page.php", sql: "requete.sql" };
+function webTokens(code, lang) {
+  var pre = webBlock(code, lang);
+  var f = document.createDocumentFragment();
+  while (pre.firstChild) f.append(pre.firstChild);
+  return f;
+}
+function dots() {
+  var d = el("span", "pg-dots");
+  d.append(el("i"), el("i"), el("i"));
+  return d;
+}
+function lineNumbers(code) {
+  var n = String(code).split("\n").length;
+  var out = [];
+  for (var i = 1; i <= n; i++) out.push(i);
+  return out.join("\n");
+}
+// a dark code window: three dots, file tab, line numbers, and the code coloured as it is typed (a transparent textarea over a coloured copy)
+function codeWindow(lang, opts) {
+  var win = el("div", "pg-win pg-code");
+  var bar = el("div", "pg-bar");
+  bar.append(dots(), el("span", "pg-tab", FILE_NAME[lang] || "code"));
+  var right = el("span", "pg-bar-r");
+  bar.append(right);
+  var body = el("div", "pg-body");
+  var gutter = el("pre", "pg-gutter");
+  gutter.setAttribute("aria-hidden", "true");
+  var edit = el("div", "pg-edit");
+  body.append(gutter, edit);
+  win.append(bar, body);
+  var api = { win: win, bar: right, body: body, edit: edit, gutter: gutter };
+  // static code (the lesson examples)
+  api.showStatic = function (code) {
+    edit.textContent = "";
+    var pre = el("pre", "pg-hl pg-static");
+    pre.append(webTokens(code, lang));
+    edit.append(pre);
+    gutter.textContent = lineNumbers(code);
+  };
+  // editable code: ta is the real field
+  api.useField = function (ta) {
+    edit.textContent = "";
+    var hl = el("pre", "pg-hl");
+    hl.setAttribute("aria-hidden", "true");
+    ta.classList.add("pg-ta");
+    ta.setAttribute("wrap", "off");
+    edit.append(hl, ta);
+    function paint() {
+      var v = ta.value;
+      hl.textContent = "";
+      hl.append(webTokens(v, lang));
+      hl.append(document.createTextNode("\u200b"));
+      gutter.textContent = lineNumbers(v);
+    }
+    ta.addEventListener("input", paint);
+    ta.addEventListener("scroll", function () {
+      hl.scrollLeft = ta.scrollLeft;
+    });
+    api.paint = paint;
+    paint();
+  };
+  return api;
+}
 // the page the student's code makes, in a sandboxed frame (its scripts cannot reach this page)
 function liveFrame(getCode, title) {
-  var wrap = el("div", "live-frame");
-  var bar = el("div", "live-bar");
-  bar.append(el("span", "live-title", title || t("liveTitle")));
-  var reload = el("button", "live-reload", t("liveReload"));
+  var wrap = el("div", "live-frame pg-win");
+  var bar = el("div", "live-bar pg-bar");
+  bar.append(dots());
+  var url = el("span", "live-url");
+  url.append(el("i", "live-dot"), document.createTextNode(title || t("liveTitle")));
+  bar.append(url);
+  var reload = el("button", "live-reload", "↻");
   reload.type = "button";
+  reload.title = t("liveReload");
+  reload.setAttribute("aria-label", t("liveReload"));
   bar.append(reload);
   var frame = document.createElement("iframe");
   frame.className = "live-iframe";
@@ -617,6 +690,119 @@ function liveFrame(getCode, title) {
     },
   };
 }
+var WEB_SYMBOLS = [["<", "<"], [">", ">"], ["</", "</"], ["\"", "\""], ["=", "="], ["/>", "/>"]];
+function webTools(ta) {
+  var tools = el("div", "ex-tools pg-tools");
+  WEB_SYMBOLS.forEach(function (b) {
+    var btn = el("button", "ex-tool is-sym", b[0]);
+    btn.type = "button";
+    btn.title = b[0];
+    btn.setAttribute("aria-label", b[0]);
+    btn.addEventListener("pointerdown", function (e) {
+      e.preventDefault();
+    });
+    btn.addEventListener("click", function () {
+      ta.focus();
+      editText(ta, b[0]);
+    });
+    tools.append(btn);
+  });
+  return tools;
+}
+// the playground: the screen split in two, code on one side, the page it makes on the other, live
+function openPlayground(opts) {
+  var old = document.querySelector(".pg-modal");
+  if (old) old.remove();
+  var ov = el("div", "pg-modal");
+  ov.setAttribute("role", "dialog");
+  ov.setAttribute("aria-modal", "true");
+  var card = el("div", "pg-modal-card");
+  var ta = el("textarea", "ex-answer");
+  ta.value = opts.code || "";
+  ta.spellcheck = false;
+  ta.setAttribute("dir", "ltr");
+  ta.setAttribute("autocapitalize", "off");
+  ta.setAttribute("autocorrect", "off");
+  ta.maxLength = ANSWER_MAX;
+  codeEditor(ta);
+  var win = codeWindow("html");
+  win.useField(ta);
+  var wrapL = el("div", "ex-box");
+  wrapL.append(win.win);
+  win.win.append(webTools(ta));
+  var live = liveFrame(
+    function () {
+      return ta.value;
+    },
+    opts.expected ? t("liveMine") : undefined
+  );
+  var expFrame = opts.expected
+    ? liveFrame(function () {
+        return opts.expected;
+      }, t("liveExpected"))
+    : null;
+  function makeX() {
+    var x = el("button", "pg-modal-x");
+    x.type = "button";
+    x.title = t("pgClose");
+    x.setAttribute("aria-label", t("pgClose"));
+    x.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg>';
+    x.addEventListener("click", function () {
+      shut();
+    });
+    return x;
+  }
+  live.wrap.querySelector(".live-bar").append(makeX());
+  var side = live.wrap;
+  if (expFrame) {
+    // the page to build stays in view above the student's own result (on a phone: a switch between the two)
+    expFrame.wrap.classList.add("is-expected");
+    expFrame.wrap.querySelector(".live-bar").append(makeX());
+    side = el("div", "pg-side");
+    side.setAttribute("data-view", "mine");
+    var sw = el("div", "pg-switch");
+    [
+      ["mine", t("liveMine")],
+      ["exp", t("liveExpected")],
+    ].forEach(function (v) {
+      var b = el("button", "pg-sw", v[1]);
+      b.type = "button";
+      b.setAttribute("aria-pressed", v[0] === "mine" ? "true" : "false");
+      b.addEventListener("click", function () {
+        side.setAttribute("data-view", v[0]);
+        Array.prototype.forEach.call(sw.children, function (c) {
+          c.setAttribute("aria-pressed", c === b ? "true" : "false");
+        });
+      });
+      sw.append(b);
+    });
+    side.append(sw, expFrame.wrap, live.wrap);
+  }
+  var prevOverflow = document.body.style.overflow;
+  function shut() {
+    ov.remove();
+    document.body.style.overflow = prevOverflow;
+    document.removeEventListener("keydown", onKey);
+    if (opts.onClose) opts.onClose(ta.value);
+  }
+  function onKey(e) {
+    if (e.key === "Escape") shut();
+  }
+  ta.addEventListener("input", function () {
+    live.update();
+    if (opts.onChange) opts.onChange(ta.value);
+  });
+  ov.addEventListener("mousedown", function (e) {
+    if (e.target === ov) shut();
+  });
+  document.addEventListener("keydown", onKey);
+  card.append(wrapL, side);
+  ov.append(card);
+  document.body.append(ov);
+  document.body.style.overflow = "hidden";
+  win.paint();
+  ta.focus();
+}
 // a lesson example: colourful code, its result under it, and a button to edit it and watch the result change
 function webExample(code, lang) {
   if (lang === "htmlview") {
@@ -630,47 +816,17 @@ function webExample(code, lang) {
     return only;
   }
   var box = el("div", "code-one code-web");
-  var head = el("div", "code-web-head");
-  head.append(el("span", "code-label", CODE_LABEL[lang]));
-  var pre = webBlock(code, lang);
-  var holder = el("div", "code-web-code");
-  holder.append(pre);
-  var current = code;
-  var live = lang === "html" ? liveFrame(function () {
-    return current;
-  }) : null;
-  if (live) {
-    var tryBtn = el("button", "code-try", t("tryIt"));
+  var win = codeWindow(lang);
+  win.showStatic(code);
+  if (lang === "html") {
+    var tryBtn = el("button", "pg-try", "▶ " + t("tryIt"));
     tryBtn.type = "button";
-    var editing = false;
     tryBtn.addEventListener("click", function () {
-      editing = !editing;
-      holder.textContent = "";
-      if (editing) {
-        var ta = el("textarea", "ex-answer code-try-ta");
-        ta.value = current;
-        ta.spellcheck = false;
-        ta.setAttribute("dir", "ltr");
-        ta.rows = Math.min(16, Math.max(4, current.split("\n").length + 1));
-        codeEditor(ta);
-        ta.addEventListener("input", function () {
-          current = ta.value;
-          live.update();
-        });
-        holder.append(ta);
-        ta.focus();
-        tryBtn.textContent = t("tryBack");
-      } else {
-        current = code;
-        holder.append(webBlock(code, lang));
-        live.update();
-        tryBtn.textContent = t("tryIt");
-      }
+      openPlayground({ code: code });
     });
-    head.append(tryBtn);
+    win.bar.append(tryBtn);
   }
-  box.append(head, holder);
-  if (live) box.append(live.wrap);
+  box.append(win.win);
   return box;
 }
 var WEB_FENCE = { html: 1, htmlsrc: 1, htmlview: 1, css: 1, js: 1, php: 1, sql: 1 };
@@ -1661,7 +1817,7 @@ function answerBox(ch, ex, boxId, placeholder, onInput, rows) {
   var tools = el("div", "ex-tools");
   var symbols =
     ex.lang === "html"
-      ? [["<", "<"], [">", ">"], ["</", "</"], ["\"", "\""], ["=", "="], ["/>", "/>"]]
+      ? WEB_SYMBOLS
       : [
           ["←", "symArrow"],
           ["≠", "symNe"],
@@ -1698,6 +1854,38 @@ function answerBox(ch, ex, boxId, placeholder, onInput, rows) {
     tools.append(btn);
   });
   var wrap = el("div", "ex-box");
+  if (ex.lang === "html") {
+    var cw = codeWindow("html");
+    cw.useField(ta);
+    ta.addEventListener("input", function () {
+      autoGrow(ta);
+    });
+    var open = el("button", "pg-try", "▶ " + t("tryIt"));
+    open.type = "button";
+    open.addEventListener("click", function () {
+      var em = /```htmlview\n?([\s\S]*?)```/.exec(ex.statement || "");
+      openPlayground({
+        code: ta.value,
+        expected: em ? em[1].replace(/\n+$/, "") : "",
+        onChange: function (v) {
+          ta.value = v;
+          ta.dispatchEvent(new Event("input", { bubbles: true })); // saves the draft and repaints the colours
+        },
+        onClose: function () {
+          autoGrow(ta);
+        },
+      });
+    });
+    cw.bar.append(open);
+    tools.classList.add("pg-tools");
+    cw.win.append(tools);
+    wrap.append(cw.win);
+    setTimeout(function () {
+      cw.paint();
+      autoGrow(ta);
+    }, 0);
+    return { wrap: wrap, ta: ta };
+  }
   wrap.append(ta, tools);
   return { wrap: wrap, ta: ta };
 }
@@ -1842,21 +2030,16 @@ function exerciseCard(ch, ex, index) {
       boxes.push(bx.ta);
     });
   } else {
-    var label = el(
-      "label",
-      "ex-label",
-      t("answerLabel") + (CODE_LABEL[ex.lang] ? " · " + CODE_LABEL[ex.lang] : "")
-    );
+    var labelText = t("answerLabel") + (CODE_LABEL[ex.lang] ? " · " + CODE_LABEL[ex.lang] : "");
+    var label = isWeb ? el("div", "pg-code-wrap") : el("label", "ex-label", labelText);
+    if (isWeb) work.append(el("div", "ex-label", labelText));
     var bx1 = answerBox(ch, ex, "0", t("answerPlaceholder"), onType, 4);
     label.append(bx1.wrap);
-    work.append(label);
     boxes.push(bx1.ta);
     if (isWeb) {
-      var lf = liveFrame(function () {
-        return bx1.ta.value;
-      });
-      bx1.ta.addEventListener("input", lf.update);
-      work.append(lf.wrap);
+      work.append(label);
+    } else {
+      work.append(label);
     }
   }
   var savedLine = el("small", "ex-saved");
