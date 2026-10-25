@@ -3383,3 +3383,5 @@ body:has(.av-modal) .ch-back.ch-back-float {
   .pg-run { width: 34px; min-height: 34px; padding: 0; justify-content: center; border-radius: 50%; }
   .pg-run-t { display: none; }
 }
+.ex-tool.is-reindent { margin-inline-start: auto; font-family: inherit; font-weight: 700; }
+@media (max-width: 560px) { .pg-tools .ex-tool.is-reindent { margin-inline-start: 0; } }

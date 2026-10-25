@@ -88,6 +88,7 @@ var STR = {
     symLe: "Inférieur ou égal (≤)",
     symGe: "Supérieur ou égal (≥)",
     indent: "Indenter",
+    reindent: "Tout indenter",
     outdent: "Désindenter",
     showSolution: "Afficher la solution",
     solution: "Solution",
@@ -205,6 +206,7 @@ var STR = {
     symLe: "أصغر أو يساوي (≤)",
     symGe: "أكبر أو يساوي (≥)",
     indent: "إزاحة",
+    reindent: "ترتيب الكود",
     outdent: "تراجع",
     showSolution: "شوف الحل",
     solution: "الحل",
@@ -649,6 +651,8 @@ function codeWindow(lang, opts) {
     ta.addEventListener("input", paint);
     ta.addEventListener("scroll", function () {
       hl.scrollLeft = ta.scrollLeft;
+      hl.scrollTop = ta.scrollTop;
+      gutter.scrollTop = ta.scrollTop; // line numbers follow the code
     });
     api.paint = paint;
     paint();
@@ -726,11 +730,24 @@ function webTools(ta) {
     });
     btn.addEventListener("click", function () {
       ta.focus();
-      editText(ta, b[0]);
+      insertSym(ta, b[0]);
     });
     tools.append(btn);
   });
+  tools.append(reindentButton(ta));
   return tools;
+}
+function reindentButton(ta) {
+  var btn = el("button", "ex-tool is-reindent", "≡ " + t("reindent"));
+  btn.type = "button";
+  btn.title = t("reindent");
+  btn.addEventListener("pointerdown", function (e) {
+    e.preventDefault();
+  });
+  btn.addEventListener("click", function () {
+    reindentField(ta);
+  });
+  return btn;
 }
 // the playground: the screen split in two, code on one side, the page it makes on the other, live
 function openPlayground(opts) {
@@ -747,7 +764,7 @@ function openPlayground(opts) {
   ta.setAttribute("autocapitalize", "off");
   ta.setAttribute("autocorrect", "off");
   ta.maxLength = ANSWER_MAX;
-  codeEditor(ta);
+  codeEditor(ta, true);
   var win = codeWindow("html");
   win.useField(ta);
   var wrapL = el("div", "ex-box");
@@ -1759,6 +1776,9 @@ function editText(ta, text) {
     ta.dispatchEvent(new Event("input", { bubbles: true }));
   }
 }
+function ind(ta) {
+  return ta.dataset.web ? "  " : INDENT; // web code: two spaces, like most editors
+}
 function shiftLines(ta, dir) {
   var v = ta.value;
   var s = ta.selectionStart;
@@ -1769,7 +1789,7 @@ function shiftLines(ta, dir) {
   if (to < 0) to = v.length;
   var lines = v.slice(from, to).split("\n");
   var out = lines.map(function (l) {
-    return dir > 0 ? INDENT + l : l.replace(/^( {1,4}|\t)/, "");
+    return dir > 0 ? ind(ta) + l : l.replace(ta.dataset.web ? /^( {1,2}|\t)/ : /^( {1,4}|\t)/, "");
   });
   var block = lines.join("\n");
   var next = out.join("\n");
@@ -1782,9 +1802,62 @@ function shiftLines(ta, dir) {
 function tabAction(ta, dir) {
   var multi = ta.value.slice(ta.selectionStart, ta.selectionEnd).indexOf("\n") >= 0;
   if (dir < 0 || multi) shiftLines(ta, dir);
-  else editText(ta, INDENT);
+  else editText(ta, ind(ta));
 }
-function codeEditor(ta) {
+// ---- web code helpers: pairs, smart Enter, re-indent (tags are never closed for the student) ----
+var VOID_TAGS = /^(area|base|br|col|embed|hr|img|input|link|meta|source|track|wbr|!doctype)$/i;
+var PAIRS = { '"': '"', "(": ")", "[": "]", "{": "}" };
+function insertPair(ta, open) {
+  var s = ta.selectionStart;
+  editText(ta, open + PAIRS[open]);
+  ta.setSelectionRange(s + 1, s + 1);
+}
+function insertSym(ta, sym) {
+  if (ta.dataset.web && sym === '"' && ta.selectionStart === ta.selectionEnd) insertPair(ta, '"');
+  else editText(ta, sym);
+}
+function opensBlock(before) {
+  var m = /<([a-z][a-z0-9-]*)(\s[^<>]*)?>\s*$/i.exec(before);
+  if (m && !VOID_TAGS.test(m[1]) && !/\/\s*>\s*$/.test(m[0])) return true;
+  return /[{(\[]\s*$/.test(before);
+}
+function reindentWeb(code) {
+  var depth = 0;
+  var inPre = false;
+  return String(code)
+    .split("\n")
+    .map(function (line) {
+      var t = line.trim();
+      if (inPre) {
+        if (/<\/pre>/i.test(t)) inPre = false;
+        return line;
+      }
+      if (!t) return "";
+      var lead = /^(<\/|[}\])])/.test(t) ? 1 : 0;
+      var out = "  ".repeat(Math.max(0, depth - lead)) + t;
+      var opens = 0;
+      (t.match(/<([a-z][a-z0-9-]*)(\s[^<>]*)?>/gi) || []).forEach(function (tag) {
+        var name = /^<([a-z][a-z0-9-]*)/i.exec(tag)[1];
+        if (!VOID_TAGS.test(name) && !/\/\s*>$/.test(tag)) opens++;
+      });
+      var closes = (t.match(/<\/[a-z][a-z0-9-]*\s*>/gi) || []).length;
+      opens += (t.match(/[{(\[]/g) || []).length;
+      closes += (t.match(/[})\]]/g) || []).length;
+      depth = Math.max(0, depth + opens - closes);
+      if (/<pre[\s>]/i.test(t) && !/<\/pre>/i.test(t)) inPre = true;
+      return out;
+    })
+    .join("\n");
+}
+function reindentField(ta) {
+  var next = reindentWeb(ta.value);
+  if (next === ta.value) return;
+  ta.focus();
+  ta.setSelectionRange(0, ta.value.length);
+  editText(ta, next);
+}
+function codeEditor(ta, web) {
+  if (web) ta.dataset.web = "1";
   ta.addEventListener("keydown", function (e) {
     if (e.isComposing || e.ctrlKey || e.metaKey || e.altKey) return;
     if (e.key === "Escape") {
@@ -1807,14 +1880,44 @@ function codeEditor(ta) {
       e.preventDefault();
       var before = v.slice(lineStartOf(v, s), s);
       var indent = /^[ \t]*/.exec(before)[0];
+      if (web) {
+        var after = v.slice(ta.selectionEnd, ta.selectionEnd + 2);
+        var opens = opensBlock(before);
+        if (opens && (after === "</" || /^[})\]]/.test(after))) {
+          editText(ta, "\n" + indent + ind(ta) + "\n" + indent); // between "<ul>" and "</ul>": the content goes in the middle
+          var c = s + 1 + indent.length + ind(ta).length;
+          ta.setSelectionRange(c, c);
+        } else editText(ta, "\n" + indent + (opens ? ind(ta) : ""));
+        return;
+      }
       editText(ta, "\n" + indent + (OPENER.test(before) ? INDENT : ""));
       return;
+    }
+    if (web && s === ta.selectionEnd) {
+      var nx = v.charAt(s);
+      if (PAIRS[e.key] && !/\w/.test(nx)) {
+        e.preventDefault();
+        insertPair(ta, e.key);
+        return;
+      }
+      if (nx === e.key && (e.key === '"' || e.key === ")" || e.key === "]" || e.key === "}")) {
+        e.preventDefault(); // typing the closing mark that is already there just steps over it
+        ta.setSelectionRange(s + 1, s + 1);
+        return;
+      }
+      if (e.key === "Backspace" && s > 0 && PAIRS[v.charAt(s - 1)] === nx) {
+        e.preventDefault(); // deleting the opening mark of an empty pair removes both
+        ta.setSelectionRange(s - 1, s + 1);
+        editText(ta, "");
+        return;
+      }
     }
     if (e.key === "Backspace" && s === ta.selectionEnd && s > 0) {
       var lead = v.slice(lineStartOf(v, s), s);
       if (lead.length > 1 && /^ +$/.test(lead)) {
         e.preventDefault(); // delete back to the previous indentation step
-        ta.setSelectionRange(s - (lead.length % 4 || 4), s);
+        var step = web ? 2 : 4;
+        ta.setSelectionRange(s - (lead.length % step || step), s);
         editText(ta, "");
       }
     }
@@ -1844,7 +1947,7 @@ function answerBox(ch, ex, boxId, placeholder, onInput, rows) {
   ta.setAttribute("lang", "fr");
   ta.placeholder = placeholder;
   ta.value = drafts[dk] || "";
-  codeEditor(ta);
+  codeEditor(ta, ex.lang === "html");
   ta.addEventListener("input", function () {
     drafts[dk] = ta.value;
     autoGrow(ta);
@@ -1879,7 +1982,7 @@ function answerBox(ch, ex, boxId, placeholder, onInput, rows) {
     });
     btn.addEventListener("click", function () {
       ta.focus();
-      editText(ta, b[0]);
+      insertSym(ta, b[0]);
     });
     tools.append(btn);
   });
@@ -1900,6 +2003,7 @@ function answerBox(ch, ex, boxId, placeholder, onInput, rows) {
   });
   var wrap = el("div", "ex-box");
   if (ex.lang === "html") {
+    tools.append(reindentButton(ta));
     var cw = codeWindow("html");
     cw.useField(ta);
     ta.addEventListener("input", function () {
