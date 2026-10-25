@@ -3259,15 +3259,13 @@ body:has(.av-modal) .ch-back.ch-back-float {
 .pg-code { background: #000a2e; color: #eaf2ff; }
 .pg-code .pg-bar { border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
 .pg-tab {
-  padding: 3px 12px; border-radius: 8px 8px 0 0; background: rgba(255, 255, 255, 0.09);
-  font: 700 12px ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; color: #cfe0ff;
+  display: inline-flex; align-items: center; gap: 7px; padding: 3px 12px 3px 9px; border-radius: 8px 8px 0 0; background: rgba(255, 255, 255, 0.09);
+  font: 700 12px ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; color: #cfe0ff; white-space: nowrap;
 }
+.pg-ico { display: inline-flex; flex: none; }
+.pg-ico svg { display: block; }
+.pg-tab-short { display: none; }
 .pg-bar-r { margin-inline-start: auto; display: inline-flex; gap: 8px; }
-.pg-try {
-  min-height: 28px; padding: 3px 12px; border: 1px solid rgba(255, 255, 255, 0.22); border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06); color: #eaf2ff; font: inherit; font-size: 12px; font-weight: 800; cursor: pointer;
-}
-.pg-try:hover { background: rgba(255, 255, 255, 0.14); }
 .pg-body { display: grid; grid-template-columns: auto minmax(0, 1fr); }
 .pg-gutter, .pg-hl, .pg-ta {
   margin: 0; padding: 12px 0; border: 0;
@@ -3326,11 +3324,6 @@ body:has(.av-modal) .ch-back.ch-back-float {
 .pg-modal-card .live-frame { display: flex; flex-direction: column; border-radius: 22px; border: 0; }
 .pg-modal-card .live-iframe { flex: 1; height: auto; min-height: 0; resize: none; }
 .pg-modal-card .live-empty { flex: 1; display: grid; place-items: center; }
-.pg-modal-x {
-  width: 30px; height: 30px; border: 0; border-radius: 50%; display: grid; place-items: center; flex: none;
-  background: var(--color-navy); color: #fff; cursor: pointer;
-}
-.pg-modal-x:hover { background: var(--color-primary); }
 @media (max-width: 760px) {
   .pg-modal { padding: 8px; }
   .pg-modal-card { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); height: 96vh; gap: 8px; }
@@ -3349,7 +3342,6 @@ body:has(.av-modal) .ch-back.ch-back-float {
   .pg-sw[aria-pressed="true"] { background: var(--color-navy); color: #fff; }
   .pg-side[data-view="mine"] .live-frame.is-expected, .pg-side[data-view="exp"] .live-frame:not(.is-expected) { display: none; }
 }
-@media (min-width: 761px) { .pg-side .live-frame.is-expected .pg-modal-x { display: none; } }
 
 /* a drawing (```svg) inside a lesson */
 .ch-fig {
@@ -3362,4 +3354,32 @@ body:has(.av-modal) .ch-back.ch-back-float {
   width: 100%;
   max-width: 560px;
   height: auto;
+}
+
+/* run button: an IDE-style green "play" */
+.pg-run {
+  display: inline-flex; align-items: center; gap: 7px; min-height: 30px; padding: 4px 14px 4px 11px; border: 0; border-radius: 8px;
+  background: #aee37b; color: #01092d; font: inherit; font-size: 12.5px; font-weight: 800; cursor: pointer; white-space: nowrap;
+}
+.pg-run:hover { background: #c4f09a; }
+.pg-run:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+/* the close button: same round white button as the other boxes, pinned top right */
+.pg-modal-x {
+  position: fixed; top: 14px; inset-inline-end: 14px; z-index: 5; width: 46px; height: 46px; border-radius: 50%;
+  border: 1px solid var(--color-border); background: var(--color-surface); color: #032c7b;
+  box-shadow: 0 6px 18px rgba(1, 9, 45, 0.18); display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.pg-modal-x:hover { background: var(--color-light-blue); border-color: #0464de; }
+.pg-modal { padding-top: 70px; }
+.pg-modal-card { height: min(calc(100vh - 90px), 780px); }
+@media (max-width: 760px) {
+  .pg-modal { padding-top: 64px; }
+  .pg-modal-card { height: calc(100vh - 74px); }
+  .pg-modal-x { top: 10px; inset-inline-end: 10px; width: 44px; height: 44px; }
+}
+@media (max-width: 560px) {
+  .pg-tab-full { display: none; }
+  .pg-tab-short { display: inline; }
+  .pg-run { width: 34px; min-height: 34px; padding: 0; justify-content: center; border-radius: 50%; }
+  .pg-run-t { display: none; }
 }

@@ -71,7 +71,7 @@ var STR = {
     answerLabel: "Ta réponse",
     liveTitle: "Résultat en direct",
     liveEmpty: "Le résultat apparaît ici dès que tu écris du code.",
-    tryIt: "Voir le résultat",
+    tryIt: "Exécuter",
     tryBack: "Revenir à l’exemple",
     pgClose: "Fermer",
     liveReload: "Recharger",
@@ -188,7 +188,7 @@ var STR = {
     answerLabel: "جوابك",
     liveTitle: "النتيجة مباشرة",
     liveEmpty: "النتيجة تظهر هنا كي تبدا تكتب الكود.",
-    tryIt: "شوف النتيجة",
+    tryIt: "شغّل",
     tryBack: "ارجع للمثال",
     pgClose: "سكّر",
     liveReload: "أعد التحميل",
@@ -568,6 +568,23 @@ function webBlock(code, lang) {
   }
   return pre;
 }
+var LANG_ICON = {
+  html: '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="#e34f26" d="M3 2l1.7 19L12 23l7.3-2L21 2z"/><text x="12" y="17" font-size="11" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial,sans-serif">5</text></svg>',
+  css: '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="#1572b6" d="M3 2l1.7 19L12 23l7.3-2L21 2z"/><text x="12" y="17" font-size="11" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial,sans-serif">3</text></svg>',
+  js: '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="3" fill="#f7df1e"/><text x="12.5" y="17" font-size="10" font-weight="800" fill="#1b1b1b" text-anchor="middle" font-family="Arial,sans-serif">JS</text></svg>',
+  php: '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><ellipse cx="12" cy="12" rx="11" ry="7" fill="#777bb4"/><text x="12" y="14.6" font-size="7.5" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial,sans-serif">php</text></svg>',
+  sql: '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="#7ee0c3" stroke-width="1.8"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v12c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3"/></svg>',
+};
+var RUN_ICON = '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l12-7.5z"/></svg>';
+function runButton() {
+  var b = el("button", "pg-run");
+  b.type = "button";
+  b.innerHTML = RUN_ICON; // static, trusted SVG
+  b.append(el("span", "pg-run-t", t("tryIt")));
+  b.title = t("tryIt");
+  b.setAttribute("aria-label", t("tryIt"));
+  return b;
+}
 var FILE_NAME = { html: "index.html", htmlsrc: "index.html", css: "styles.css", js: "app.js", php: "page.php", sql: "requete.sql" };
 function webTokens(code, lang) {
   var pre = webBlock(code, lang);
@@ -590,7 +607,13 @@ function lineNumbers(code) {
 function codeWindow(lang, opts) {
   var win = el("div", "pg-win pg-code");
   var bar = el("div", "pg-bar");
-  bar.append(dots(), el("span", "pg-tab", FILE_NAME[lang] || "code"));
+  var fname = FILE_NAME[lang] || "code";
+  var tab = el("span", "pg-tab");
+  var ico = el("span", "pg-ico");
+  ico.innerHTML = LANG_ICON[lang === "htmlsrc" ? "html" : lang] || ""; // static, trusted SVG
+  tab.append(ico, el("span", "pg-tab-full", fname), el("span", "pg-tab-short", fname.slice(0, 3) + "…"));
+  tab.title = fname;
+  bar.append(dots(), tab);
   var right = el("span", "pg-bar-r");
   bar.append(right);
   var body = el("div", "pg-body");
@@ -741,23 +764,15 @@ function openPlayground(opts) {
         return opts.expected;
       }, t("liveExpected"))
     : null;
-  function makeX() {
-    var x = el("button", "pg-modal-x");
-    x.type = "button";
-    x.title = t("pgClose");
-    x.setAttribute("aria-label", t("pgClose"));
-    x.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg>';
-    x.addEventListener("click", function () {
-      shut();
-    });
-    return x;
-  }
-  live.wrap.querySelector(".live-bar").append(makeX());
+  var x = el("button", "pg-modal-x");
+  x.type = "button";
+  x.title = t("pgClose");
+  x.setAttribute("aria-label", t("pgClose"));
+  x.innerHTML = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg>';
   var side = live.wrap;
   if (expFrame) {
     // the page to build stays in view above the student's own result (on a phone: a switch between the two)
     expFrame.wrap.classList.add("is-expected");
-    expFrame.wrap.querySelector(".live-bar").append(makeX());
     side = el("div", "pg-side");
     side.setAttribute("data-view", "mine");
     var sw = el("div", "pg-switch");
@@ -792,12 +807,13 @@ function openPlayground(opts) {
     live.update();
     if (opts.onChange) opts.onChange(ta.value);
   });
+  x.addEventListener("click", shut);
   ov.addEventListener("mousedown", function (e) {
     if (e.target === ov) shut();
   });
   document.addEventListener("keydown", onKey);
   card.append(wrapL, side);
-  ov.append(card);
+  ov.append(card, x);
   document.body.append(ov);
   document.body.style.overflow = "hidden";
   win.paint();
@@ -819,8 +835,7 @@ function webExample(code, lang) {
   var win = codeWindow(lang);
   win.showStatic(code);
   if (lang === "html") {
-    var tryBtn = el("button", "pg-try", "▶ " + t("tryIt"));
-    tryBtn.type = "button";
+    var tryBtn = runButton();
     tryBtn.addEventListener("click", function () {
       openPlayground({ code: code });
     });
@@ -1890,8 +1905,7 @@ function answerBox(ch, ex, boxId, placeholder, onInput, rows) {
     ta.addEventListener("input", function () {
       autoGrow(ta);
     });
-    var open = el("button", "pg-try", "▶ " + t("tryIt"));
-    open.type = "button";
+    var open = runButton();
     open.addEventListener("click", function () {
       var em = /```htmlview\n?([\s\S]*?)```/.exec(ex.statement || "");
       openPlayground({
