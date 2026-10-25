@@ -1,4 +1,4 @@
-/* ClassLedger student chapters: chapter list, chapter page, exercises, solutions, progress.
+/* Classek student chapters: chapter list, chapter page, exercises, solutions, progress.
 
    Firestore layout (content is written by the admin only, see firestore.rules):
      chapters/{chapterId}                                   level, subject, topic, title, title_ar, order, published, rappel, exerciseCount
@@ -69,12 +69,24 @@ var STR = {
     lessonClose: "Masquer le cours",
     lessonSections: "{n} sections",
     answerLabel: "Ta réponse",
+    liveTitle: "Résultat en direct",
+    liveEmpty: "Le résultat apparaît ici dès que tu écris du code.",
+    tryIt: "Voir le résultat",
+    tryBack: "Revenir à l’exemple",
+    pgClose: "Fermer",
+    liveReload: "Recharger",
+    liveExpected: "Résultat attendu",
+    liveMine: "Mon résultat",
     answerPlaceholder: "Essaie d’abord : écris ta réponse ici pour débloquer la solution.",
     qPlaceholder: "Ta réponse à la question {n}…",
     saving: "Enregistrement…",
     savedAns: "Enregistré",
     saveAnsFail: "Impossible d’enregistrer ta réponse. Nouvel essai en cours.",
     hintsUsed: "Indices {n}/{total}",
+    symArrow: "Affectation (←)",
+    symNe: "Différent de (≠)",
+    symLe: "Inférieur ou égal (≤)",
+    symGe: "Supérieur ou égal (≥)",
     indent: "Indenter",
     outdent: "Désindenter",
     showSolution: "Afficher la solution",
@@ -174,12 +186,24 @@ var STR = {
     lessonClose: "خبّي الدرس",
     lessonSections: "{n} أقسام",
     answerLabel: "جوابك",
+    liveTitle: "النتيجة مباشرة",
+    liveEmpty: "النتيجة تظهر هنا كي تبدا تكتب الكود.",
+    tryIt: "شوف النتيجة",
+    tryBack: "ارجع للمثال",
+    pgClose: "سكّر",
+    liveReload: "أعد التحميل",
+    liveExpected: "النتيجة المطلوبة",
+    liveMine: "نتيجتي",
     answerPlaceholder: "جرّب الأول: اكتب جوابك هنا باش يتفتح الحل.",
     qPlaceholder: "جوابك على السؤال {n}…",
     saving: "نحفظو…",
     savedAns: "تمّ الحفظ",
     saveAnsFail: "ما نجمناش نحفظو جوابك. باش نعاودو المحاولة.",
     hintsUsed: "تلميحات {n}/{total}",
+    symArrow: "إسناد (←)",
+    symNe: "مختلف عن (≠)",
+    symLe: "أصغر أو يساوي (≤)",
+    symGe: "أكبر أو يساوي (≥)",
     indent: "إزاحة",
     outdent: "تراجع",
     showSolution: "شوف الحل",
@@ -362,7 +386,7 @@ function inline(parent, text) {
 }
 // code blocks: ```algo and ```python written one after the other become one block with two tabs
 // (Algorithme is the default, the choice is remembered); a block with no language stays as it is (traces, outputs)
-var CODE_LABEL = { algo: "Algorithme", python: "Python" };
+var CODE_LABEL = { algo: "Algorithme", python: "Python", html: "HTML", htmlsrc: "HTML", css: "CSS", js: "JavaScript", php: "PHP", sql: "SQL" };
 var codeLang = "algo";
 try {
   var savedLang = window.localStorage.getItem("cl.codeLang");
@@ -483,6 +507,328 @@ function vizOpts() {
     setCodeLang: setCodeLang,
   };
 }
+
+/* ---------------- web code: coloured blocks, and a live result frame for HTML ---------------- */
+var WEB_KW = {
+  js: wordSet("function var let const if else for while return new class this true false null undefined switch case break continue try catch typeof document window alert console"),
+  php: wordSet("echo if else elseif foreach for while function return isset empty true false null include require array die exit as"),
+  sql: wordSet("SELECT FROM WHERE INSERT INTO VALUES UPDATE SET DELETE CREATE TABLE DATABASE ALTER DROP ADD PRIMARY KEY FOREIGN REFERENCES NOT NULL AUTO_INCREMENT DEFAULT UNIQUE JOIN INNER LEFT ON GROUP BY ORDER ASC DESC AVG COUNT SUM MAX MIN AND OR LIKE IN AS DISTINCT HAVING INT VARCHAR CHAR DATE DATETIME DECIMAL LIMIT"),
+};
+function webBlock(code, lang) {
+  var pre = el("pre", "test-code code-web-" + lang);
+  var add = function (cls, txt) {
+    pre.append(cls ? el("span", cls, txt) : document.createTextNode(txt));
+  };
+  var m;
+  if (lang === "html" || lang === "htmlsrc") {
+    var re = /(<!--[\s\S]*?-->)|(<\/?)([A-Za-z][\w-]*)|(>)|("[^"]*"|'[^']*')|([A-Za-z_:][\w:.-]*)(?==)|([\s\S])/g;
+    var inTag = false;
+    while ((m = re.exec(code))) {
+      if (m[1]) add("tk-com", m[1]);
+      else if (m[3]) {
+        add("", m[2]);
+        add("tk-kw", m[3]);
+        inTag = true;
+      } else if (m[4]) {
+        add("", ">");
+        inTag = false;
+      } else if (m[5] && inTag) add("tk-str", m[5]);
+      else if (m[6] && inTag) add("tk-attr", m[6]);
+      else add("", m[0]);
+    }
+  } else if (lang === "css") {
+    var rc = /(\/\*[\s\S]*?\*\/)|("[^"]*"|'[^']*')|(#[0-9a-fA-F]{3,8}\b)|([\w-]+)|([{}])|([\s\S])/g;
+    var depth = 0;
+    while ((m = rc.exec(code))) {
+      if (m[1]) add("tk-com", m[1]);
+      else if (m[2] || m[3]) add("tk-str", m[2] || m[3]);
+      else if (m[5]) {
+        depth += m[5] === "{" ? 1 : -1;
+        add("", m[5]);
+      } else if (m[4]) {
+        if (depth > 0 && /^\s*:/.test(code.slice(rc.lastIndex)) ) add("tk-attr", m[4]);
+        else if (depth === 0) add("tk-kw", m[4]);
+        else add("", m[4]);
+      } else add("", m[0]);
+    }
+  } else {
+    var kw = WEB_KW[lang] || {};
+    var ci = lang === "sql";
+    var rg = lang === "sql" ? /(--[^\n]*|\/\*[\s\S]*?\*\/)|("[^"]*"|'[^']*')|(\$?[A-Za-z_][\w]*)|([\s\S])/g : /(\/\/[^\n]*|\/\*[\s\S]*?\*\/|#[^\n]*)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')|(\$?[A-Za-z_][\w]*)|([\s\S])/g;
+    while ((m = rg.exec(code))) {
+      if (m[1]) add("tk-com", m[1]);
+      else if (m[2]) add("tk-str", m[2]);
+      else if (m[3]) {
+        var w = ci ? m[3].toUpperCase() : m[3];
+        if (kw[w]) add("tk-kw", m[3]);
+        else if (m[3].charAt(0) === "$") add("tk-attr", m[3]);
+        else add("", m[3]);
+      } else add("", m[0]);
+    }
+  }
+  return pre;
+}
+var FILE_NAME = { html: "index.html", htmlsrc: "index.html", css: "styles.css", js: "app.js", php: "page.php", sql: "requete.sql" };
+function webTokens(code, lang) {
+  var pre = webBlock(code, lang);
+  var f = document.createDocumentFragment();
+  while (pre.firstChild) f.append(pre.firstChild);
+  return f;
+}
+function dots() {
+  var d = el("span", "pg-dots");
+  d.append(el("i"), el("i"), el("i"));
+  return d;
+}
+function lineNumbers(code) {
+  var n = String(code).split("\n").length;
+  var out = [];
+  for (var i = 1; i <= n; i++) out.push(i);
+  return out.join("\n");
+}
+// a dark code window: three dots, file tab, line numbers, and the code coloured as it is typed (a transparent textarea over a coloured copy)
+function codeWindow(lang, opts) {
+  var win = el("div", "pg-win pg-code");
+  var bar = el("div", "pg-bar");
+  bar.append(dots(), el("span", "pg-tab", FILE_NAME[lang] || "code"));
+  var right = el("span", "pg-bar-r");
+  bar.append(right);
+  var body = el("div", "pg-body");
+  var gutter = el("pre", "pg-gutter");
+  gutter.setAttribute("aria-hidden", "true");
+  var edit = el("div", "pg-edit");
+  body.append(gutter, edit);
+  win.append(bar, body);
+  var api = { win: win, bar: right, body: body, edit: edit, gutter: gutter };
+  // static code (the lesson examples)
+  api.showStatic = function (code) {
+    edit.textContent = "";
+    var pre = el("pre", "pg-hl pg-static");
+    pre.append(webTokens(code, lang));
+    edit.append(pre);
+    gutter.textContent = lineNumbers(code);
+  };
+  // editable code: ta is the real field
+  api.useField = function (ta) {
+    edit.textContent = "";
+    var hl = el("pre", "pg-hl");
+    hl.setAttribute("aria-hidden", "true");
+    ta.classList.add("pg-ta");
+    ta.setAttribute("wrap", "off");
+    edit.append(hl, ta);
+    function paint() {
+      var v = ta.value;
+      hl.textContent = "";
+      hl.append(webTokens(v, lang));
+      hl.append(document.createTextNode("\u200b"));
+      gutter.textContent = lineNumbers(v);
+    }
+    ta.addEventListener("input", paint);
+    ta.addEventListener("scroll", function () {
+      hl.scrollLeft = ta.scrollLeft;
+    });
+    api.paint = paint;
+    paint();
+  };
+  return api;
+}
+// the page the student's code makes, in a sandboxed frame (its scripts cannot reach this page)
+function liveFrame(getCode, title) {
+  var wrap = el("div", "live-frame pg-win");
+  var bar = el("div", "live-bar pg-bar");
+  bar.append(dots());
+  var url = el("span", "live-url");
+  url.append(el("i", "live-dot"), document.createTextNode(title || t("liveTitle")));
+  bar.append(url);
+  var reload = el("button", "live-reload", "↻");
+  reload.type = "button";
+  reload.title = t("liveReload");
+  reload.setAttribute("aria-label", t("liveReload"));
+  bar.append(reload);
+  var frame = document.createElement("iframe");
+  frame.className = "live-iframe";
+  frame.setAttribute("sandbox", "allow-scripts allow-forms allow-modals");
+  frame.setAttribute("title", t("liveTitle"));
+  var empty = el("p", "live-empty", t("liveEmpty"));
+  var timer = null;
+  function paint() {
+    var code = String(getCode() || "");
+    var blank = !code.trim();
+    empty.hidden = !blank;
+    frame.hidden = blank;
+    frame.srcdoc = blank ? "" : (/<!doctype/i.test(code) ? "" : "<!doctype html>") + code;
+  }
+  reload.addEventListener("click", paint);
+  wrap.append(bar, empty, frame);
+  paint();
+  // some browsers leave a frame blank when it was filled before it reached the page (or while its card was hidden):
+  // fill it again the first time it is really on screen, and again whenever it comes back into view empty-handed
+  if (window.IntersectionObserver) {
+    var seen = false;
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (en.isIntersecting && !seen) {
+          seen = true;
+          paint();
+        }
+      });
+    });
+    io.observe(wrap);
+  }
+  frame.addEventListener("load", function () {
+    loadedOnce = true;
+  });
+  var loadedOnce = false;
+  setTimeout(function () {
+    if (!loadedOnce && wrap.isConnected && String(getCode() || "").trim()) paint(); // nothing came: try once more
+  }, 800);
+  return {
+    wrap: wrap,
+    update: function () {
+      clearTimeout(timer);
+      timer = setTimeout(paint, 250);
+    },
+  };
+}
+var WEB_SYMBOLS = [["<", "<"], [">", ">"], ["</", "</"], ["\"", "\""], ["=", "="], ["/>", "/>"]];
+function webTools(ta) {
+  var tools = el("div", "ex-tools pg-tools");
+  WEB_SYMBOLS.forEach(function (b) {
+    var btn = el("button", "ex-tool is-sym", b[0]);
+    btn.type = "button";
+    btn.title = b[0];
+    btn.setAttribute("aria-label", b[0]);
+    btn.addEventListener("pointerdown", function (e) {
+      e.preventDefault();
+    });
+    btn.addEventListener("click", function () {
+      ta.focus();
+      editText(ta, b[0]);
+    });
+    tools.append(btn);
+  });
+  return tools;
+}
+// the playground: the screen split in two, code on one side, the page it makes on the other, live
+function openPlayground(opts) {
+  var old = document.querySelector(".pg-modal");
+  if (old) old.remove();
+  var ov = el("div", "pg-modal");
+  ov.setAttribute("role", "dialog");
+  ov.setAttribute("aria-modal", "true");
+  var card = el("div", "pg-modal-card");
+  var ta = el("textarea", "ex-answer");
+  ta.value = opts.code || "";
+  ta.spellcheck = false;
+  ta.setAttribute("dir", "ltr");
+  ta.setAttribute("autocapitalize", "off");
+  ta.setAttribute("autocorrect", "off");
+  ta.maxLength = ANSWER_MAX;
+  codeEditor(ta);
+  var win = codeWindow("html");
+  win.useField(ta);
+  var wrapL = el("div", "ex-box");
+  wrapL.append(win.win);
+  win.win.append(webTools(ta));
+  var live = liveFrame(
+    function () {
+      return ta.value;
+    },
+    opts.expected ? t("liveMine") : undefined
+  );
+  var expFrame = opts.expected
+    ? liveFrame(function () {
+        return opts.expected;
+      }, t("liveExpected"))
+    : null;
+  function makeX() {
+    var x = el("button", "pg-modal-x");
+    x.type = "button";
+    x.title = t("pgClose");
+    x.setAttribute("aria-label", t("pgClose"));
+    x.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg>';
+    x.addEventListener("click", function () {
+      shut();
+    });
+    return x;
+  }
+  live.wrap.querySelector(".live-bar").append(makeX());
+  var side = live.wrap;
+  if (expFrame) {
+    // the page to build stays in view above the student's own result (on a phone: a switch between the two)
+    expFrame.wrap.classList.add("is-expected");
+    expFrame.wrap.querySelector(".live-bar").append(makeX());
+    side = el("div", "pg-side");
+    side.setAttribute("data-view", "mine");
+    var sw = el("div", "pg-switch");
+    [
+      ["mine", t("liveMine")],
+      ["exp", t("liveExpected")],
+    ].forEach(function (v) {
+      var b = el("button", "pg-sw", v[1]);
+      b.type = "button";
+      b.setAttribute("aria-pressed", v[0] === "mine" ? "true" : "false");
+      b.addEventListener("click", function () {
+        side.setAttribute("data-view", v[0]);
+        Array.prototype.forEach.call(sw.children, function (c) {
+          c.setAttribute("aria-pressed", c === b ? "true" : "false");
+        });
+      });
+      sw.append(b);
+    });
+    side.append(sw, expFrame.wrap, live.wrap);
+  }
+  var prevOverflow = document.body.style.overflow;
+  function shut() {
+    ov.remove();
+    document.body.style.overflow = prevOverflow;
+    document.removeEventListener("keydown", onKey);
+    if (opts.onClose) opts.onClose(ta.value);
+  }
+  function onKey(e) {
+    if (e.key === "Escape") shut();
+  }
+  ta.addEventListener("input", function () {
+    live.update();
+    if (opts.onChange) opts.onChange(ta.value);
+  });
+  ov.addEventListener("mousedown", function (e) {
+    if (e.target === ov) shut();
+  });
+  document.addEventListener("keydown", onKey);
+  card.append(wrapL, side);
+  ov.append(card);
+  document.body.append(ov);
+  document.body.style.overflow = "hidden";
+  win.paint();
+  ta.focus();
+}
+// a lesson example: colourful code, its result under it, and a button to edit it and watch the result change
+function webExample(code, lang) {
+  if (lang === "htmlview") {
+    // result only (the page to reproduce, without its code)
+    var only = el("div", "code-one code-web");
+    var lfv = liveFrame(function () {
+      return code;
+    }, t("liveExpected"));
+    lfv.wrap.classList.add("is-expected");
+    only.append(lfv.wrap);
+    return only;
+  }
+  var box = el("div", "code-one code-web");
+  var win = codeWindow(lang);
+  win.showStatic(code);
+  if (lang === "html") {
+    var tryBtn = el("button", "pg-try", "▶ " + t("tryIt"));
+    tryBtn.type = "button";
+    tryBtn.addEventListener("click", function () {
+      openPlayground({ code: code });
+    });
+    win.bar.append(tryBtn);
+  }
+  box.append(win.win);
+  return box;
+}
 // ```svg blocks of a lesson: the drawing is parsed, cleaned (no script, no link, no external url) and shown inline,
 // so it follows the site colours (use style="fill:var(--color-primary)" etc.) and the light/dark mode
 function svgFigure(src) {
@@ -509,6 +855,7 @@ function svgFigure(src) {
   return fig;
 }
 
+var WEB_FENCE = { html: 1, htmlsrc: 1, htmlview: 1, css: 1, js: 1, php: 1, sql: 1 };
 function md(text) {
   var box = el("div", "ch-content");
   box.setAttribute("lang", "fr");
@@ -552,6 +899,10 @@ function md(text) {
     if (s.lang === "viz") continue; // old lessons: the Run button on the code replaces the launcher card
     if (s.lang === "svg") {
       box.append(svgFigure(s.v));
+      continue;
+    }
+    if (WEB_FENCE[s.lang]) {
+      box.append(webExample(s.v, s.lang));
       continue;
     }
     var known = s.lang === "algo" || s.lang === "python";
@@ -849,6 +1200,7 @@ async function loadSolution(chId, exId) {
 async function setStatus(chId, exId, value) {
   var sdk = ctx.sdk;
   var before = S.status[chId];
+  var before_val = before ? before[exId] : undefined;
   var next = {};
   next[exId] = value;
   S.status[chId] = Object.assign({}, before, next);
@@ -859,6 +1211,11 @@ async function setStatus(chId, exId, value) {
       { merge: true },
     );
     rowError[chId + "/" + exId] = "";
+    if (value === "done" && before_val !== "done" && ctx.onDone) {
+      try {
+        ctx.onDone(chId, exId); // a finished exercise counts as a study day
+      } catch (e2) {}
+    }
   } catch (e) {
     console.warn("Couldn’t save the progress:", e);
     S.status[chId] = before;
@@ -1299,7 +1656,7 @@ function lessonBlock(ch, always) {
       var d = el("details", "lesson-sec");
       d.setAttribute("lang", "fr");
       d.setAttribute("dir", "ltr");
-      d.open = sectionOpen[k] !== undefined ? !!sectionOpen[k] : false; // closed by default: the À retenir line is enough to skim
+      d.open = sectionOpen[k] !== undefined ? !!sectionOpen[k] : false; // every section starts closed: the student opens the one they want
       var kp = splitKeep(s.body);
       var sum = el("summary", "");
       sum.append(el("span", "lesson-sec-t", s.title));
@@ -1485,16 +1842,40 @@ function answerBox(ch, ex, boxId, placeholder, onInput, rows) {
   ta.addEventListener("blur", function () {
     flushSave(ch.id, ex.id);
   });
-  // phones have no Tab key: two small buttons (shown on touch screens only)
+  // under the box while writing: symbols that are not on the keyboard (algorithm arrow, comparisons),
+  // and, on touch screens that have no Tab key, indent / outdent
   var tools = el("div", "ex-tools");
+  var symbols =
+    ex.lang === "html"
+      ? WEB_SYMBOLS
+      : [
+          ["←", "symArrow"],
+          ["≠", "symNe"],
+          ["≤", "symLe"],
+          ["≥", "symGe"],
+        ];
+  symbols.forEach(function (b) {
+    var btn = el("button", "ex-tool is-sym", b[0]);
+    btn.type = "button";
+    btn.title = ex.lang === "html" ? b[0] : t(b[1]);
+    btn.setAttribute("aria-label", ex.lang === "html" ? b[0] : t(b[1]));
+    btn.addEventListener("pointerdown", function (e) {
+      e.preventDefault(); // keep the keyboard open and the caret where it is
+    });
+    btn.addEventListener("click", function () {
+      ta.focus();
+      editText(ta, b[0]);
+    });
+    tools.append(btn);
+  });
   [
     ["indent", 1],
     ["outdent", -1],
   ].forEach(function (b) {
-    var btn = el("button", "ex-tool", (b[1] > 0 ? "⇥ " : "⇤ ") + t(b[0]));
+    var btn = el("button", "ex-tool is-touch", (b[1] > 0 ? "⇥ " : "⇤ ") + t(b[0]));
     btn.type = "button";
     btn.addEventListener("pointerdown", function (e) {
-      e.preventDefault(); // keep the keyboard open and the caret where it is
+      e.preventDefault();
     });
     btn.addEventListener("click", function () {
       ta.focus();
@@ -1503,6 +1884,38 @@ function answerBox(ch, ex, boxId, placeholder, onInput, rows) {
     tools.append(btn);
   });
   var wrap = el("div", "ex-box");
+  if (ex.lang === "html") {
+    var cw = codeWindow("html");
+    cw.useField(ta);
+    ta.addEventListener("input", function () {
+      autoGrow(ta);
+    });
+    var open = el("button", "pg-try", "▶ " + t("tryIt"));
+    open.type = "button";
+    open.addEventListener("click", function () {
+      var em = /```htmlview\n?([\s\S]*?)```/.exec(ex.statement || "");
+      openPlayground({
+        code: ta.value,
+        expected: em ? em[1].replace(/\n+$/, "") : "",
+        onChange: function (v) {
+          ta.value = v;
+          ta.dispatchEvent(new Event("input", { bubbles: true })); // saves the draft and repaints the colours
+        },
+        onClose: function () {
+          autoGrow(ta);
+        },
+      });
+    });
+    cw.bar.append(open);
+    tools.classList.add("pg-tools");
+    cw.win.append(tools);
+    wrap.append(cw.win);
+    setTimeout(function () {
+      cw.paint();
+      autoGrow(ta);
+    }, 0);
+    return { wrap: wrap, ta: ta };
+  }
   wrap.append(ta, tools);
   return { wrap: wrap, ta: ta };
 }
@@ -1573,7 +1986,8 @@ function exerciseCard(ch, ex, index) {
     card.append(pin, panel);
     return card;
   }
-  var split = splitQuestions(ex.statement);
+  var isWeb = ex.lang === "html";
+  var split = isWeb ? null : splitQuestions(ex.statement);
   var prev = previewOf(ex.statement);
   if (prev) sum.append(el("span", "ex-preview", prev));
   sum.addEventListener("click", function () {
@@ -1646,15 +2060,17 @@ function exerciseCard(ch, ex, index) {
       boxes.push(bx.ta);
     });
   } else {
-    var label = el(
-      "label",
-      "ex-label",
-      t("answerLabel") + (CODE_LABEL[ex.lang] ? " · " + CODE_LABEL[ex.lang] : "")
-    );
+    var labelText = t("answerLabel") + (CODE_LABEL[ex.lang] ? " · " + CODE_LABEL[ex.lang] : "");
+    var label = isWeb ? el("div", "pg-code-wrap") : el("label", "ex-label", labelText);
+    if (isWeb) work.append(el("div", "ex-label", labelText));
     var bx1 = answerBox(ch, ex, "0", t("answerPlaceholder"), onType, 4);
     label.append(bx1.wrap);
-    work.append(label);
     boxes.push(bx1.ta);
+    if (isWeb) {
+      work.append(label);
+    } else {
+      work.append(label);
+    }
   }
   var savedLine = el("small", "ex-saved");
   work.append(savedLine);
@@ -2483,6 +2899,16 @@ function render() {
 }
 
 export var Chapters = {
+  /* what the weekly bilan needs: chapters (with their quiz banks) and the exercise statuses */
+  snapshot: function () {
+    return { chapters: S.chapters, status: S.status, loading: S.loading, failed: S.failed };
+  },
+  /* wait for the chapters to be loaded (loads them if nobody did yet) */
+  ensure: async function () {
+    for (var i = 0; i < 100 && S.loading; i++) await new Promise(function (r) { setTimeout(r, 100); });
+    if (!S.chapters.length && !S.loading && ctx && ctx.ready()) await load();
+    return S.chapters;
+  },
   /* c: { sdk, db, uid, getLang(), getLevel(), ready(), topicOf(key), subjectIcon(subject) } */
   init: function (c) {
     ctx = c;

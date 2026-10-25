@@ -56,6 +56,7 @@ In the course and in statements/solutions, code fences are coloured by language:
 
 - ` ```html ` shows the code **and its result**, with an “Essayer” button to edit it live.
 - ` ```htmlsrc ` shows the code only (for example a page with errors to correct).
+- ` ```svg ` draws a figure inline in a lesson (cleaned: no script, link or external url; use `style="fill:var(--color-primary)"` to follow the site colours).
 - ` ```htmlview ` shows the result only, titled “Résultat attendu” (the page to reproduce).
 
 The uploader now also stores each exercise's `lang` and `viz` fields.
