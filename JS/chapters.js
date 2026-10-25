@@ -837,7 +837,7 @@ function openPlayground(opts) {
   ta.focus();
 }
 // a lesson example: colourful code, its result under it, and a button to edit it and watch the result change
-function webExample(code, lang) {
+function webExample(code, lang, noRun) {
   if (lang === "htmlview") {
     // result only (the page to reproduce, without its code)
     var only = el("div", "code-one code-web");
@@ -851,7 +851,7 @@ function webExample(code, lang) {
   var box = el("div", "code-one code-web");
   var win = codeWindow(lang);
   win.showStatic(code);
-  if (lang === "html") {
+  if (lang === "html" && !noRun) {
     var tryBtn = runButton();
     tryBtn.addEventListener("click", function () {
       openPlayground({ code: code });
@@ -888,7 +888,7 @@ function svgFigure(src) {
 }
 
 var WEB_FENCE = { html: 1, htmlsrc: 1, htmlview: 1, css: 1, js: 1, php: 1, sql: 1 };
-function md(text) {
+function md(text, opts) {
   var box = el("div", "ch-content");
   box.setAttribute("lang", "fr");
   box.setAttribute("dir", "ltr");
@@ -934,7 +934,7 @@ function md(text) {
       continue;
     }
     if (WEB_FENCE[s.lang]) {
-      box.append(webExample(s.v, s.lang));
+      box.append(webExample(s.v, s.lang, opts && opts.noRun)); // a solution is for reading: no editor to open
       continue;
     }
     var known = s.lang === "algo" || s.lang === "python";
@@ -2261,7 +2261,7 @@ function exerciseCard(ch, ex, index) {
     work.append(actions);
   } else {
     var sol = el("div", "ex-solution");
-    sol.append(el("div", "ex-sol-title", t("solution")), md(solutions[key]));
+    sol.append(el("div", "ex-sol-title", t("solution")), md(solutions[key], { noRun: true }));
     var mark = el("div", "ex-actions");
     function choose(value) {
       return async function () {
