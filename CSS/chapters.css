@@ -3393,3 +3393,9 @@ body:has(.av-modal) .ch-back.ch-back-float {
 .pg-copy.is-done { background: #aee37b; color: #10260a; }
 .pg-copy:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .code-web .pg-static { user-select: text; }
+/* algorithm / Python: the same code window as the web code */
+.pg-win.is-answer .pg-edit { min-height: calc(1.55 * 13.5px * 4 + 24px); }
+.pg-win.code-algo, .pg-win.code-python { margin: 0; }
+.code-pair .pg-win, .code-one .pg-win { margin: 0; }
+.tk-num { color: #ff9e7a; }
+.pg-win .pg-static { margin: 0; }

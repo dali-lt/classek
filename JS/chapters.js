@@ -72,6 +72,7 @@ var STR = {
     liveTitle: "Résultat en direct",
     liveEmpty: "Le résultat apparaît ici dès que tu écris du code.",
     tryIt: "Exécuter",
+    animBtn: "Animation",
     copyCode: "Copier le code",
     copied: "Copié",
     tryBack: "Revenir à l’exemple",
@@ -192,6 +193,7 @@ var STR = {
     liveTitle: "النتيجة مباشرة",
     liveEmpty: "النتيجة تظهر هنا كي تبدا تكتب الكود.",
     tryIt: "شغّل",
+    animBtn: "رسم متحرك",
     copyCode: "نسخ الكود",
     copied: "تم النسخ",
     tryBack: "ارجع للمثال",
@@ -421,7 +423,7 @@ function wordSet(list) {
 }
 var KEYWORDS = {
   algo: wordSet("Fonction Procédure DEBUT FIN Si Alors Sinon FinSi Pour de à Faire FinPour Tant que FinTantQue Répéter Jusqu'à Vrai Faux div mod ET OU NON Retourner Lire Écrire"),
-  python: wordSet("def if elif else return for while in range and or not True False break"),
+  python: wordSet("def if elif else return for while in range and or not True False None break continue pass import from as print len input int float str abs max min is class"),
 };
 // light colouring (keywords, comments) built with DOM nodes only; the text itself is never changed
 function codeBlock(code, lang) {
@@ -481,6 +483,26 @@ function codeLine(text, lang) {
   }
   return frag;
 }
+// an algorithm / Python block of a lesson: the same dark code window as the web code (file tab with its logo,
+// line numbers, colours), with the animation button when the function has one, and a copy icon
+function progWindow(code, lang, noCopy) {
+  var win = codeWindow(lang);
+  win.showStatic(code);
+  win.win.classList.add("code-" + lang); // the Algorithme / Python tabs above still show one and hide the other
+  var runKind = kindForCode(code);
+  if (runKind) {
+    var run = runButton();
+    run.querySelector(".pg-run-t").textContent = t("animBtn");
+    run.title = (ctx.getLang() === "ar" ? "عرض بالرسم المتحرك · " : "Voir l’animation · ") + algoTitle(runKind, ctx.getLang());
+    run.setAttribute("aria-label", run.title);
+    run.addEventListener("click", function () {
+      openAlgoViz(runKind, vizOpts());
+    });
+    win.bar.append(run);
+  }
+  if (!noCopy) win.bar.append(copyButton(code));
+  return win.win;
+}
 function codePair(a, b) {
   var wrap = el("div", "code-pair");
   wrap.setAttribute("data-lang", codeLang);
@@ -496,7 +518,7 @@ function codePair(a, b) {
     });
     tabs.append(btn);
   });
-  wrap.append(tabs, codeBlock(a.v, a.lang), codeBlock(b.v, b.lang));
+  wrap.append(tabs, progWindow(a.v, a.lang), progWindow(b.v, b.lang));
   return wrap;
 }
 
@@ -542,6 +564,16 @@ function webBlock(code, lang) {
       else if (m[6] && inTag) add("tk-attr", m[6]);
       else add("", m[0]);
     }
+  } else if (lang === "algo" || lang === "python") {
+    var kwp = KEYWORDS[lang];
+    var rp = lang === "python" ? /(#[^\n]*)|("(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*')|([A-Za-zÀ-ÿ_][A-Za-zÀ-ÿ_0-9]*)|(\d+(?:\.\d+)?)|([\s\S])/g : /(\{[^}]*\})|("[^"\n]*")|([A-Za-zÀ-ÿ_'][A-Za-zÀ-ÿ_0-9']*)|(\d+(?:\.\d+)?)|([\s\S])/g;
+    while ((m = rp.exec(code))) {
+      if (m[1]) add("tk-com", m[1]);
+      else if (m[2]) add("tk-str", m[2]);
+      else if (m[3]) add(kwp[m[3]] ? "tk-kw" : "", m[3]);
+      else if (m[4]) add("tk-num", m[4]);
+      else add("", m[0]);
+    }
   } else if (lang === "css") {
     var rc = /(\/\*[\s\S]*?\*\/)|("[^"]*"|'[^']*')|(#[0-9a-fA-F]{3,8}\b)|([\w-]+)|([{}])|([\s\S])/g;
     var depth = 0;
@@ -581,6 +613,8 @@ var LANG_ICON = {
   php: '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><ellipse cx="12" cy="12" rx="11" ry="7" fill="#777bb4"/><text x="12" y="14.6" font-size="7.5" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial,sans-serif">php</text></svg>',
   sql: '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="#7ee0c3" stroke-width="1.8"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v12c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3"/></svg>',
 };
+LANG_ICON.python = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="4" fill="#3776ab"/><text x="12" y="16.4" font-size="10" font-weight="800" fill="#ffd43b" text-anchor="middle" font-family="Arial,sans-serif">Py</text></svg>';
+LANG_ICON.algo = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="#f5a524" d="M12 1.5l10.5 10.5L12 22.5 1.5 12z"/><text x="12" y="15.6" font-size="9.5" font-weight="800" fill="#2a1a00" text-anchor="middle" font-family="Arial,sans-serif">A</text></svg>';
 var RUN_ICON = '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l12-7.5z"/></svg>';
 function runButton() {
   var b = el("button", "pg-run");
@@ -628,7 +662,7 @@ function copyButton(code) {
   });
   return b;
 }
-var FILE_NAME = { html: "index.html", htmlsrc: "index.html", css: "styles.css", js: "app.js", php: "page.php", sql: "requete.sql" };
+var FILE_NAME = { algo: "algorithme", python: "programme.py", html: "index.html", htmlsrc: "index.html", css: "styles.css", js: "app.js", php: "page.php", sql: "requete.sql" };
 function webTokens(code, lang) {
   var pre = webBlock(code, lang);
   var f = document.createDocumentFragment();
@@ -989,7 +1023,7 @@ function md(text, opts) {
       i = j;
     } else if (known) {
       var one = el("div", "code-one");
-      one.append(el("span", "code-label", CODE_LABEL[s.lang]), codeBlock(s.v, s.lang));
+      one.append(el("span", "code-label", CODE_LABEL[s.lang]), progWindow(s.v, s.lang));
       box.append(one);
     } else {
       box.append(codeBlock(s.v, ""));
@@ -1923,7 +1957,7 @@ function reindentField(ta) {
   ta.setSelectionRange(0, ta.value.length);
   editText(ta, next);
 }
-function codeEditor(ta, web) {
+function codeEditor(ta, web, pairs) {
   if (web) ta.dataset.web = "1";
   ta.addEventListener("keydown", function (e) {
     if (e.isComposing || e.ctrlKey || e.metaKey || e.altKey) return;
@@ -1960,7 +1994,7 @@ function codeEditor(ta, web) {
       editText(ta, "\n" + indent + (OPENER.test(before) ? INDENT : ""));
       return;
     }
-    if (web && s === ta.selectionEnd) {
+    if ((web || pairs) && s === ta.selectionEnd) {
       var nx = v.charAt(s);
       if (nx === e.key && (e.key === '"' || e.key === ")" || e.key === "]" || e.key === "}")) {
         e.preventDefault(); // typing the closing mark that is already there just steps over it
@@ -2001,7 +2035,12 @@ function autoGrow(ta) {
   ta.style.height = Math.min(ta.scrollHeight + 2, 380) + "px";
 }
 
-function answerBox(ch, ex, boxId, placeholder, onInput, rows) {
+// does this question ask the student to write code (then its box is a code window), or to answer in words / numbers?
+function asksForCode(text) {
+  return /(écri|ecri|compl[eé]t|programm|fonction|proc[eé]dure|algorithme|python|\bdef\b|instruction|d[eé]fini|traduis|transform|code\b)/i.test(String(text || ""));
+}
+function answerBox(ch, ex, boxId, placeholder, onInput, rows, asCode) {
+  var progCode = !!asCode && (ex.lang === "algo" || ex.lang === "python");
   var dk = ch.id + "/" + ex.id + "#" + boxId;
   var ta = el("textarea", "ex-answer");
   ta.rows = rows || 2;
@@ -2014,7 +2053,7 @@ function answerBox(ch, ex, boxId, placeholder, onInput, rows) {
   ta.setAttribute("lang", "fr");
   ta.placeholder = placeholder;
   ta.value = drafts[dk] || "";
-  codeEditor(ta, ex.lang === "html");
+  codeEditor(ta, ex.lang === "html", progCode);
   ta.addEventListener("input", function () {
     drafts[dk] = ta.value;
     autoGrow(ta);
@@ -2097,6 +2136,22 @@ function answerBox(ch, ex, boxId, placeholder, onInput, rows) {
     wrap.append(cw.win);
     setTimeout(function () {
       cw.paint();
+      autoGrow(ta);
+    }, 0);
+    return { wrap: wrap, ta: ta };
+  }
+  if (progCode) {
+    var pw = codeWindow(ex.lang);
+    pw.win.classList.add("is-answer");
+    pw.useField(ta);
+    ta.addEventListener("input", function () {
+      autoGrow(ta);
+    });
+    tools.classList.add("pg-tools");
+    pw.win.append(tools);
+    wrap.append(pw.win);
+    setTimeout(function () {
+      pw.paint();
       autoGrow(ta);
     }, 0);
     return { wrap: wrap, ta: ta };
@@ -2239,7 +2294,7 @@ function exerciseCard(ch, ex, index) {
       var item = el("div", "ex-q");
       var qh = el("div", "ex-q-head");
       qh.append(el("span", "ex-q-n", String(q.n)), md(q.text));
-      var bx = answerBox(ch, ex, String(q.n), tf("qPlaceholder", { n: q.n }), onType);
+      var bx = answerBox(ch, ex, String(q.n), tf("qPlaceholder", { n: q.n }), onType, undefined, asksForCode(q.text));
       item.append(qh, bx.wrap);
       work.append(item);
       boxes.push(bx.ta);
@@ -2248,7 +2303,7 @@ function exerciseCard(ch, ex, index) {
     var labelText = t("answerLabel") + (CODE_LABEL[ex.lang] ? " · " + CODE_LABEL[ex.lang] : "");
     var label = isWeb ? el("div", "pg-code-wrap") : el("label", "ex-label", labelText);
     if (isWeb) work.append(el("div", "ex-label", labelText));
-    var bx1 = answerBox(ch, ex, "0", t("answerPlaceholder"), onType, 4);
+    var bx1 = answerBox(ch, ex, "0", t("answerPlaceholder"), onType, 4, asksForCode(ex.statement));
     label.append(bx1.wrap);
     boxes.push(bx1.ta);
     if (isWeb) {
