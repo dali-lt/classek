@@ -3399,3 +3399,18 @@ body:has(.av-modal) .ch-back.ch-back-float {
 .code-pair .pg-win, .code-one .pg-win { margin: 0; }
 .tk-num { color: #ff9e7a; }
 .pg-win .pg-static { margin: 0; }
+/* whole-screen code (algorithm / Python): one wide window */
+.pg-modal.is-solo .pg-modal-card { grid-template-columns: minmax(0, 1fr); width: min(980px, 100%); }
+.pg-modal.is-solo .pg-code { height: 100%; }
+@media (max-width: 760px) { .pg-modal.is-solo .pg-modal-card { grid-template-rows: minmax(0, 1fr); } }
+/* answer window: language switch, bottom right, icon only */
+.pg-win.is-answer .pg-tools { display: flex; align-items: center; padding: 8px 12px 10px; }
+.pg-win.is-answer .pg-swap { margin-inline-start: auto; }
+.pg-swap {
+  display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 11px; border: 0; border-radius: 999px; cursor: pointer;
+  background: rgba(255, 255, 255, 0.1); color: #cfe0ff; transition: background 0.15s;
+}
+.pg-swap:hover { background: rgba(255, 255, 255, 0.2); color: #fff; }
+.pg-swap:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.pg-swap svg { display: block; }
+.pg-win[data-lang="python"] .pg-tools .ex-tool.is-sym { display: none; }

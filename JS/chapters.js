@@ -73,6 +73,9 @@ var STR = {
     liveEmpty: "Le résultat apparaît ici dès que tu écris du code.",
     tryIt: "Exécuter",
     animBtn: "Animation",
+    toPython: "Écrire en Python",
+    toAlgo: "Écrire en algorithme",
+    expandCode: "Plein écran",
     copyCode: "Copier le code",
     copied: "Copié",
     tryBack: "Revenir à l’exemple",
@@ -194,6 +197,9 @@ var STR = {
     liveEmpty: "النتيجة تظهر هنا كي تبدا تكتب الكود.",
     tryIt: "شغّل",
     animBtn: "رسم متحرك",
+    toPython: "الكتابة بلغة Python",
+    toAlgo: "الكتابة بالخوارزمية",
+    expandCode: "ملء الشاشة",
     copyCode: "نسخ الكود",
     copied: "تم النسخ",
     tryBack: "ارجع للمثال",
@@ -500,6 +506,9 @@ function progWindow(code, lang, noCopy) {
     });
     win.bar.append(run);
   }
+  win.bar.append(expandButton(function () {
+    openCodeFull({ code: code, lang: lang, readOnly: true });
+  }));
   if (!noCopy) win.bar.append(copyButton(code));
   return win.win;
 }
@@ -688,8 +697,11 @@ function codeWindow(lang, opts) {
   var tab = el("span", "pg-tab");
   var ico = el("span", "pg-ico");
   ico.innerHTML = LANG_ICON[lang === "htmlsrc" ? "html" : lang] || ""; // static, trusted SVG
-  tab.append(ico, el("span", "pg-tab-full", fname), el("span", "pg-tab-short", fname.slice(0, 3) + "…"));
+  var tabFull = el("span", "pg-tab-full", fname);
+  var tabShort = el("span", "pg-tab-short", fname.slice(0, 3) + "…");
+  tab.append(ico, tabFull, tabShort);
   tab.title = fname;
+  win.setAttribute("data-lang", lang);
   bar.append(dots(), tab);
   var right = el("span", "pg-bar-r");
   bar.append(right);
@@ -700,6 +712,17 @@ function codeWindow(lang, opts) {
   body.append(gutter, edit);
   win.append(bar, body);
   var api = { win: win, bar: right, body: body, edit: edit, gutter: gutter };
+  // the language of the window can change (algorithm <-> Python): the tab, its logo and the colours follow
+  api.setLang = function (l) {
+    lang = l;
+    var nm = FILE_NAME[l] || "code";
+    ico.innerHTML = LANG_ICON[l] || ""; // static, trusted SVG
+    tabFull.textContent = nm;
+    tabShort.textContent = nm.slice(0, 3) + "…";
+    tab.title = nm;
+    win.setAttribute("data-lang", l);
+    if (api.paint) api.paint();
+  };
   // static code (the lesson examples)
   api.showStatic = function (code) {
     edit.textContent = "";
@@ -910,6 +933,103 @@ function openPlayground(opts) {
   document.body.style.overflow = "hidden";
   win.paint();
   ta.focus();
+}
+var EXPAND_ICON = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg>';
+function expandButton(onClick) {
+  var b = el("button", "pg-copy pg-expand");
+  b.type = "button";
+  b.innerHTML = EXPAND_ICON; // static, trusted SVG
+  b.title = t("expandCode");
+  b.setAttribute("aria-label", t("expandCode"));
+  b.addEventListener("click", onClick);
+  return b;
+}
+// algorithm / Python code on the whole screen: to read a long code, or to write one comfortably
+function openCodeFull(opts) {
+  var old = document.querySelector(".pg-modal");
+  if (old) old.remove();
+  var ov = el("div", "pg-modal is-solo");
+  ov.setAttribute("role", "dialog");
+  ov.setAttribute("aria-modal", "true");
+  var card = el("div", "pg-modal-card");
+  var win = codeWindow(opts.lang);
+  var ta = null;
+  var wrapL = el("div", "ex-box");
+  if (opts.readOnly) {
+    win.showStatic(opts.code || "");
+    win.bar.append(copyButton(opts.code || ""));
+    wrapL.append(win.win);
+  } else {
+    ta = el("textarea", "ex-answer");
+    ta.value = opts.code || "";
+    ta.spellcheck = false;
+    ta.setAttribute("dir", "ltr");
+    ta.setAttribute("autocapitalize", "off");
+    ta.setAttribute("autocorrect", "off");
+    ta.maxLength = ANSWER_MAX;
+    codeEditor(ta, false, true);
+    win.useField(ta);
+    var tl = el("div", "ex-tools pg-tools");
+    [["←", "symArrow"], ["≠", "symNe"], ["≤", "symLe"], ["≥", "symGe"]].forEach(function (b) {
+      var btn = el("button", "ex-tool is-sym", b[0]);
+      btn.type = "button";
+      btn.title = t(b[1]);
+      btn.setAttribute("aria-label", t(b[1]));
+      btn.addEventListener("pointerdown", function (e) {
+        e.preventDefault();
+      });
+      btn.addEventListener("click", function () {
+        ta.focus();
+        editText(ta, b[0]);
+      });
+      tl.append(btn);
+    });
+    [["indent", 1], ["outdent", -1]].forEach(function (b) {
+      var btn = el("button", "ex-tool is-touch", (b[1] > 0 ? "⇥ " : "⇤ ") + t(b[0]));
+      btn.type = "button";
+      btn.addEventListener("pointerdown", function (e) {
+        e.preventDefault();
+      });
+      btn.addEventListener("click", function () {
+        ta.focus();
+        tabAction(ta, b[1]);
+      });
+      tl.append(btn);
+    });
+    win.win.append(tl);
+    wrapL.append(win.win);
+    ta.addEventListener("input", function () {
+      if (opts.onChange) opts.onChange(ta.value);
+    });
+  }
+  var x = el("button", "pg-modal-x");
+  x.type = "button";
+  x.title = t("pgClose");
+  x.setAttribute("aria-label", t("pgClose"));
+  x.innerHTML = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg>';
+  var prevOverflow = document.body.style.overflow;
+  function shut() {
+    ov.remove();
+    document.body.style.overflow = prevOverflow;
+    document.removeEventListener("keydown", onKey);
+    if (opts.onClose) opts.onClose(ta ? ta.value : opts.code);
+  }
+  function onKey(e) {
+    if (e.key === "Escape") shut();
+  }
+  x.addEventListener("click", shut);
+  ov.addEventListener("mousedown", function (e) {
+    if (e.target === ov) shut();
+  });
+  document.addEventListener("keydown", onKey);
+  card.append(wrapL);
+  ov.append(card, x);
+  document.body.append(ov);
+  document.body.style.overflow = "hidden";
+  if (ta) {
+    win.paint();
+    ta.focus();
+  }
 }
 // a lesson example: colourful code, its result under it, and a button to edit it and watch the result change
 function webExample(code, lang, noRun) {
@@ -2035,6 +2155,15 @@ function autoGrow(ta) {
   ta.style.height = Math.min(ta.scrollHeight + 2, 380) + "px";
 }
 
+var SWAP_ICON = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h14l-3.5-3.5M20 16H6l3.5 3.5"/></svg>';
+// the language an answer is written in: what the student chose for this exercise, else what the exercise asks, else the lesson tab last used
+function answerLang(ch, ex) {
+  try {
+    var v = window.localStorage.getItem("cl.alang." + ch.id + "/" + ex.id);
+    if (v === "algo" || v === "python") return v;
+  } catch (e) {}
+  return ex.lang === "algo" || ex.lang === "python" ? ex.lang : codeLang;
+}
 // does this question ask the student to write code (then its box is a code window), or to answer in words / numbers?
 function asksForCode(text) {
   return /(écri|ecri|compl[eé]t|programm|fonction|proc[eé]dure|algorithme|python|\bdef\b|instruction|d[eé]fini|traduis|transform|code\b)/i.test(String(text || ""));
@@ -2141,14 +2270,51 @@ function answerBox(ch, ex, boxId, placeholder, onInput, rows, asCode) {
     return { wrap: wrap, ta: ta };
   }
   if (progCode) {
-    var pw = codeWindow(ex.lang);
+    var curLang = answerLang(ch, ex);
+    var pw = codeWindow(curLang);
     pw.win.classList.add("is-answer");
     pw.useField(ta);
+    pw.bar.append(
+      expandButton(function () {
+        openCodeFull({
+          code: ta.value,
+          lang: curLang,
+          onChange: function (v) {
+            ta.value = v;
+            ta.dispatchEvent(new Event("input", { bubbles: true })); // saves the draft and repaints the colours
+          },
+          onClose: function () {
+            pw.paint();
+            autoGrow(ta);
+          },
+        });
+      })
+    );
     ta.addEventListener("input", function () {
       autoGrow(ta);
     });
     tools.classList.add("pg-tools");
     pw.win.append(tools);
+    // bottom right, icon only: write the answer in the other language (the exercise decides which one shows first)
+    var swap = el("button", "pg-swap");
+    swap.type = "button";
+    function paintSwap() {
+      var other = curLang === "algo" ? "python" : "algo";
+      swap.innerHTML = SWAP_ICON + (LANG_ICON[other] || ""); // static, trusted SVG
+      swap.title = other === "python" ? t("toPython") : t("toAlgo");
+      swap.setAttribute("aria-label", swap.title);
+      pw.win.setAttribute("data-lang", curLang);
+    }
+    swap.addEventListener("click", function () {
+      curLang = curLang === "algo" ? "python" : "algo";
+      try {
+        window.localStorage.setItem("cl.alang." + ch.id + "/" + ex.id, curLang);
+      } catch (e) {}
+      pw.setLang(curLang);
+      paintSwap();
+    });
+    paintSwap();
+    tools.append(swap); // always visible (the tools row of an answer window stays open), so the button never moves under the finger
     wrap.append(pw.win);
     setTimeout(function () {
       pw.paint();
