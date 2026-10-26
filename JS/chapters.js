@@ -1824,6 +1824,11 @@ function opensBlock(before) {
 function reindentWeb(code) {
   var depth = 0;
   var inPre = false;
+  var inComment = false;
+  var inBlock = ""; // "style" or "script": only there do { } ( ) [ ] open and close blocks
+  var pad = function (n) {
+    return "  ".repeat(Math.max(0, n));
+  };
   return String(code)
     .split("\n")
     .map(function (line) {
@@ -1833,18 +1838,37 @@ function reindentWeb(code) {
         return line;
       }
       if (!t) return "";
-      var lead = /^(<\/|[}\])])/.test(t) ? 1 : 0;
-      var out = "  ".repeat(Math.max(0, depth - lead)) + t;
+      if (inComment) {
+        if (t.indexOf("-->") >= 0) inComment = false;
+        return pad(depth) + t;
+      }
+      var c = t.replace(/<!--[\s\S]*?-->/g, "");
+      if (/<!--/.test(c)) {
+        inComment = true;
+        c = c.replace(/<!--[\s\S]*$/, "");
+      }
+      if (inBlock) {
+        if (!new RegExp("</" + inBlock + "\\s*>", "i").test(c)) {
+          var lead0 = /^[})\]]/.test(c) ? 1 : 0;
+          var out0 = pad(depth - lead0) + t;
+          depth = Math.max(0, depth + (c.match(/[{(\[]/g) || []).length - (c.match(/[})\]]/g) || []).length);
+          return out0;
+        }
+        inBlock = "";
+      }
+      c = c.replace(/"[^"]*"/g, '""'); // a ">" or a "<" inside an attribute value is not a tag
+      var lead = ((/^(?:<\/[a-z][a-z0-9-]*\s*>\s*)+/i.exec(c) || [""])[0].match(/<\//g) || []).length;
+      var out = pad(depth - lead) + t;
       var opens = 0;
-      (t.match(/<([a-z][a-z0-9-]*)(\s[^<>]*)?>/gi) || []).forEach(function (tag) {
+      (c.match(/<([a-z][a-z0-9-]*)(\s[^<>]*)?>/gi) || []).forEach(function (tag) {
         var name = /^<([a-z][a-z0-9-]*)/i.exec(tag)[1];
         if (!VOID_TAGS.test(name) && !/\/\s*>$/.test(tag)) opens++;
       });
-      var closes = (t.match(/<\/[a-z][a-z0-9-]*\s*>/gi) || []).length;
-      opens += (t.match(/[{(\[]/g) || []).length;
-      closes += (t.match(/[})\]]/g) || []).length;
+      var closes = (c.match(/<\/[a-z][a-z0-9-]*\s*>/gi) || []).length;
       depth = Math.max(0, depth + opens - closes);
-      if (/<pre[\s>]/i.test(t) && !/<\/pre>/i.test(t)) inPre = true;
+      var blk = /<(style|script)[\s>]/i.exec(c);
+      if (blk && !new RegExp("</" + blk[1] + "\\s*>", "i").test(c)) inBlock = blk[1].toLowerCase();
+      if (/<pre[\s>]/i.test(c) && !/<\/pre>/i.test(c)) inPre = true;
       return out;
     })
     .join("\n");
@@ -1895,14 +1919,14 @@ function codeEditor(ta, web) {
     }
     if (web && s === ta.selectionEnd) {
       var nx = v.charAt(s);
-      if (PAIRS[e.key] && !/\w/.test(nx)) {
-        e.preventDefault();
-        insertPair(ta, e.key);
-        return;
-      }
       if (nx === e.key && (e.key === '"' || e.key === ")" || e.key === "]" || e.key === "}")) {
         e.preventDefault(); // typing the closing mark that is already there just steps over it
         ta.setSelectionRange(s + 1, s + 1);
+        return;
+      }
+      if (PAIRS[e.key] && !/\w/.test(nx)) {
+        e.preventDefault();
+        insertPair(ta, e.key);
         return;
       }
       if (e.key === "Backspace" && s > 0 && PAIRS[v.charAt(s - 1)] === nx) {
