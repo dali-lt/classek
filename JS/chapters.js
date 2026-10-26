@@ -3098,59 +3098,42 @@ function paintMe() {
     c.setAttribute("class", cls);
     return c;
   }
-  // one ring, two halves: Programmation (blue, right) and STI (green, left), each filling with its own progress.
-  // With a single subject on the site the ring stays whole.
-  var bySub = {};
+  // the ring as before (the done part, one empty track with round ends and a small gap), but the done part is
+  // coloured by subject: Programmation blue, STI green, side by side in proportion to what was done in each
+  var subDone = { prog: 0, sti: 0 };
   S.chapters.forEach(function (c) {
-    var n = Number(c.exerciseCount) || 0;
-    if (!n) return;
-    var o = bySub[c.subject] || (bySub[c.subject] = { done: 0, total: 0 });
-    o.total += n;
-    o.done += doneCount(c);
+    if (subDone[c.subject] === undefined) return;
+    subDone[c.subject] += doneCount(c);
   });
-  var halves = ["prog", "sti"].filter(function (k) {
-    return bySub[k] && bySub[k].total > 0;
+  var parts = ["prog", "sti"].filter(function (k) {
+    return subDone[k] > 0;
   });
-  if (halves.length === 2) {
-    var CAPW = 4; // half of the stroke width: a round cap sticks out this much past each end
-    var G = 6; // visible gap between the two halves
-    var L = C / 2 - G - 2 * CAPW;
-    halves.forEach(function (k, h) {
-      var sp = bySub[k].done / bySub[k].total;
-      var from = h * (C / 2) + G / 2 + CAPW;
-      var tr = circle("me-ring-bg is-cap is-" + k);
-      tr.setAttribute("stroke-linecap", "round");
-      tr.setAttribute("stroke-dasharray", L + " " + C);
-      tr.setAttribute("stroke-dashoffset", String(-from));
-      var tt = document.createElementNS(svgNS, "title");
-      tt.textContent = t("s_" + k) + " · " + bySub[k].done + "/" + bySub[k].total;
-      tr.append(tt);
-      svg.append(tr);
-      if (sp > 0) {
-        var fg = circle("me-ring-fg is-" + k);
-        fg.setAttribute("stroke-linecap", "round");
-        var flen = Math.max(0.1, L * sp);
-        fg.setAttribute("stroke-dasharray", flen + " " + C);
-        // both halves grow away from the top, like a mirror: blue clockwise on the right, green counter-clockwise on the left
-        fg.setAttribute("stroke-dashoffset", String(-(h === 0 ? from : from + L - flen)));
-        svg.append(fg);
-      }
-    });
-  } else
+  var doneSum = parts.reduce(function (n, k) {
+    return n + subDone[k];
+  }, 0);
   if (pct <= 0) {
     svg.append(circle("me-ring-bg")); // nothing done yet: the whole track
-  } else if (pct >= 100) {
-    svg.append(circle("me-ring-fg"));
   } else {
-    // two arcs with round ends that meet with a small gap (not a fill sliding under the track)
+    var full = pct >= 100;
     var GAP = 13;
-    var L1 = (C * pct) / 100;
+    var L1 = (C * Math.min(pct, 100)) / 100;
+    var SEG = 12; // gap between the blue and the green part (round caps eat 8 of it)
+    var avail = L1 - (parts.length - 1) * SEG;
+    var pos = 0;
+    parts.forEach(function (k) {
+      var len = Math.max(0.1, (avail * subDone[k]) / doneSum);
+      var arc = circle("me-ring-fg" + (k === "sti" ? " is-sti" : ""));
+      arc.setAttribute("stroke-linecap", "round");
+      arc.setAttribute("stroke-dasharray", len + " " + C);
+      arc.setAttribute("stroke-dashoffset", String(-pos));
+      var tt = document.createElementNS(svgNS, "title");
+      tt.textContent = t("s_" + k) + " · " + subDone[k];
+      arc.append(tt);
+      svg.append(arc);
+      pos += len + SEG;
+    });
     var rest = C - L1 - 2 * GAP;
-    var arc = circle("me-ring-fg");
-    arc.setAttribute("stroke-linecap", "round");
-    arc.setAttribute("stroke-dasharray", Math.max(0.1, L1 - 0) + " " + C);
-    svg.append(arc);
-    if (rest > 1) {
+    if (!full && rest > 1) {
       var tr = circle("me-ring-bg is-cap");
       tr.setAttribute("stroke-linecap", "round");
       tr.setAttribute("stroke-dasharray", rest + " " + C);
