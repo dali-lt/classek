@@ -72,6 +72,8 @@ var STR = {
     liveTitle: "Résultat en direct",
     liveEmpty: "Le résultat apparaît ici dès que tu écris du code.",
     tryIt: "Exécuter",
+    copyCode: "Copier le code",
+    copied: "Copié",
     tryBack: "Revenir à l’exemple",
     pgClose: "Fermer",
     liveReload: "Recharger",
@@ -190,6 +192,8 @@ var STR = {
     liveTitle: "النتيجة مباشرة",
     liveEmpty: "النتيجة تظهر هنا كي تبدا تكتب الكود.",
     tryIt: "شغّل",
+    copyCode: "نسخ الكود",
+    copied: "تم النسخ",
     tryBack: "ارجع للمثال",
     pgClose: "سكّر",
     liveReload: "أعد التحميل",
@@ -587,6 +591,43 @@ function runButton() {
   b.setAttribute("aria-label", t("tryIt"));
   return b;
 }
+var COPY_ICON = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V6.5A2.5 2.5 0 0 1 7.5 4H15"/></svg>';
+var CHECK_ICON = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+// solutions are for reading: an icon that copies the code (the code itself cannot be edited there)
+function copyButton(code) {
+  var b = el("button", "pg-copy");
+  b.type = "button";
+  b.innerHTML = COPY_ICON; // static, trusted SVG
+  b.title = t("copyCode");
+  b.setAttribute("aria-label", t("copyCode"));
+  b.addEventListener("click", function () {
+    function done() {
+      b.innerHTML = CHECK_ICON;
+      b.classList.add("is-done");
+      b.title = t("copied");
+      setTimeout(function () {
+        b.innerHTML = COPY_ICON;
+        b.classList.remove("is-done");
+        b.title = t("copyCode");
+      }, 1500);
+    }
+    function fallback() {
+      var ta = document.createElement("textarea");
+      ta.value = code;
+      ta.style.cssText = "position:fixed;opacity:0;top:0;left:0";
+      document.body.append(ta);
+      ta.select();
+      try {
+        document.execCommand("copy");
+        done();
+      } catch (e) {}
+      ta.remove();
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(done, fallback);
+    else fallback();
+  });
+  return b;
+}
 var FILE_NAME = { html: "index.html", htmlsrc: "index.html", css: "styles.css", js: "app.js", php: "page.php", sql: "requete.sql" };
 function webTokens(code, lang) {
   var pre = webBlock(code, lang);
@@ -857,6 +898,8 @@ function webExample(code, lang, noRun) {
       openPlayground({ code: code });
     });
     win.bar.append(tryBtn);
+  } else if (noRun) {
+    win.bar.append(copyButton(code));
   }
   box.append(win.win);
   return box;

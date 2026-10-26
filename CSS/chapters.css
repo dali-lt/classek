@@ -3385,3 +3385,11 @@ body:has(.av-modal) .ch-back.ch-back-float {
 }
 .ex-tool.is-reindent { margin-inline-start: auto; font-family: inherit; font-weight: 700; }
 @media (max-width: 560px) { .pg-tools .ex-tool.is-reindent { margin-inline-start: 0; } }
+.pg-copy {
+  display: inline-grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 0; border-radius: 50%; cursor: pointer;
+  background: rgba(255, 255, 255, 0.1); color: #cfe0ff; transition: background 0.15s, color 0.15s;
+}
+.pg-copy:hover { background: rgba(255, 255, 255, 0.2); color: #fff; }
+.pg-copy.is-done { background: #aee37b; color: #10260a; }
+.pg-copy:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.code-web .pg-static { user-select: text; }
