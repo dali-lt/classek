@@ -3,7 +3,7 @@
    The profile card ("My account") reuses the teacher app's modal look (style.css)
    and saves to users/{uid}/meta/profile. */
 
-import { Chapters } from "./chapters.js?v=84";
+import { Chapters } from "./chapters.js?v=85";
 import * as Cy from "./cycle.js?v=68";
 import {
   MAX_SHOWN,
@@ -117,6 +117,7 @@ var STR = {
     profileNotSet: "Non renseigné",
     profileSaved: "Ton profil a été enregistré.",
     profileSyncing: "Chargement de tes informations…",
+    profileWelcome: "Bienvenue sur Classek ! Complète ton profil pour commencer.",
     saveFail: "Enregistrement impossible. Réessaie.",
     genderMale: "Garçon",
     genderFemale: "Fille",
@@ -296,6 +297,7 @@ var STR = {
     profileNotSet: "موش محدد",
     profileSaved: "تم حفظ البروفايل.",
     profileSyncing: "جاري تحميل معلوماتك…",
+    profileWelcome: "مرحبا بيك في Classek ! كمّل البروفايل متاعك باش تبدأ.",
     saveFail: "ما نجمناش نحفظو. عاود جرّب.",
     genderMale: "ذكر",
     genderFemale: "أنثى",
@@ -1060,6 +1062,21 @@ function renderPage() {
 function modalIsOpen() {
   return $("pOverlay").classList.contains("open");
 }
+// first visit of a new account: the profile form opens by itself (right after the Google account is chosen),
+// then the level test is offered
+var setupPending = false;
+function openSetup() {
+  setupPending = true;
+  editing = true;
+  justSaved = false;
+  renderModal();
+  $("pOverlay").classList.add("open");
+}
+function afterSetup() {
+  if (!setupPending) return;
+  setupPending = false;
+  if (placementLoaded && !placement) openTest();
+}
 function openModal() {
   editing = false;
   justSaved = false;
@@ -1069,6 +1086,7 @@ function openModal() {
 function closeModal() {
   $("pOverlay").classList.remove("open");
   editing = false;
+  afterSetup();
 }
 function row(label, value, ltr) {
   var r = el("div", "me-row");
@@ -1134,6 +1152,7 @@ function renderModal() {
   }
 
   var form = el("form", "me-form");
+  if (setupPending) form.append(el("p", "me-welcome", t("profileWelcome")));
   function field(labelText, value, type, max, placeholder) {
     var label = el("label", "me-field");
     label.append(el("span", "me-row-label", labelText));
@@ -1310,8 +1329,12 @@ function renderModal() {
       await saveProfile(next);
       profile = next;
       editing = false;
-      justSaved = true;
+      justSaved = !setupPending;
       renderPage();
+      if (setupPending) {
+        closeModal(); // the profile is ready: on to the level test
+        return;
+      }
       renderModal();
     } catch (err) {
       saveBtn.disabled = false;
@@ -3249,8 +3272,10 @@ async function main() {
     }
     paintWeek();
     renderPlacementCard();
+    var profileChecked = false;
     try {
       var ps = await sdk.getDoc(profileRef);
+      profileChecked = true;
       if (ps.exists()) {
         var d = ps.data();
         profile = {
@@ -3268,7 +3293,18 @@ async function main() {
     }
     profileLoaded = true;
     renderPage();
-    if (!placement) openTest(); // first visit: offer the test once (skippable)
+    // a new account (no name and no level saved yet): the profile form comes first, asked once per account on this device
+    var setupKey = "cl.setup." + u.uid;
+    var seenSetup = false;
+    try {
+      seenSetup = !!window.localStorage.getItem(setupKey);
+    } catch (e) {}
+    if (profileChecked && !seenSetup && !profile.firstName && !profile.lastName && !profile.level) {
+      try {
+        window.localStorage.setItem(setupKey, "1");
+      } catch (e) {}
+      openSetup();
+    } else if (!placement) openTest(); // first visit: offer the test once (skippable)
   });
 }
 

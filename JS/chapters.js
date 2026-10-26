@@ -3098,6 +3098,45 @@ function paintMe() {
     c.setAttribute("class", cls);
     return c;
   }
+  // one ring, two halves: Programmation (blue, right) and STI (green, left), each filling with its own progress.
+  // With a single subject on the site the ring stays whole.
+  var bySub = {};
+  S.chapters.forEach(function (c) {
+    var n = Number(c.exerciseCount) || 0;
+    if (!n) return;
+    var o = bySub[c.subject] || (bySub[c.subject] = { done: 0, total: 0 });
+    o.total += n;
+    o.done += doneCount(c);
+  });
+  var halves = ["prog", "sti"].filter(function (k) {
+    return bySub[k] && bySub[k].total > 0;
+  });
+  if (halves.length === 2) {
+    var CAPW = 4; // half of the stroke width: a round cap sticks out this much past each end
+    var G = 6; // visible gap between the two halves
+    var L = C / 2 - G - 2 * CAPW;
+    halves.forEach(function (k, h) {
+      var sp = bySub[k].done / bySub[k].total;
+      var from = h * (C / 2) + G / 2 + CAPW;
+      var tr = circle("me-ring-bg is-cap is-" + k);
+      tr.setAttribute("stroke-linecap", "round");
+      tr.setAttribute("stroke-dasharray", L + " " + C);
+      tr.setAttribute("stroke-dashoffset", String(-from));
+      var tt = document.createElementNS(svgNS, "title");
+      tt.textContent = t("s_" + k) + " · " + bySub[k].done + "/" + bySub[k].total;
+      tr.append(tt);
+      svg.append(tr);
+      if (sp > 0) {
+        var fg = circle("me-ring-fg is-" + k);
+        fg.setAttribute("stroke-linecap", "round");
+        var flen = Math.max(0.1, L * sp);
+        fg.setAttribute("stroke-dasharray", flen + " " + C);
+        // both halves grow away from the top, like a mirror: blue clockwise on the right, green counter-clockwise on the left
+        fg.setAttribute("stroke-dashoffset", String(-(h === 0 ? from : from + L - flen)));
+        svg.append(fg);
+      }
+    });
+  } else
   if (pct <= 0) {
     svg.append(circle("me-ring-bg")); // nothing done yet: the whole track
   } else if (pct >= 100) {
@@ -3167,6 +3206,7 @@ function paintResume() {
   }
   var n = Number(ch.exerciseCount) || 0;
   var d = doneCount(ch);
+  box.classList.add("is-" + ch.subject); // the progress line takes the colour of the subject
   box.append(el("span", "rs-cap", t(sum.started ? "resumeCap" : "resumeStartCap")));
   var h = el("h2", "rs-title", chapterTitle(ch) || "");
   h.setAttribute("dir", "auto");

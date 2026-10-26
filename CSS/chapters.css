@@ -3414,3 +3414,11 @@ body:has(.av-modal) .ch-back.ch-back-float {
 .pg-swap:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .pg-swap svg { display: block; }
 .pg-win[data-lang="python"] .pg-tools .ex-tool.is-sym { display: none; }
+
+/* ---------- subject colours on progress: Programmation blue, STI green ---------- */
+.me-ring-bg.is-sti { stroke: color-mix(in srgb, var(--color-accent) 42%, #fff); }
+.me-ring-fg.is-sti { stroke: #7ccb45; }
+.s-resume.is-sti .rs-bar > i { background: var(--color-accent); }
+.subject-card.is-sti .sc-bar.seg { --seg-track: color-mix(in srgb, var(--color-accent) 40%, #fff); }
+.subject-card.is-sti .sc-bar.seg > i { background: #7ccb45; }
+.me-welcome { margin: 0 0 4px; padding: 10px 14px; border-radius: 14px; background: var(--color-light-blue); color: var(--color-primary); font-weight: 700; font-size: 14px; line-height: 1.4; }
