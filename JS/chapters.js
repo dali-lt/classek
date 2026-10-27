@@ -5,7 +5,7 @@
      chapters/{chapterId}/exercises/{exId}                  order, difficulty, lang (algo | python, optional), statement, hints[]  (hint: legacy single string)
      chapters/{chapterId}/exercises/{exId}/private/solution { text }   (fetched only when the student asks for it)
    Student progress:
-     users/{uid}/progress/{chapterId}                       { status: { exId: "done" | "review" } }
+     users/{uid}/progress/{chapterId}                       { status: { exId: "done" | "mid" | "review" } }  (all three = the exercise is finished)
 
    The page chrome is in the student's language (EN / AR); the course content is French. */
 
@@ -36,7 +36,7 @@ var STR = {
     navHome: "Accueil",
     hello: "Bonjour",
     meSub: "Voici où tu en es.",
-    meNote: "À revoir = les exercices que tu as marqués « pas encore compris ».",
+    meNote: "Terminés = tous les exercices évalués (Correct, Moyen ou Faux). À revoir = ceux que tu as marqués Moyen ou Faux.",
     mePct: "de progression totale",
     stDone: "Terminés",
     stReview: "À revoir",
@@ -107,6 +107,7 @@ var STR = {
     evalOk: "Correct à 100 %",
     evalMid: "Moyen",
     evalBad: "Faux",
+    evalAuto: "Tu n’as presque rien répondu : l’exercice est compté « Faux » automatiquement.",
     evalMine: "Ton évaluation",
     loadSol: "Chargement de la solution…",
     done: "Réussi",
@@ -170,7 +171,7 @@ var STR = {
     navHome: "الرئيسية",
     hello: "مرحبا",
     meSub: "هذا وين وصلت.",
-    meNote: "للمراجعة = التمارين اللي حطّيتها «ما فهمتهاش مليح».",
+    meNote: "منجزة = كل التمارين اللي قيّمتها (صحيح، متوسط أو غلط). للمراجعة = اللي حطّيتها متوسط أو غلط.",
     mePct: "من التقدّم الكلي",
     stDone: "منجزة",
     stReview: "للمراجعة",
@@ -241,6 +242,7 @@ var STR = {
     evalOk: "صحيح 100%",
     evalMid: "متوسط",
     evalBad: "غلط",
+    evalAuto: "ما جاوبتش على أغلب الأسئلة: التمرين يتحسب « غلط » أوتوماتيكيا.",
     evalMine: "تقييمك",
     loadSol: "نحمّلو في الحل…",
     done: "صحيح",
@@ -350,7 +352,7 @@ var S = {
   loading: false,
   failed: false,
   chapters: [],
-  status: {}, // chapterId -> { exId: "done" | "review" }
+  status: {}, // chapterId -> { exId: "done" | "mid" | "review" }: any of the three means finished
   notes: [], // all of the student's notes, newest first
   notesOk: true,
   subject: null,
@@ -1332,7 +1334,7 @@ function statusOf(chId) {
 function doneCount(ch) {
   var st = statusOf(ch.id);
   return Object.keys(st).filter(function (k) {
-    return st[k] === "done";
+    return st[k] === "done" || st[k] === "mid" || st[k] === "review"; // Correct, Moyen or Faux: the exercise is finished
   }).length;
 }
 
@@ -1599,7 +1601,7 @@ async function loadSolution(chId, exId) {
   solutions[key] = snap.exists() ? String(snap.data().text || "") : "";
 }
 
-async function setStatus(chId, exId, value) {
+async function setStatus(chId, exId, value, opts) {
   var sdk = ctx.sdk;
   var before = S.status[chId];
   var before_val = before ? before[exId] : undefined;
@@ -1613,7 +1615,7 @@ async function setStatus(chId, exId, value) {
       { merge: true },
     );
     rowError[chId + "/" + exId] = "";
-    if (value === "done" && before_val !== "done" && ctx.onDone) {
+    if (!before_val && !(opts && opts.auto) && ctx.onDone) {
       try {
         ctx.onDone(chId, exId); // a finished exercise counts as a study day
       } catch (e2) {}
@@ -2572,6 +2574,16 @@ function currentExerciseId(ch) {
   return null;
 }
 
+// true when none or most (more than half) of the answer boxes are empty: such an exercise is Faux without asking
+function mostlyEmpty(boxes) {
+  if (!boxes.length) return false;
+  var empty = boxes.filter(function (b) {
+    return !String(b.value || "").trim();
+  }).length;
+  return empty * 2 > boxes.length;
+}
+var autoMarked = {}; // "chapterId/exId" -> the automatic Faux was already sent once
+
 function exerciseCard(ch, ex, index) {
   var key = ch.id + "/" + ex.id;
   var st = statusOf(ch.id)[ex.id];
@@ -2810,9 +2822,9 @@ function exerciseCard(ch, ex, index) {
     var sol = el("div", "ex-solution");
     sol.append(el("div", "ex-sol-title", t("solution")), md(solutions[key], { noRun: true }));
     var mark = el("div", "ex-actions");
-    function choose(value) {
+    function choose(value, auto) {
       return async function () {
-        await setStatus(ch.id, ex.id, value);
+        await setStatus(ch.id, ex.id, value, { auto: !!auto });
         delete deskOpen[key]; // back to the default: the exercise the student has reached is the open one
         openEx[ch.id] = undefined;
         render();
@@ -2825,10 +2837,28 @@ function exerciseCard(ch, ex, index) {
         }
       };
     }
+    var autoWrong = !st && !!answersLoaded[ch.id] && mostlyEmpty(boxes); // saved answers must have been read, else an empty box proves nothing
     if (st) {
       var mine = el("div", "ex-eval is-" + st);
       mine.append(el("span", "ex-eval-k", t("evalMine")), el("b", "ex-eval-v", t(st)));
       sol.append(mine);
+      if (st === "review" && answersLoaded[ch.id] && mostlyEmpty(boxes)) sol.append(el("p", "ex-eval-ask", t("evalAuto")));
+    } else if (autoWrong) {
+      sol.append(el("p", "ex-eval-ask", t("evalAuto")));
+      if (!autoMarked[key]) {
+        autoMarked[key] = true;
+        setTimeout(choose("review", true), 0);
+      } else {
+        // the save failed once: one button to try again
+        mark.classList.add("ex-eval-choices");
+        var again = el("button", "pc-btn ev-review", t("retry"));
+        again.type = "button";
+        again.addEventListener("click", function () {
+          again.disabled = true;
+          choose("review", true)();
+        });
+        mark.append(again);
+      }
     } else {
       mark.classList.add("ex-eval-choices");
       var ask = el("p", "ex-eval-ask", t("evalAsk"));
@@ -3326,17 +3356,17 @@ function summary() {
     var st = statusOf(c.id);
     var keys = Object.keys(st);
     var d = keys.filter(function (k) {
-      return st[k] === "done";
+      return st[k] === "done" || st[k] === "mid" || st[k] === "review"; // finished = any of the three evaluations
     }).length;
     var r = keys.filter(function (k) {
-      return st[k] === "review" || st[k] === "mid";
+      return st[k] === "review" || st[k] === "mid"; // to revisit: a part of the finished ones
     }).length;
     total += n;
     done += d;
     review += r;
-    if (d + r < n) {
+    if (d < n) {
       if (!firstOpen) firstOpen = c;
-      if (!started && d + r > 0) started = c;
+      if (!started && d > 0) started = c;
     }
   });
   resume = started || firstOpen;
@@ -3344,7 +3374,7 @@ function summary() {
     total: total,
     done: done,
     review: review,
-    left: Math.max(0, total - done - review),
+    left: Math.max(0, total - done),
     chapter: resume,
     started: !!started,
   };
