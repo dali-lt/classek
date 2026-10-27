@@ -3422,3 +3422,9 @@ body:has(.av-modal) .ch-back.ch-back-float {
 .subject-card.is-sti .sc-bar.seg { --seg-track: color-mix(in srgb, var(--color-accent) 40%, #fff); }
 .subject-card.is-sti .sc-bar.seg > i { background: #7ccb45; }
 .me-welcome { margin: 0 0 4px; padding: 10px 14px; border-radius: 14px; background: var(--color-light-blue); color: var(--color-primary); font-weight: 700; font-size: 14px; line-height: 1.4; }
+
+/* phones: the full-screen editor follows the visible screen (browser bars that slide in and out) and keeps its buttons above the bottom edge */
+.pg-modal { padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+.pg-modal-card { height: min(calc(100dvh - 90px), 780px); }
+@media (max-width: 760px) { .pg-modal { padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)); } .pg-modal-card { height: calc(100dvh - 74px - env(safe-area-inset-bottom, 0px)); } }
+.pg-modal-card .pg-tools, .pg-win.is-answer .pg-tools { padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }

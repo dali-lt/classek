@@ -431,6 +431,49 @@ var KEYWORDS = {
   algo: wordSet("Fonction Procédure DEBUT FIN Si Alors Sinon FinSi Pour de à Faire FinPour Tant que FinTantQue Répéter Jusqu'à Vrai Faux div mod ET OU NON Retourner Lire Écrire"),
   python: wordSet("def if elif else return for while in range and or not True False None break continue pass import from as print len input int float str abs max min is class"),
 };
+// algorithm keywords are recognised whatever the case or accents the student types (fonction, FONCTION, procedure...)
+function plain(s) {
+  return String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+var ALGO_CANON = (function () {
+  var o = Object.create(null);
+  "Fonction Procédure DEBUT FIN Si Alors Sinon FinSi Pour Faire FinPour Tant FinTantQue Répéter Jusqu'à Vrai Faux ET OU NON Retourner Lire Écrire".split(" ").forEach(function (w) {
+    o[plain(w)] = w;
+  });
+  return o;
+})();
+var ALGO_LOWER = wordSet("de que div mod"); // written in lowercase in the manual: coloured, never rewritten
+function lineAround(code, i) {
+  var a = code.lastIndexOf("\n", i - 1) + 1;
+  var b = code.indexOf("\n", i);
+  if (b < 0) b = code.length;
+  return code.slice(a, b).trim();
+}
+// is this word a keyword? DEBUT and FIN only when alone on their line (fin can be a variable)
+function isKeyword(lang, kw, w, code, idx) {
+  if (kw[w]) return true;
+  if (lang !== "algo") return false;
+  var p = plain(w);
+  if (ALGO_LOWER[p]) return true;
+  if (!ALGO_CANON[p]) return false;
+  if (p === "fin" || p === "debut") return plain(lineAround(code, idx)) === p;
+  return true;
+}
+// the text of one line with its keywords written like the manual (finsi -> FinSi); comments and strings are left alone
+function fixAlgoCase(line) {
+  var re = /(\{[^}]*\})|("[^"\n]*")|([A-Za-zÀ-ÿ_'][A-Za-zÀ-ÿ_0-9']*)|([\s\S])/g;
+  var out = "";
+  var m;
+  while ((m = re.exec(line))) {
+    if (m[3]) {
+      var p = plain(m[3]);
+      var c = ALGO_CANON[p];
+      if (c && (p !== "fin" && p !== "debut" ? true : plain(line.trim()) === p)) out += c;
+      else out += m[3];
+    } else out += m[0];
+  }
+  return out;
+}
 // light colouring (keywords, comments) built with DOM nodes only; the text itself is never changed
 function codeBlock(code, lang) {
   var pre = el("pre", "test-code" + (lang ? " code-" + lang : ""));
@@ -579,7 +622,7 @@ function webBlock(code, lang) {
     while ((m = rp.exec(code))) {
       if (m[1]) add("tk-com", m[1]);
       else if (m[2]) add("tk-str", m[2]);
-      else if (m[3]) add(kwp[m[3]] ? "tk-kw" : "", m[3]);
+      else if (m[3]) add(isKeyword(lang, kwp, m[3], code, m.index) ? "tk-kw" : "", m[3]);
       else if (m[4]) add("tk-num", m[4]);
       else add("", m[0]);
     }
@@ -2099,6 +2142,11 @@ function codeEditor(ta, web, pairs) {
     var s = ta.selectionStart;
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
+      if (pairs && codeLangOf(ta) === "algo") {
+        fixRange(ta, lineStartOf(v, s), s); // finsi -> FinSi before the new line starts
+        v = ta.value;
+        s = ta.selectionStart;
+      }
       var before = v.slice(lineStartOf(v, s), s);
       var indent = /^[ \t]*/.exec(before)[0];
       if (web) {
@@ -2143,9 +2191,31 @@ function codeEditor(ta, web, pairs) {
       }
     }
   });
+  // phone keyboards often send the line break without a usable keydown: fix the line that was just left
+  ta.addEventListener("input", function (e) {
+    if (!pairs || e.inputType !== "insertLineBreak" || codeLangOf(ta) !== "algo") return;
+    var c = ta.selectionStart;
+    if (c < 1) return;
+    fixRange(ta, lineStartOf(ta.value, c - 1), c - 1);
+  });
   ta.addEventListener("blur", function () {
     delete ta.dataset.free;
   });
+}
+function codeLangOf(ta) {
+  var w = ta.closest ? ta.closest(".pg-win") : null;
+  return w ? w.getAttribute("data-lang") : "";
+}
+// rewrites the keywords of v[a..b] and keeps the caret where it was (Ctrl+Z still works)
+function fixRange(ta, a, b) {
+  var seg = ta.value.slice(a, b);
+  var fx = fixAlgoCase(seg);
+  if (fx === seg) return;
+  var c = ta.selectionStart;
+  ta.setSelectionRange(a, b);
+  editText(ta, fx);
+  var nc = c >= b ? c + (fx.length - seg.length) : Math.min(c, a + fx.length);
+  ta.setSelectionRange(nc, nc);
 }
 
 function autoGrow(ta) {
