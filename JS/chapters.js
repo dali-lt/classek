@@ -815,7 +815,7 @@ function liveFrame(getCode, title) {
   bar.append(reload);
   var frame = document.createElement("iframe");
   frame.className = "live-iframe";
-  frame.setAttribute("sandbox", "allow-scripts allow-forms allow-modals");
+  frame.setAttribute("sandbox", "allow-scripts allow-modals");
   frame.setAttribute("title", t("liveTitle"));
   var empty = el("p", "live-empty", t("liveEmpty"));
   var timer = null;
