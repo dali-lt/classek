@@ -3462,7 +3462,10 @@ body:has(.av-modal) .ch-back.ch-back-float {
 
 /* ---- update92: playground = code | (exercise + expected page) over (my live result); phones: all stacked ---- */
 .pg-side { grid-template-rows: minmax(0, 0.9fr) minmax(0, 1.1fr); }
-.pg-task { display: flex; flex-direction: column; min-height: 0; background: #fff; border-radius: 22px; overflow: hidden; border-inline-start: 6px solid var(--color-primary); }
+.pg-task { display: flex; flex-direction: column; min-height: 0; background: var(--tint, #fff); border-radius: 22px; overflow: hidden; }
+.pg-task.d-easy { --tint: color-mix(in srgb, var(--color-accent) 38%, var(--color-surface)); }
+.pg-task.d-medium { --tint: color-mix(in srgb, var(--color-primary) 13%, var(--color-surface)); }
+.pg-task.d-bac { --tint: color-mix(in srgb, #e64d6b 14%, var(--color-surface)); }
 .pg-views { display: flex; gap: 4px; padding: 10px 12px 4px; flex: none; }
 .pg-vw { min-height: 30px; padding: 4px 14px; border: 0; border-radius: 999px; background: transparent; color: var(--color-text-muted); font: inherit; font-size: 12.5px; font-weight: 800; cursor: pointer; }
 .pg-vw[aria-pressed="true"] { background: var(--color-navy); color: #fff; }

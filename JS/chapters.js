@@ -1036,7 +1036,7 @@ function openPlayground(opts) {
   if (opts.statement || expFrame) {
     // right side: the exercise (and, as a second tab, the expected page) above, the student's own live result below
     card.classList.add("has-task");
-    var task = el("div", "pg-task");
+    var task = el("div", "pg-task d-" + (opts.tone || "easy"));
     side = el("div", "pg-side");
     var views = el("div", "pg-views"); // wide screens: exercise | expected page, above the live result
     var views3 = el("div", "pg-views pg-views3"); // phones: exercise | expected page | my live result, in one panel under the code
@@ -2478,6 +2478,7 @@ function answerBox(ch, ex, boxId, placeholder, onInput, rows, asCode) {
       openPlayground({
         code: ta.value,
         title: starterTitle(ch, ex),
+        tone: ex.difficulty === "bac" || ex.difficulty === "medium" ? ex.difficulty : "easy",
         statement: (ex.statement || "")
           .replace(/```htmlview\n?[\s\S]*?```/g, "")
           .replace(/\n[^\n]*:\s*$/, function (m) {
