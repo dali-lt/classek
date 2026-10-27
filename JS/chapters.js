@@ -95,6 +95,8 @@ var STR = {
     symGe: "Supérieur ou égal (≥)",
     indent: "Indenter",
     reindent: "Tout indenter",
+    skeleton: "Structure",
+    skeletonTitle: "Insérer la structure de base d’une page HTML",
     outdent: "Désindenter",
     showSolution: "Afficher la solution",
     solution: "Solution",
@@ -219,6 +221,8 @@ var STR = {
     symGe: "أكبر أو يساوي (≥)",
     indent: "إزاحة",
     reindent: "ترتيب الكود",
+    skeleton: "الهيكل",
+    skeletonTitle: "إدراج هيكل صفحة HTML الأساسي",
     outdent: "تراجع",
     showSolution: "شوف الحل",
     solution: "الحل",
@@ -859,7 +863,7 @@ function liveFrame(getCode, title) {
   };
 }
 var WEB_SYMBOLS = [["<", "<"], [">", ">"], ["</", "</"], ["\"", "\""], ["=", "="], ["/>", "/>"]];
-function webTools(ta) {
+function webTools(ta, getTitle) {
   var tools = el("div", "ex-tools pg-tools");
   WEB_SYMBOLS.forEach(function (b) {
     var btn = el("button", "ex-tool is-sym", b[0]);
@@ -875,8 +879,63 @@ function webTools(ta) {
     });
     tools.append(btn);
   });
+  tools.append(skeletonButton(ta, getTitle || function () {
+    return "Ma page";
+  }));
   tools.append(reindentButton(ta));
   return tools;
+}
+// the base of every HTML page, written for the student: doctype, html, head (charset, title) and an empty body
+function escHtml(v) {
+  return String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+function skeletonHtml(title, inner) {
+  var body = inner ? String(inner).replace(/\s+$/, "").split("\n").map(function (l) {
+    return l ? "  " + l : l;
+  }).join("\n") : "  ";
+  return '<!doctype html>\n<html lang="fr">\n<head>\n  <meta charset="utf-8">\n  <title>' + escHtml(title) + "</title>\n</head>\n<body>\n" + body + "\n</body>\n</html>";
+}
+// the page title that fits the exercise: the tab title the statement asks for, else the main title of the expected page, else the chapter title
+function starterTitle(ch, ex) {
+  var st = String(ex.statement || "");
+  var m = /titre de l['’]onglet[^«"\n]{0,30}«\s*([^»]+?)\s*»/i.exec(st);
+  if (m) return m[1];
+  var view = /```htmlview\n?([\s\S]*?)```/.exec(st);
+  if (view) {
+    var tt = /<title>([^<]+)<\/title>/i.exec(view[1]) || /<h1[^>]*>([^<]+)<\/h1>/i.exec(view[1]);
+    if (tt) return tt[1].trim();
+  }
+  return chapterTitle(ch) || "";
+}
+// exercises about the skeleton itself, or that give a page to correct, start empty
+function wantsStarter(ex) {
+  if (ex.starter === "none") return false;
+  var st = String(ex.statement || "");
+  return !/```htmlsrc/.test(st) && !/minimale/i.test(st);
+}
+function skeletonCaret(code) {
+  var i = code.indexOf("<body>\n");
+  return i < 0 ? code.length : i + "<body>\n".length + 2;
+}
+function skeletonButton(ta, getTitle) {
+  var btn = el("button", "ex-tool is-reindent is-skel", "⟨/⟩ " + t("skeleton"));
+  btn.type = "button";
+  btn.title = t("skeletonTitle");
+  btn.setAttribute("aria-label", t("skeletonTitle"));
+  btn.addEventListener("pointerdown", function (e) {
+    e.preventDefault();
+  });
+  btn.addEventListener("click", function () {
+    var v = ta.value;
+    if (/<html[\s>]/i.test(v) || /<!doctype/i.test(v)) return; // already a full page
+    var code = skeletonHtml(getTitle(), v.trim() ? v : "");
+    ta.focus();
+    ta.setSelectionRange(0, v.length);
+    editText(ta, code);
+    var c = v.trim() ? code.length : skeletonCaret(code);
+    ta.setSelectionRange(c, c);
+  });
+  return btn;
 }
 function reindentButton(ta) {
   var btn = el("button", "ex-tool is-reindent", "≡ " + t("reindent"));
@@ -910,7 +969,9 @@ function openPlayground(opts) {
   win.useField(ta);
   var wrapL = el("div", "ex-box");
   wrapL.append(win.win);
-  win.win.append(webTools(ta));
+  win.win.append(webTools(ta, function () {
+    return opts.title || "Ma page";
+  }));
   var live = liveFrame(
     function () {
       return ta.value;
@@ -2252,6 +2313,24 @@ function answerBox(ch, ex, boxId, placeholder, onInput, rows, asCode) {
   ta.setAttribute("lang", "fr");
   ta.placeholder = placeholder;
   ta.value = drafts[dk] || "";
+  var starter = "";
+  if (ex.lang === "html" && drafts[dk] === undefined && wantsStarter(ex)) {
+    // nothing typed yet: the base of the page is already there, with a title that fits this exercise
+    starter = skeletonHtml(starterTitle(ch, ex));
+    ta.value = starter;
+    var placed = false;
+    ta.addEventListener("focus", function () {
+      if (placed) return;
+      placed = true;
+      setTimeout(function () {
+        // after the click has put its own caret: start inside <body>
+        if (ta.value === starter) {
+          var c = skeletonCaret(starter);
+          ta.setSelectionRange(c, c);
+        }
+      }, 0);
+    });
+  }
   codeEditor(ta, ex.lang === "html", progCode);
   ta.addEventListener("input", function () {
     drafts[dk] = ta.value;
@@ -2308,6 +2387,9 @@ function answerBox(ch, ex, boxId, placeholder, onInput, rows, asCode) {
   });
   var wrap = el("div", "ex-box");
   if (ex.lang === "html") {
+    tools.append(skeletonButton(ta, function () {
+      return starterTitle(ch, ex);
+    }));
     tools.append(reindentButton(ta));
     var cw = codeWindow("html");
     cw.useField(ta);
@@ -2319,6 +2401,7 @@ function answerBox(ch, ex, boxId, placeholder, onInput, rows, asCode) {
       var em = /```htmlview\n?([\s\S]*?)```/.exec(ex.statement || "");
       openPlayground({
         code: ta.value,
+        title: starterTitle(ch, ex),
         expected: em ? em[1].replace(/\n+$/, "") : "",
         onChange: function (v) {
           ta.value = v;

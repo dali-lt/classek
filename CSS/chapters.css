@@ -3428,3 +3428,7 @@ body:has(.av-modal) .ch-back.ch-back-float {
 .pg-modal-card { height: min(calc(100dvh - 90px), 780px); }
 @media (max-width: 760px) { .pg-modal { padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)); } .pg-modal-card { height: calc(100dvh - 74px - env(safe-area-inset-bottom, 0px)); } }
 .pg-modal-card .pg-tools, .pg-win.is-answer .pg-tools { padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
+/* HTML tool row: "Structure" and "Tout indenter" sit together on the right */
+.ex-tool.is-skel { margin-inline-start: auto; }
+.ex-tool.is-skel + .ex-tool.is-reindent { margin-inline-start: 0; }
+@media (max-width: 560px) { .ex-tool.is-skel { margin-inline-start: 0; } }
