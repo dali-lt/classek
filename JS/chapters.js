@@ -102,8 +102,15 @@ var STR = {
     solution: "Solution",
     gotIt: "J’ai compris",
     reviewLater: "À revoir",
-    done: "Terminé",
-    review: "À revoir",
+    evalAsk: "Comment s’est passé ton exercice ? (choix définitif)",
+    evalOk: "Correct à 100 %",
+    evalMid: "Moyen",
+    evalBad: "Faux",
+    evalMine: "Ton évaluation",
+    loadSol: "Chargement de la solution…",
+    done: "Réussi",
+    mid: "Moyen",
+    review: "Faux",
     d_easy: "Facile",
     d_medium: "Moyen",
     d_bac: "Niveau Bac",
@@ -228,8 +235,15 @@ var STR = {
     solution: "الحل",
     gotIt: "نجحت",
     reviewLater: "نراجعو بعد",
-    done: "مكتمل",
-    review: "للمراجعة",
+    evalAsk: "كيفاش مشى التمرين ؟ (اختيار نهائي)",
+    evalOk: "صحيح 100%",
+    evalMid: "متوسط",
+    evalBad: "غلط",
+    evalMine: "تقييمك",
+    loadSol: "نحمّلو في الحل…",
+    done: "صحيح",
+    mid: "متوسط",
+    review: "غلط",
     d_easy: "سهل",
     d_medium: "متوسط",
     d_bac: "مستوى الباك",
@@ -347,6 +361,7 @@ var saveState = {}; // "chapterId/exId" -> "saving" | "saved" | "error"
 var saveVer = {}; // "chapterId/exId" -> counter, to know if more was typed while a save was running
 var hintShown = {}; // "chapterId/exId" -> how many hints the student has revealed (one per click)
 var deskOpen = {}; // "chapterId/exId" -> true/false once the student opened/closed an exercise on a wide screen (until then: only finished exercises are closed)
+var autoSol = {}; // "chapterId/exId" -> the solution of an evaluated exercise is being loaded
 var openEx = {}; // chapterId -> id of the exercise that is open on phones (the others are one row each)
 var tabs = {}; // chapterId -> "course" | "ex" | "notes": what the middle of the chapter page shows
 var notesWide = window.matchMedia("(min-width: 1101px)"); // wide: notes sit in a column on the right; narrower: they are a third tab
@@ -1885,6 +1900,8 @@ function icon(svg, cls) {
 
 var ICON_CHECK_PIN =
   '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
+var ICON_MID_PIN =
+  '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"><path d="M6 12h12"/></svg>';
 var ICON_REVIEW_PIN =
   '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 14-5.3L20 9"/><path d="M20 4v5h-5"/></svg>';
 
@@ -2211,6 +2228,7 @@ function reindentField(ta) {
 function codeEditor(ta, web, pairs) {
   if (web) ta.dataset.web = "1";
   ta.addEventListener("keydown", function (e) {
+    if (ta.readOnly) return;
     if (e.isComposing || e.ctrlKey || e.metaKey || e.altKey) return;
     if (e.key === "Escape") {
       ta.dataset.free = "1"; // the next Tab leaves the box (keyboard users are never trapped)
@@ -2309,6 +2327,10 @@ function fixRange(ta, a, b) {
 function autoGrow(ta) {
   // starts small and grows with what is typed (up to a limit, then it scrolls)
   if (!ta.scrollHeight) return; // not on screen (a closed exercise): try again when it opens
+  if (ta.closest && ta.closest(".pg-edit")) {
+    ta.style.height = ""; // code window: the box has a fixed maximum height and scrolls, the field just fills it
+    return;
+  }
   ta.style.height = "auto";
   ta.style.height = Math.min(ta.scrollHeight + 2, 380) + "px";
 }
@@ -2524,13 +2546,8 @@ function exerciseCard(ch, ex, index) {
   // only the exercise the student has reached is open; every other one is a row that opens on a click (answers included).
   // Wide screens: any number can be open. Phones: one at a time (null = the student closed them all)
   var reached = currentExerciseId(ch) === ex.id;
-  var isOpenCard = wide
-    ? deskOpen[key] !== undefined
-      ? deskOpen[key]
-      : reached
-    : openEx[ch.id] !== undefined
-      ? openEx[ch.id] === ex.id
-      : reached;
+  // one exercise open at a time (wide screens too): opening another one closes the previous one
+  var isOpenCard = openEx[ch.id] !== undefined ? openEx[ch.id] === ex.id : reached;
   // exercises come one at a time: the ones after the one the student has reached stay locked until it is finished
   var reachedId = currentExerciseId(ch);
   var locked = !st && !!reachedId && !reached;
@@ -2541,7 +2558,7 @@ function exerciseCard(ch, ex, index) {
   );
   card.id = "ex-" + ex.id;
   var pin = el("span", "ex-pin");
-  pin.innerHTML = st === "done" ? ICON_CHECK_PIN : st === "review" ? ICON_REVIEW_PIN : ""; // static, trusted SVG
+  pin.innerHTML = st === "done" ? ICON_CHECK_PIN : st === "mid" ? ICON_MID_PIN : st === "review" ? ICON_REVIEW_PIN : ""; // static, trusted SVG
   var panel = el("div", "ex-panel");
   var work = el("div", "ex-work");
   var hints = hintsOf(ex);
@@ -2577,8 +2594,7 @@ function exerciseCard(ch, ex, index) {
   var prev = previewOf(ex.statement);
   if (prev) sum.append(el("span", "ex-preview", prev));
   sum.addEventListener("click", function () {
-    if (wide) deskOpen[key] = !isOpenCard;
-    else openEx[ch.id] = isOpenCard ? null : ex.id;
+    openEx[ch.id] = isOpenCard ? null : ex.id;
     render();
     if (!isOpenCard) {
       setTimeout(function () {
@@ -2602,7 +2618,7 @@ function exerciseCard(ch, ex, index) {
   card.append(pin, panel, work);
 
   // hints come one at a time: each click puts the next hint on screen in place of the previous one
-  if (hints.length) {
+  if (hints.length && !st) {
     var shown = Math.min(hintShown[key] || 0, hints.length);
     if (shown > 0) {
       var hint = el("div", "ex-hint");
@@ -2629,8 +2645,24 @@ function exerciseCard(ch, ex, index) {
     }
   }
 
-  var isOpen = !!revealed[key];
+  var isOpen = !!revealed[key] || (!!st && solutions[key] !== undefined);
+  if (st && !isOpen && isOpenCard && !autoSol[key]) {
+    // already evaluated: no button, the solution just shows
+    autoSol[key] = true;
+    loadSolution(ch.id, ex.id)
+      .then(function () {
+        revealed[key] = true;
+        card.replaceWith(exerciseCard(ch, ex, index));
+      })
+      .catch(function (e) {
+        console.warn("Couldn’t load the solution:", e);
+        autoSol[key] = false;
+        rowError[key] = t("solFail");
+        card.replaceWith(exerciseCard(ch, ex, index));
+      });
+  }
   var boxes = [];
+  var wraps = [];
   var refresh = function () {};
   var onType = function () {
     refresh();
@@ -2644,6 +2676,7 @@ function exerciseCard(ch, ex, index) {
       item.append(qh, bx.wrap);
       work.append(item);
       boxes.push(bx.ta);
+      wraps.push(bx.wrap);
     });
   } else {
     var labelText = t("answerLabel") + (CODE_LABEL[ex.lang] ? " · " + CODE_LABEL[ex.lang] : "");
@@ -2652,11 +2685,21 @@ function exerciseCard(ch, ex, index) {
     var bx1 = answerBox(ch, ex, "0", t("answerPlaceholder"), onType, 4, asksForCode(ex.statement));
     label.append(bx1.wrap);
     boxes.push(bx1.ta);
+    wraps.push(bx1.wrap);
     if (isWeb) {
       work.append(label);
     } else {
       work.append(label);
     }
+  }
+  if (st) {
+    // evaluated once: the answer can no longer be changed
+    boxes.forEach(function (b) {
+      b.readOnly = true;
+    });
+    wraps.forEach(function (w) {
+      w.classList.add("is-locked");
+    });
   }
   var savedLine = el("small", "ex-saved");
   work.append(savedLine);
@@ -2666,7 +2709,9 @@ function exerciseCard(ch, ex, index) {
     savedLine.classList.toggle("is-error", sv === "error");
   }
 
-  if (!isOpen) {
+  if (!isOpen && st && !rowError[key]) {
+    work.append(el("small", "ex-saved", t("loadSol")));
+  } else if (!isOpen) {
     var actions = el("div", "ex-actions");
     var show = el("button", "pc-btn", t("showSolution"));
     show.type = "button";
@@ -2746,13 +2791,29 @@ function exerciseCard(ch, ex, index) {
         }
       };
     }
-    var ok = el("button", "pc-btn", t("gotIt"));
-    ok.type = "button";
-    ok.addEventListener("click", choose("done"));
-    var later = el("button", "pc-btn is-ghost", t("reviewLater"));
-    later.type = "button";
-    later.addEventListener("click", choose("review"));
-    mark.append(ok, later);
+    if (st) {
+      var mine = el("div", "ex-eval is-" + st);
+      mine.append(el("span", "ex-eval-k", t("evalMine")), el("b", "ex-eval-v", t(st)));
+      sol.append(mine);
+    } else {
+      mark.classList.add("ex-eval-choices");
+      var ask = el("p", "ex-eval-ask", t("evalAsk"));
+      var once = false;
+      [["done", "evalOk"], ["mid", "evalMid"], ["review", "evalBad"]].forEach(function (c) {
+        var b = el("button", "pc-btn ev-" + c[0], t(c[1]));
+        b.type = "button";
+        b.addEventListener("click", function () {
+          if (once) return;
+          once = true;
+          mark.querySelectorAll("button").forEach(function (x) {
+            x.disabled = true;
+          });
+          choose(c[0])();
+        });
+        mark.append(b);
+      });
+      sol.append(ask);
+    }
     sol.append(mark);
     work.append(sol);
   }
@@ -2772,37 +2833,41 @@ function feedbackRow(ch, ex, key, index) {
   row.append(el("span", "ex-fb-ask", t("fbAsk")));
   var chips = el("div", "ex-fb-chips");
   var msg = el("small", "ex-fb-msg");
+  var sent = ratings[key] !== undefined; // the opinion is sent once: afterwards it only shows what was chosen
+  var paintChips = function () {
+    chips.querySelectorAll(".fb-chip").forEach(function (x, i) {
+      var on = FB_CHOICES[i][0] === ratings[key];
+      x.classList.toggle("is-on", on);
+      x.setAttribute("aria-pressed", on ? "true" : "false");
+      x.disabled = sent;
+    });
+  };
   FB_CHOICES.forEach(function (c) {
-    var b = el("button", "fb-chip" + (ratings[key] === c[0] ? " is-on" : ""));
+    var b = el("button", "fb-chip");
     b.type = "button";
-    b.setAttribute("aria-pressed", ratings[key] === c[0] ? "true" : "false");
     b.append(el("span", "fb-emo", c[1]), document.createTextNode(t(c[2])));
     b.addEventListener("click", async function () {
+      if (sent) return;
       var prev = ratings[key];
+      sent = true;
       ratings[key] = c[0];
-      chips.querySelectorAll(".fb-chip").forEach(function (x, i) {
-        var on = FB_CHOICES[i][0] === c[0];
-        x.classList.toggle("is-on", on);
-        x.setAttribute("aria-pressed", on ? "true" : "false");
-      });
+      paintChips();
       msg.textContent = "";
       try {
         await ctx.sendRating(ch.id, ex.id, c[0]);
         msg.textContent = "✓ " + t("fbThanks");
       } catch (e) {
         console.warn("Couldn’t send the rating:", e);
+        sent = false;
         if (prev === undefined) delete ratings[key];
         else ratings[key] = prev;
-        chips.querySelectorAll(".fb-chip").forEach(function (x, i) {
-          var on = FB_CHOICES[i][0] === ratings[key];
-          x.classList.toggle("is-on", on);
-          x.setAttribute("aria-pressed", on ? "true" : "false");
-        });
+        paintChips();
         msg.textContent = t("fbFail");
       }
     });
     chips.append(b);
   });
+  paintChips();
   row.append(chips);
   var more = el("button", "ex-link", t("fbComment"));
   more.type = "button";
@@ -3230,7 +3295,7 @@ function summary() {
       return st[k] === "done";
     }).length;
     var r = keys.filter(function (k) {
-      return st[k] === "review";
+      return st[k] === "review" || st[k] === "mid";
     }).length;
     total += n;
     done += d;

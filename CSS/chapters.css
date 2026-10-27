@@ -3432,3 +3432,30 @@ body:has(.av-modal) .ch-back.ch-back-float {
 .ex-tool.is-skel { margin-inline-start: auto; }
 .ex-tool.is-skel + .ex-tool.is-reindent { margin-inline-start: 0; }
 @media (max-width: 560px) { .ex-tool.is-skel { margin-inline-start: 0; } }
+
+/* ---- update91: code boxes have a maximum height, evaluation in 3 choices (once), opinion sent once ---- */
+.pg-body { max-height: 360px; overflow: auto; overscroll-behavior: contain; }
+.pg-modal-card .pg-body { max-height: none; }
+.pg-win.is-answer .pg-body { max-height: 360px; }
+.ex-box.is-locked .pg-tools, .ex-box.is-locked .ex-tools { display: none !important; }
+.ex-box.is-locked .pg-code:focus-within { box-shadow: 0 1px 2px rgba(1, 9, 45, 0.08), 0 14px 30px -14px rgba(1, 9, 45, 0.28); }
+.ex-box.is-locked .ex-answer { cursor: default; }
+.ex-dot.is-mid { border-color: #f0a62b; background: #f0a62b; color: #3b2600; }
+.ex-card.is-mid { --pin: #f0a62b; }
+.ex-state.is-mid { background: #f0a62b; color: #3b2600; }
+.ex-eval-ask { margin: 14px 0 8px; font-weight: 800; font-size: 14px; color: var(--color-text-muted); }
+.ex-eval-choices { display: flex; flex-wrap: wrap; gap: 8px; }
+.ex-eval-choices .pc-btn { flex: 1 1 140px; }
+.ex-eval-choices .ev-done { background: #aee37b; border-color: #aee37b; color: #1f4a0c; }
+.ex-eval-choices .ev-mid { background: #f0a62b; border-color: #f0a62b; color: #3b2600; }
+.ex-eval-choices .ev-review { background: #e64d6b; border-color: #e64d6b; color: #fff; }
+.ex-eval-choices .pc-btn:disabled { opacity: 0.55; cursor: default; }
+.ex-eval { display: inline-flex; align-items: center; gap: 8px; margin-top: 14px; padding: 8px 14px; border-radius: 999px; font-size: 14px; }
+.ex-eval-k { color: var(--color-text-muted); font-weight: 700; }
+.ex-eval.is-done .ex-eval-v { color: #3f8a1c; }
+.ex-eval.is-mid .ex-eval-v { color: #b87400; }
+.ex-eval.is-review .ex-eval-v { color: #e64d6b; }
+.fb-chip:disabled { cursor: default; }
+.fb-chip:disabled:not(.is-on) { opacity: 0.45; }
+.fb-chip:disabled:hover { background: inherit; }
+.fb-chip.is-on:disabled:hover { background: var(--color-primary); }

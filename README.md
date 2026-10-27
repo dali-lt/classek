@@ -35,10 +35,8 @@ CSS/              style.css, welcome.css, test.css, chapters.css
 JS/               welcome.js, student.js, chapters.js, cycle.js
                   (study days + bilan questions), firebase-config.js,
                   firebase-sync.js, sync-core.js
-data/             placement-test.json
 Images/           logos and illustrations
 docs/             chapter-format.md
-firestore.rules   Firestore security rules
 ```
 
 ## Getting started
@@ -46,7 +44,7 @@ firestore.rules   Firestore security rules
 1. Clone or download the repo.
 2. Create a Firebase project and enable **Authentication** (Google provider) and **Firestore**.
 3. Paste your web app config in `JS/firebase-config.js`.
-4. Publish `firestore.rules` (Firebase console → Firestore → Rules).
+4. Write your Firestore security rules (Firebase console → Firestore → Rules).
 5. Add your site domain in Authentication → Settings → Authorized domains.
 6. Serve the folder (GitHub Pages, or any static server) and open `index.html`.
 
@@ -71,7 +69,7 @@ chapters/{chapterId}/exercises/{exId}/private/solution  { text }
 ## Data & privacy
 
 - Data is stored in Firebase (Firestore) under the signed-in account.
-- Access is controlled by **Firestore Security Rules** (`firestore.rules`), not only by the interface: each user can only read and write documents under their own `users/{uid}`.
+- Access is controlled by **Firestore Security Rules**, not only by the interface: each user can only read and write documents under their own `users/{uid}`.
 - The Firebase web config is not secret; the rules are what protect the data.
 - Placement test questions and answers are served as a static file, so they are public. Do not put paid or private content in this repo.
 - "Delete account" removes the account and its data.
