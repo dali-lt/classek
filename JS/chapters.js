@@ -805,6 +805,7 @@ function codeWindow(lang, opts) {
   return api;
 }
 // the page the student's code makes, in a sandboxed frame (its scripts cannot reach this page)
+var liveSeq = 0;
 function liveFrame(getCode, title) {
   var wrap = el("div", "live-frame pg-win");
   var bar = el("div", "live-bar pg-bar");
@@ -817,43 +818,69 @@ function liveFrame(getCode, title) {
   reload.title = t("liveReload");
   reload.setAttribute("aria-label", t("liveReload"));
   bar.append(reload);
-  var frame = document.createElement("iframe");
-  frame.className = "live-iframe";
-  frame.setAttribute("sandbox", "allow-scripts allow-modals");
-  frame.setAttribute("title", t("liveTitle"));
   var empty = el("p", "live-empty", t("liveEmpty"));
+  var frame = null;
   var timer = null;
-  function paint() {
+  var gen = 0; // number of the last paint
+  var acked = 0; // last paint the frame confirmed (it ran a small script that tells us the page really rendered)
+  var tries = 0;
+  var token = "cl-live-" + ++liveSeq + "-";
+  var wasHere = false;
+  function onMsg(e) {
+    if (wasHere && !wrap.isConnected) {
+      window.removeEventListener("message", onMsg);
+      return;
+    }
+    if (frame && e.source === frame.contentWindow && e.data === token + gen) acked = gen;
+  }
+  window.addEventListener("message", onMsg);
+  // every paint builds a brand new frame: some browsers leave a frame blank when its page is replaced while it is shown,
+  // or when it was filled before it reached the page. The page tells us when it has rendered; if it does not, we paint again.
+  function paint(isRetry) {
+    if (wrap.isConnected) wasHere = true;
     var code = String(getCode() || "");
     var blank = !code.trim();
     empty.hidden = !blank;
-    frame.hidden = blank;
-    frame.srcdoc = blank ? "" : (/<!doctype/i.test(code) ? "" : "<!doctype html>") + code;
+    gen++;
+    var mine = gen;
+    if (!isRetry) tries = 0;
+    var nf = null;
+    if (!blank) {
+      nf = document.createElement("iframe");
+      nf.className = "live-iframe";
+      nf.setAttribute("sandbox", "allow-scripts allow-modals");
+      nf.setAttribute("title", t("liveTitle"));
+      nf.srcdoc = (/<!doctype/i.test(code) ? "" : "<!doctype html>") + code + "\n<script>try{parent.postMessage(" + JSON.stringify(token + mine) + ',"*")}catch(e){}</scr' + "ipt>";
+    }
+    if (frame && frame.parentNode) {
+      if (nf) frame.replaceWith(nf);
+      else frame.remove();
+    } else if (nf) wrap.append(nf);
+    frame = nf;
+    if (nf) {
+      setTimeout(function () {
+        if (gen !== mine || acked === mine || !wrap.isConnected) return;
+        if (tries < 4) {
+          tries++;
+          paint(true); // nothing came back: try again
+        }
+      }, 700);
+    }
   }
-  reload.addEventListener("click", paint);
-  wrap.append(bar, empty, frame);
+  reload.addEventListener("click", function () {
+    paint();
+  });
+  wrap.append(bar, empty);
   paint();
-  // some browsers leave a frame blank when it was filled before it reached the page (or while its card was hidden):
-  // fill it again the first time it is really on screen, and again whenever it comes back into view empty-handed
+  // first time on screen (or back on screen without a confirmed page): paint again
   if (window.IntersectionObserver) {
-    var seen = false;
     var io = new IntersectionObserver(function (entries) {
       entries.forEach(function (en) {
-        if (en.isIntersecting && !seen) {
-          seen = true;
-          paint();
-        }
+        if (en.isIntersecting && acked !== gen && String(getCode() || "").trim()) paint();
       });
     });
     io.observe(wrap);
   }
-  frame.addEventListener("load", function () {
-    loadedOnce = true;
-  });
-  var loadedOnce = false;
-  setTimeout(function () {
-    if (!loadedOnce && wrap.isConnected && String(getCode() || "").trim()) paint(); // nothing came: try once more
-  }, 800);
   return {
     wrap: wrap,
     update: function () {
