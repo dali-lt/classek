@@ -2373,9 +2373,18 @@ function answerLang(ch, ex) {
   } catch (e) {}
   return ex.lang === "algo" || ex.lang === "python" ? ex.lang : codeLang;
 }
-// does this question ask the student to write code (then its box is a code window), or to answer in words / numbers?
+// does this question ask the student to WRITE code (then its box is a code window), or to answer in words / numbers?
+// Only the instruction counts: a writing verb (Écrivez, Développez, Complétez, Traduisez, Corrigez, Proposez...) followed by something
+// that is code (fonction, procédure, module, algorithme, version, lignes, nom(...)...). The words "fonction" or "algorithme" alone,
+// as in "Que calcule cette fonction ?", only name the code being studied, and the code blocks written inside the question are ignored.
+var CODE_VERB = /^(?:\d+\)\s*)?(écrivez|ecrivez|écris|ecris|développez|developpez|complétez|completez|traduisez|implémentez|implementez|programmez|codez|réécrivez|reecrivez|rédigez|redigez|corrigez|proposez)\b/i;
+var CODE_OBJECT = /(fonction|proc[eé]dure|module|algorithme|version|programme|\bcode\b|lignes?\b|boucle|instruction|python|\bdef\b|correction|\b[A-Za-z_][A-Za-z_0-9]*\s*\()/i;
 function asksForCode(text) {
-  return /(écri|ecri|compl[eé]t|programm|fonction|proc[eé]dure|algorithme|python|\bdef\b|instruction|d[eé]fini|traduis|transform|code\b)/i.test(String(text || ""));
+  var t = String(text || "").replace(/```[\s\S]*?```/g, "\n");
+  return t.split(/(?:[.?!:;]\s+|\n)+/).some(function (piece) {
+    piece = piece.trim();
+    return CODE_VERB.test(piece) && CODE_OBJECT.test(piece);
+  });
 }
 function answerBox(ch, ex, boxId, placeholder, onInput, rows, asCode) {
   var progCode = !!asCode && (ex.lang === "algo" || ex.lang === "python");
