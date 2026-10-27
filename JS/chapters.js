@@ -83,6 +83,7 @@ var STR = {
     liveReload: "Recharger",
     liveExpected: "Résultat attendu",
     liveMine: "Mon résultat",
+    pgTask: "Exercice",
     answerPlaceholder: "Essaie d’abord : écris ta réponse ici pour débloquer la solution.",
     qPlaceholder: "Ta réponse à la question {n}…",
     saving: "Enregistrement…",
@@ -216,6 +217,7 @@ var STR = {
     liveReload: "أعد التحميل",
     liveExpected: "النتيجة المطلوبة",
     liveMine: "نتيجتي",
+    pgTask: "التمرين",
     answerPlaceholder: "جرّب الأول: اكتب جوابك هنا باش يتفتح الحل.",
     qPlaceholder: "جوابك على السؤال {n}…",
     saving: "نحفظو…",
@@ -1018,7 +1020,7 @@ function openPlayground(opts) {
     function () {
       return ta.value;
     },
-    opts.expected ? t("liveMine") : undefined
+    opts.expected || opts.statement ? t("liveMine") : undefined
   );
   var expFrame = opts.expected
     ? liveFrame(function () {
@@ -1031,28 +1033,53 @@ function openPlayground(opts) {
   x.setAttribute("aria-label", t("pgClose"));
   x.innerHTML = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg>';
   var side = live.wrap;
-  if (expFrame) {
-    // the page to build stays in view above the student's own result (on a phone: a switch between the two)
-    expFrame.wrap.classList.add("is-expected");
+  if (opts.statement || expFrame) {
+    // right side: the exercise (and, as a second tab, the expected page) above, the student's own live result below
+    card.classList.add("has-task");
+    var task = el("div", "pg-task");
     side = el("div", "pg-side");
-    side.setAttribute("data-view", "mine");
-    var sw = el("div", "pg-switch");
-    [
-      ["mine", t("liveMine")],
-      ["exp", t("liveExpected")],
-    ].forEach(function (v) {
-      var b = el("button", "pg-sw", v[1]);
-      b.type = "button";
-      b.setAttribute("aria-pressed", v[0] === "mine" ? "true" : "false");
-      b.addEventListener("click", function () {
-        side.setAttribute("data-view", v[0]);
-        Array.prototype.forEach.call(sw.children, function (c) {
-          c.setAttribute("aria-pressed", c === b ? "true" : "false");
-        });
+    var views = el("div", "pg-views"); // wide screens: exercise | expected page, above the live result
+    var views3 = el("div", "pg-views pg-views3"); // phones: exercise | expected page | my live result, in one panel under the code
+    var list = [];
+    if (opts.statement) list.push(["task", t("pgTask")]);
+    if (expFrame) list.push(["exp", t("liveExpected")]);
+    var all = list.concat([["mine", t("liveMine")]]);
+    var btns = [];
+    function setView(v) {
+      if (v !== "mine") task.setAttribute("data-view", v);
+      side.setAttribute("data-pview", v);
+      btns.forEach(function (x) {
+        x.b.setAttribute("aria-pressed", x.v === v ? "true" : "false");
       });
-      sw.append(b);
+    }
+    function addBtn(bar, v) {
+      var b = el("button", "pg-vw", v[1]);
+      b.type = "button";
+      b.addEventListener("click", function () {
+        setView(v[0]);
+      });
+      btns.push({ b: b, v: v[0] });
+      bar.append(b);
+    }
+    list.forEach(function (v) {
+      addBtn(views, v);
     });
-    side.append(sw, expFrame.wrap, live.wrap);
+    all.forEach(function (v) {
+      addBtn(views3, v);
+    });
+    task.setAttribute("data-view", list[0][0]);
+    task.append(views);
+    if (opts.statement) {
+      var tb = el("div", "pg-task-body");
+      tb.append(md(opts.statement, { noRun: true }));
+      task.append(tb);
+    }
+    if (expFrame) {
+      expFrame.wrap.classList.add("is-expected");
+      task.append(expFrame.wrap);
+    }
+    side.append(views3, task, live.wrap);
+    setView(list[0][0]);
   }
   var prevOverflow = document.body.style.overflow;
   function shut() {
@@ -2451,6 +2478,12 @@ function answerBox(ch, ex, boxId, placeholder, onInput, rows, asCode) {
       openPlayground({
         code: ta.value,
         title: starterTitle(ch, ex),
+        statement: (ex.statement || "")
+          .replace(/```htmlview\n?[\s\S]*?```/g, "")
+          .replace(/\n[^\n]*:\s*$/, function (m) {
+            return em ? "" : m; // "Résultat attendu :" introduced the expected page, which now has its own tab
+          })
+          .trim(),
         expected: em ? em[1].replace(/\n+$/, "") : "",
         onChange: function (v) {
           ta.value = v;
