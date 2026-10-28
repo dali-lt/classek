@@ -3498,3 +3498,13 @@ body:has(.av-modal) .ch-back.ch-back-float {
 .pg-tab-btn.is-on { background: rgba(255, 255, 255, 0.12); color: #fff; box-shadow: inset 0 -2px 0 #0464de; }
 .pg-tab-btn:focus-visible { outline: 2px solid #aee37b; outline-offset: 1px; }
 .pg-edit .is-off { display: none !important; }
+
+/* mistakes found in the code: the number and the whole line stay marked, the first message is shown under the code */
+.pg-ln-err { color: #ff6b81; font-weight: 800; }
+.pg-errs { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.pg-errs-in { position: absolute; inset: 0 0 auto 0; }
+.pg-err-line { position: absolute; left: 0; right: 0; background: rgba(230, 77, 107, 0.17); border-inline-start: 3px solid #e64d6b; box-sizing: border-box; }
+.pg-lint { display: flex; align-items: baseline; gap: 8px; width: 100%; margin: 0; padding: 8px 14px; border: 0; border-top: 1px solid rgba(230, 77, 107, 0.4); border-radius: 0; background: rgba(230, 77, 107, 0.14); color: #ffc2cd; font: 600 12.5px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; text-align: start; cursor: pointer; }
+.pg-lint[hidden] { display: none; }
+.pg-lint b { flex: none; color: #ff8aa0; font-weight: 800; }
+.pg-tab-btn.has-err::after { content: ""; flex: none; width: 7px; height: 7px; border-radius: 50%; background: #ff6b81; }

@@ -9,6 +9,7 @@
 
    The page chrome is in the student's language (EN / AR); the course content is French. */
 
+import { lintWeb } from "./weblint.js?v=1";
 import { openAlgoViz, openAlgoLibrary, libraryLabel, algoTitle, hasAlgoViz, kindForCode, registerAnimations } from "./algoviz.js?v=67";
 
 var STR = {
@@ -833,8 +834,93 @@ function codeWindow(lang, opts) {
   gutter.setAttribute("aria-hidden", "true");
   var edit = el("div", "pg-edit");
   body.append(gutter, edit);
-  win.append(bar, body);
+  var lintBar = el("button", "pg-lint"); // the first mistake found, under the code
+  lintBar.type = "button";
+  lintBar.hidden = true;
+  win.append(bar, body, lintBar);
   var api = { win: win, bar: right, body: body, edit: edit, gutter: gutter };
+  // ---- mistakes found while typing (a tag never closed, an unknown CSS property, a missing bracket...):
+  // the line stays marked (number, band, message) until it is fixed
+  var band = el("div", "pg-errs");
+  band.setAttribute("aria-hidden", "true");
+  var bandIn = el("div", "pg-errs-in");
+  band.append(bandIn);
+  var lintOn = null; // the field whose mistakes are shown
+  function uiLang() {
+    return ctx && ctx.getLang ? ctx.getLang() : "fr";
+  }
+  function setGutter(code, errs) {
+    var bad = {};
+    (errs || []).forEach(function (e) {
+      bad[e.line] = true;
+    });
+    var n = String(code).split("\n").length;
+    gutter.textContent = "";
+    for (var k = 1; k <= n; k++) {
+      gutter.append(bad[k] ? el("span", "pg-ln-err", String(k)) : document.createTextNode(String(k)));
+      if (k < n) gutter.append(document.createTextNode("\n"));
+    }
+  }
+  function lineMetrics(st) {
+    var cs = window.getComputedStyle ? window.getComputedStyle(st.hl) : null;
+    return { lh: (cs && parseFloat(cs.lineHeight)) || 20.925, pt: (cs && parseFloat(cs.paddingTop)) || 12 };
+  }
+  function showLint(st) {
+    lintOn = st;
+    setGutter(st.ta.value, st.errs);
+    bandIn.textContent = "";
+    var mt = lineMetrics(st);
+    st.errs.forEach(function (e) {
+      var d = el("div", "pg-err-line");
+      d.style.top = mt.pt + (e.line - 1) * mt.lh + "px";
+      d.style.height = mt.lh + "px";
+      bandIn.append(d);
+    });
+    bandIn.style.transform = "translateY(" + -st.ta.scrollTop + "px)";
+    if (!st.errs.length) {
+      lintBar.hidden = true;
+      return;
+    }
+    var first = st.errs[0];
+    lintBar.hidden = false;
+    lintBar.textContent = "";
+    lintBar.setAttribute("dir", "auto");
+    lintBar.append(
+      el("b", "", "⚠ " + (uiLang() === "ar" ? "السطر " : "Ligne ") + first.line),
+      el("span", "", first.msg + (st.errs.length > 1 ? "  (+" + (st.errs.length - 1) + ")" : ""))
+    );
+  }
+  function lintField(st) {
+    var lg = st.lang();
+    st.errs = lg === "html" || lg === "htmlsrc" || lg === "css" || lg === "js" ? lintWeb(st.ta.value, lg, uiLang()) : [];
+    if (st.badge) st.badge.classList.toggle("has-err", st.errs.length > 0);
+    if (lintOn === st) showLint(st);
+  }
+  // checked a moment after the last key, so nothing flashes red while the student is still typing
+  function watch(st) {
+    st.errs = [];
+    st.ta.addEventListener("input", function () {
+      clearTimeout(st.timer);
+      st.timer = setTimeout(function () {
+        lintField(st);
+      }, 800);
+    });
+    st.ta.addEventListener("scroll", function () {
+      if (lintOn === st) bandIn.style.transform = "translateY(" + -st.ta.scrollTop + "px)";
+    });
+    setTimeout(function () {
+      lintField(st); // a saved draft may already hold mistakes
+    }, 0);
+  }
+  lintBar.addEventListener("click", function () {
+    if (!lintOn || !lintOn.errs.length) return;
+    var ta = lintOn.ta;
+    var pos = 0;
+    for (var k = 1; k < lintOn.errs[0].line; k++) pos = ta.value.indexOf("\n", pos) + 1;
+    ta.focus();
+    ta.setSelectionRange(pos, pos);
+    ta.scrollTop = Math.max(0, (lintOn.errs[0].line - 3) * lineMetrics(lintOn).lh);
+  });
   // the language of the window can change (algorithm <-> Python): the tab, its logo and the colours follow
   api.setLang = function (l) {
     lang = l;
@@ -845,6 +931,7 @@ function codeWindow(lang, opts) {
     tab.title = nm;
     win.setAttribute("data-lang", l);
     if (api.paint) api.paint();
+    if (lintOn) lintField(lintOn);
   };
   // static code (the lesson examples)
   api.showStatic = function (code) {
@@ -861,13 +948,23 @@ function codeWindow(lang, opts) {
     hl.setAttribute("aria-hidden", "true");
     ta.classList.add("pg-ta");
     ta.setAttribute("wrap", "off");
-    edit.append(hl, ta);
+    edit.append(band, hl, ta);
+    var st = {
+      ta: ta,
+      hl: hl,
+      lang: function () {
+        return lang;
+      },
+      errs: [],
+      timer: 0,
+    };
+    lintOn = st;
     function paint() {
       var v = ta.value;
       hl.textContent = "";
       hl.append(webTokens(v, lang));
       hl.append(document.createTextNode("\u200b"));
-      gutter.textContent = lineNumbers(v);
+      setGutter(v, st.errs);
     }
     ta.addEventListener("input", paint);
     ta.addEventListener("scroll", function () {
@@ -877,12 +974,14 @@ function codeWindow(lang, opts) {
     });
     api.paint = paint;
     paint();
+    watch(st);
   };
   // several files side by side, like the tabs of a real editor (index.html, style.css, script.js): only the logo and the name change.
   // files: [{ name, lang, ta }]. Only the text of the open file is shown, and each one is coloured by its own language.
   api.useFiles = function (files, onSwitch) {
     edit.textContent = "";
     if (tab.parentNode) tab.remove();
+    edit.append(band);
     var tabs = el("span", "pg-tabs");
     tabs.setAttribute("role", "tablist");
     var views = [];
@@ -899,6 +998,7 @@ function codeWindow(lang, opts) {
       win.setAttribute("data-lang", lang);
       api.paint = views[i].paint;
       views[i].paint();
+      showLint(views[i].st);
       if (focus) views[i].ta.focus();
       if (onSwitch) onSwitch(i);
     }
@@ -920,12 +1020,22 @@ function codeWindow(lang, opts) {
       });
       tabs.append(btn);
       var v = { hl: hl, ta: f.ta, btn: btn };
+      v.st = {
+        ta: f.ta,
+        hl: hl,
+        lang: function () {
+          return f.lang;
+        },
+        errs: [],
+        timer: 0,
+        badge: btn,
+      };
       v.paint = function () {
         var val = f.ta.value;
         hl.textContent = "";
         hl.append(webTokens(val, f.lang));
         hl.append(document.createTextNode("\u200b"));
-        if (cur === i) gutter.textContent = lineNumbers(val);
+        if (cur === i) setGutter(val, v.st.errs);
       };
       f.ta.addEventListener("input", v.paint);
       f.ta.addEventListener("scroll", function () {
@@ -933,6 +1043,7 @@ function codeWindow(lang, opts) {
         hl.scrollTop = f.ta.scrollTop;
         if (cur === i) gutter.scrollTop = f.ta.scrollTop;
       });
+      watch(v.st);
       views.push(v);
     });
     bar.insertBefore(tabs, right);
