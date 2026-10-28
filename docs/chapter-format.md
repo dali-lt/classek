@@ -30,6 +30,7 @@ Code fences are coloured by language: `html`, `css`, `js`, `php`, `sql`.
 Notes:
 - `svg` is cleaned before display: no script, link or external url. Use `style="fill:var(--color-primary)"` to follow the site colours.
 - An exercise with `"lang": "html"` gets a **live result frame** under its answer box (sandboxed, so the student's scripts cannot touch the site) and the HTML helper buttons (`<` `>` `</` `"` `=` `/>`).
+- If the statement of an `html` exercise names an external file (`style.css`, `script.js`), the editor shows one tab per file, like a real editor (index.html, style.css, script.js), and the live result links them as a browser would: the page must contain `<link href="style.css">` / `<script src="script.js">`. The answers are saved as boxes 0 (page), 1, 2.
 - The uploader stores each exercise's `lang` and `viz` fields.
 
 ## 3. Quiz (weekly bilan)

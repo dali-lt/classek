@@ -3489,3 +3489,12 @@ body:has(.av-modal) .ch-back.ch-back-float {
 /* exercises: the code boxes (answer and solution) show about 5 lines, then scroll */
 .ex-card .pg-body { max-height: 134px; overflow: auto; overscroll-behavior: contain; }
 .ex-card .pg-win.is-answer .pg-body { max-height: 134px; }
+
+/* several files in one window: tabs like a real editor, only the logo and the name change */
+.pg-tabs { display: inline-flex; align-items: flex-end; gap: 4px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.pg-tabs::-webkit-scrollbar { display: none; }
+.pg-tab-btn { appearance: none; border: 0; cursor: pointer; background: transparent; color: rgba(207, 224, 255, 0.55); }
+.pg-tab-btn:hover { background: rgba(255, 255, 255, 0.05); color: #cfe0ff; }
+.pg-tab-btn.is-on { background: rgba(255, 255, 255, 0.12); color: #fff; box-shadow: inset 0 -2px 0 #0464de; }
+.pg-tab-btn:focus-visible { outline: 2px solid #aee37b; outline-offset: 1px; }
+.pg-edit .is-off { display: none !important; }
