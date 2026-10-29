@@ -762,12 +762,10 @@ function webFilesOf(ex) {
     if (/^[\w-]+\.(css|js)$/i.test(n) && names.indexOf(n) < 0) names.push(n);
   };
   if (Array.isArray(ex.files)) ex.files.forEach(add);
-  else {
-    String(ex.statement || "").replace(/(^|[\s"'(«:>])([A-Za-z0-9_-]+\.(?:css|js))(?![\w/-]|\.\w)/gi, function (all, pre, name) {
-      add(name);
-      return all;
-    });
-  }
+  String(ex.statement || "").replace(/(^|[\s"'`(«:\[]>])([A-Za-z0-9_-]+\.(?:css|js))(?![\w/-]|\.\w)/gi, function (all, pre, name) {
+    add(name);
+    return all;
+  });
   names.sort(function (a, b) {
     return (/\.css$/i.test(a) ? 0 : 1) - (/\.css$/i.test(b) ? 0 : 1); // css before js, otherwise the order of the statement
   });
