@@ -758,11 +758,11 @@ var FILE_NAME = { algo: "algorithme", python: "programme.py", html: "index.html"
 function webFilesOf(ex) {
   var names = [];
   var add = function (n) {
-    n = String(n || "").trim();
+    n = String(n && typeof n === "object" ? n.name || "" : n || "").trim();
     if (/^[\w-]+\.(css|js)$/i.test(n) && names.indexOf(n) < 0) names.push(n);
   };
   if (Array.isArray(ex.files)) ex.files.forEach(add);
-  String(ex.statement || "").replace(/(^|[\s"'`(«:\[]>])([A-Za-z0-9_-]+\.(?:css|js))(?![\w/-]|\.\w)/gi, function (all, pre, name) {
+  String(ex.statement || "").replace(/([A-Za-z0-9_-]+\.(?:css|js))(?![\w.-])/gi, function (all, name) {
     add(name);
     return all;
   });
