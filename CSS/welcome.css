@@ -2215,3 +2215,75 @@ html.s-drawer-open .s-menu-btn .notif-dot {
     padding-inline-end: 0;
   }
 }
+
+/* ================= Decorative grid (JS/bg-grid.js) =================
+   faint lines in the brand blue + a few squares (lime, sometimes blue) that light up and fade.
+   Behind everything (z-index -1: the page colour sits on the canvas), fading towards the bottom so the content stays calm. */
+.bg-grid {
+  --cell: 56px;
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+  background-image:
+    linear-gradient(to right, rgba(4, 100, 222, 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(4, 100, 222, 0.07) 1px, transparent 1px);
+  background-size: var(--cell) var(--cell);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, 0.8) 40%, transparent 92%);
+  mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, 0.8) 40%, transparent 92%);
+}
+.bg-grid-cell {
+  position: absolute;
+  width: var(--cell);
+  height: var(--cell);
+  background: rgba(174, 227, 123, 0.5);
+  opacity: 0;
+  animation: bg-cell var(--dur, 7s) ease-in-out var(--delay, 0s) infinite;
+  will-change: opacity;
+}
+.bg-grid-cell.is-blue {
+  background: rgba(4, 100, 222, 0.16);
+}
+@keyframes bg-cell {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.bg-paused .bg-grid-cell {
+  animation-play-state: paused;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .bg-grid {
+    background-image:
+      linear-gradient(to right, rgba(174, 227, 123, 0.07) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(174, 227, 123, 0.07) 1px, transparent 1px);
+  }
+  :root:not([data-theme="light"]) .bg-grid-cell {
+    background: rgba(4, 100, 222, 0.28);
+  }
+  :root:not([data-theme="light"]) .bg-grid-cell.is-blue {
+    background: rgba(174, 227, 123, 0.16);
+  }
+}
+:root[data-theme="dark"] .bg-grid {
+  background-image:
+    linear-gradient(to right, rgba(174, 227, 123, 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(174, 227, 123, 0.07) 1px, transparent 1px);
+}
+:root[data-theme="dark"] .bg-grid-cell {
+  background: rgba(4, 100, 222, 0.28);
+}
+:root[data-theme="dark"] .bg-grid-cell.is-blue {
+  background: rgba(174, 227, 123, 0.16);
+}
+@media (prefers-reduced-motion: reduce) {
+  .bg-grid-cell {
+    animation: none;
+    opacity: 0;
+  }
+}
