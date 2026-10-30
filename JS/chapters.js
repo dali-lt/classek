@@ -11,6 +11,7 @@
 
 import { lintWeb } from "./weblint.js?v=1";
 import { openAlgoViz, openAlgoLibrary, libraryLabel, algoTitle, hasAlgoViz, kindForCode, registerAnimations } from "./algoviz.js?v=67";
+import { assembleWeb, fileExplorer, fsParse, fsToDraft, fsClone, fsApply, langOfName } from "./webfiles.js?v=1";
 
 var STR = {
   fr: {
@@ -754,45 +755,22 @@ function copyButton(code) {
   return b;
 }
 var FILE_NAME = { algo: "algorithme", python: "programme.py", html: "index.html", htmlsrc: "index.html", css: "styles.css", js: "app.js", php: "page.php", sql: "requete.sql" };
-// the files of a web exercise: index.html first, then the CSS and JS files its statement names (style.css, script.js...)
+// the files of a web exercise: index.html first, then the CSS and JS files its statement names (style.css, script.js, css/app.css...)
 function webFilesOf(ex) {
   var names = [];
   var add = function (n) {
     n = String(n && typeof n === "object" ? n.name || "" : n || "").trim();
-    if (/^[\w-]+\.(css|js)$/i.test(n) && names.indexOf(n) < 0) names.push(n);
+    if (/^(?:[\w-]+\/){0,2}[\w-]+\.(css|js)$/i.test(n) && names.indexOf(n) < 0) names.push(n);
   };
   if (Array.isArray(ex.files)) ex.files.forEach(add);
-  String(ex.statement || "").replace(/([A-Za-z0-9_-]+\.(?:css|js))(?![\w.-])/gi, function (all, name) {
+  String(ex.statement || "").replace(/(?:^|[^\w./-])((?:[A-Za-z0-9_-]+\/){0,2}[A-Za-z0-9_-]+\.(?:css|js))(?![\w/-]|\.\w)/gi, function (all, name) {
     add(name);
     return all;
   });
-  names.sort(function (a, b) {
-    return (/\.css$/i.test(a) ? 0 : 1) - (/\.css$/i.test(b) ? 0 : 1); // css before js, otherwise the order of the statement
+  names.sort(function (x, y) {
+    return (/\.css$/i.test(x) ? 0 : 1) - (/\.css$/i.test(y) ? 0 : 1); // css before js, otherwise the order of the statement
   });
   return ["index.html"].concat(names.slice(0, 3));
-}
-function escRe(v) {
-  return String(v).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-// the page the browser would build: each <link href="style.css"> / <script src="script.js"> is replaced by the file the student wrote.
-// A file that the page never links to is not applied, exactly like in a real browser.
-function assembleWeb(list) {
-  var html = String((list[0] && list[0].code) || "");
-  list.slice(1).forEach(function (f) {
-    var code = String(f.code || "");
-    if (/\.css$/i.test(f.name)) {
-      var rl = new RegExp("<link\\b[^>]*?href\\s*=\\s*[\"']?[^\"'>\\s]*?" + escRe(f.name) + "[\"']?[^>]*>", "gi");
-      html = html.replace(rl, function () {
-        return "<style>\n" + code.replace(/<\/style/gi, "<\\/style") + "\n</style>";
-      });
-    } else {
-      var rs = new RegExp("<script\\b[^>]*?src\\s*=\\s*[\"']?[^\"'>\\s]*?" + escRe(f.name) + "[\"']?[^>]*>\\s*</script\\s*>", "gi");
-      html = html.replace(rs, function () {
-        return "<script>\n" + code.replace(/<\/script/gi, "<\\/script") + "\n</scr" + "ipt>";
-      });
-    }
-  });
-  return html;
 }
 function webTokens(code, lang) {
   var pre = webBlock(code, lang);
@@ -975,7 +953,8 @@ function codeWindow(lang, opts) {
     watch(st);
   };
   // several files side by side, like the tabs of a real editor (index.html, style.css, script.js): only the logo and the name change.
-  // files: [{ name, lang, ta }]. Only the text of the open file is shown, and each one is coloured by its own language.
+  // files: [{ id, name, lang, ta }]. Only the text of the open file is shown, and each one is coloured by its own language.
+  // The list can change afterwards: addFile / removeFile (index.html, the first one, stays).
   api.useFiles = function (files, onSwitch) {
     edit.textContent = "";
     if (tab.parentNode) tab.remove();
@@ -985,6 +964,7 @@ function codeWindow(lang, opts) {
     var views = [];
     var cur = 0;
     function show(i, focus) {
+      if (!views[i]) return;
       cur = i;
       views.forEach(function (v, k) {
         v.btn.classList.toggle("is-on", k === i);
@@ -1000,11 +980,15 @@ function codeWindow(lang, opts) {
       if (focus) views[i].ta.focus();
       if (onSwitch) onSwitch(i);
     }
-    files.forEach(function (f, i) {
+    function mount(f) {
       var hl = el("pre", "pg-hl");
       hl.setAttribute("aria-hidden", "true");
       f.ta.classList.add("pg-ta");
       f.ta.setAttribute("wrap", "off");
+      if (views.length) {
+        hl.classList.add("is-off"); // a file added later waits for its tab to be opened
+        f.ta.classList.add("is-off");
+      }
       edit.append(hl, f.ta);
       var btn = el("button", "pg-tab pg-tab-btn");
       btn.type = "button";
@@ -1013,11 +997,11 @@ function codeWindow(lang, opts) {
       ic.innerHTML = LANG_ICON[f.lang] || ""; // static, trusted SVG
       btn.append(ic, el("span", "pg-tab-full", f.name), el("span", "pg-tab-short", f.name.slice(0, 3) + "…"));
       btn.title = f.name;
+      var v = { hl: hl, ta: f.ta, btn: btn };
       btn.addEventListener("click", function () {
-        show(i, true);
+        show(views.indexOf(v), true);
       });
       tabs.append(btn);
-      var v = { hl: hl, ta: f.ta, btn: btn };
       v.st = {
         ta: f.ta,
         hl: hl,
@@ -1033,19 +1017,45 @@ function codeWindow(lang, opts) {
         hl.textContent = "";
         hl.append(webTokens(val, f.lang));
         hl.append(document.createTextNode("\u200b"));
-        if (cur === i) setGutter(val, v.st.errs);
+        if (views[cur] === v) setGutter(val, v.st.errs);
       };
       f.ta.addEventListener("input", v.paint);
       f.ta.addEventListener("scroll", function () {
         hl.scrollLeft = f.ta.scrollLeft;
         hl.scrollTop = f.ta.scrollTop;
-        if (cur === i) gutter.scrollTop = f.ta.scrollTop;
+        if (views[cur] === v) gutter.scrollTop = f.ta.scrollTop;
       });
       watch(v.st);
       views.push(v);
-    });
+    }
+    files.forEach(mount);
     bar.insertBefore(tabs, right);
     api.show = show;
+    api.addFile = function (f, select) {
+      files.push(f);
+      mount(f);
+      if (select) show(files.length - 1, true);
+    };
+    api.removeFile = function (f) {
+      var k = files.indexOf(f);
+      if (k < 1) return; // index.html stays
+      var v = views[k];
+      clearTimeout(v.st.timer);
+      v.hl.remove();
+      v.ta.remove();
+      v.btn.remove();
+      files.splice(k, 1);
+      views.splice(k, 1);
+      if (cur === k) show(Math.min(k, views.length - 1), false);
+      else if (cur > k) cur--;
+    };
+    api.showFile = function (f) {
+      var k = files.indexOf(f);
+      if (k >= 0) show(k, true);
+    };
+    api.current = function () {
+      return files[cur];
+    };
     show(0, false);
   };
   return api;
@@ -1298,7 +1308,7 @@ function openPlayground(opts) {
   ov.setAttribute("role", "dialog");
   ov.setAttribute("aria-modal", "true");
   var card = el("div", "pg-modal-card");
-  var multi = Array.isArray(opts.files) && opts.files.length > 1;
+  var multi = Array.isArray(opts.files);
   function newField(value) {
     var f = el("textarea", "ex-answer");
     f.value = value || "";
@@ -1313,18 +1323,20 @@ function openPlayground(opts) {
   var ta = newField(multi ? opts.files[0].value : opts.code);
   var pfiles = multi
     ? opts.files.map(function (f, i) {
-        return { name: f.name, lang: f.lang, ta: i === 0 ? ta : newField(f.value) };
+        return { id: f.id, name: f.name, lang: f.lang, ta: i === 0 ? ta : newField(f.value) };
       })
     : [{ ta: ta }];
   var win = codeWindow("html");
   var wrapL = el("div", "ex-box");
   wrapL.append(win.win);
+  var fxm = null; // the explorer of the files (only for the exercises that give files)
   if (multi) {
     var ptools = fileTools(pfiles, function () {
       return opts.title || "Ma page";
     });
     win.useFiles(pfiles, function (i) {
       ptools.sync(i);
+      if (fxm) fxm.refresh();
     });
     win.win.append(ptools.el);
   } else {
@@ -1413,12 +1425,52 @@ function openPlayground(opts) {
   function onKey(e) {
     if (e.key === "Escape") shut();
   }
-  pfiles.forEach(function (f, i) {
+  function wire(f) {
     f.ta.addEventListener("input", function () {
       live.update();
-      if (opts.onChange) opts.onChange(f.ta.value, i);
+      if (opts.onChange) opts.onChange(f.ta.value, f.id); // the id of the file, which does not change when another one is deleted
     });
-  });
+  }
+  pfiles.forEach(wire);
+  if (multi && opts.fs) {
+    var pm = fsClone(opts.fs);
+    var pfileById = function (id) {
+      for (var k = 0; k < pfiles.length; k++) if (pfiles[k].id === id) return pfiles[k];
+      return null;
+    };
+    fxm = fileExplorer({
+      model: pm,
+      lang: ctx && ctx.getLang ? ctx.getLang() : "fr",
+      canEdit: opts.canEdit,
+      current: function () {
+        var c = win.current();
+        return c ? c.id : 0;
+      },
+      onOpen: function (id) {
+        var f = pfileById(id);
+        if (f) win.showFile(f);
+      },
+      icon: function (path) {
+        return LANG_ICON[langOfName(path)] || "";
+      },
+      onChange: function (evt) {
+        if (evt.t === "file") {
+          var nf = { id: evt.id, name: evt.path, lang: langOfName(evt.path), ta: newField("") };
+          wire(nf);
+          win.addFile(nf, false);
+        } else if (evt.t === "del") {
+          evt.ids.forEach(function (id) {
+            var f = pfileById(id);
+            if (f) win.removeFile(f);
+          });
+        }
+        live.update();
+        if (opts.onStructure) opts.onStructure(evt); // the exercise behind keeps the same files
+      },
+    });
+    fxm.mount(win.win);
+    win.bar.append(fxm.button);
+  }
   x.addEventListener("click", shut);
   ov.addEventListener("mousedown", function (e) {
     if (e.target === ov) shut();
@@ -2795,46 +2847,107 @@ function answerBox(ch, ex, boxId, placeholder, onInput, rows, asCode) {
     tools.append(btn);
   });
   var wrap = el("div", "ex-box");
-  if (ex.lang === "html" && webFilesOf(ex).length > 1) {
-    var names = webFilesOf(ex);
-    var files = names.map(function (name, i) {
-      return { name: name, lang: i === 0 ? "html" : /\.css$/i.test(name) ? "css" : "js", ta: i === 0 ? ta : fileField(ch, ex, i, onInput) };
+  if (ex.lang === "html") {
+    var fsKey = ch.id + "/" + ex.id;
+    // the files of this exercise: the names of the statement the first time, then what the student made (saved as answer "fs")
+    var fsm = fsParse(drafts[fsKey + "#fs"], webFilesOf(ex).slice(1));
+    var files = [{ id: 0, name: "index.html", lang: "html", ta: ta }];
+    fsm.files.forEach(function (f) {
+      files.push({ id: f.id, name: f.path, lang: langOfName(f.path), ta: fileField(ch, ex, f.id, onInput) });
     });
     var mw = codeWindow("html");
+    var fsFx = null;
+    var fsSink = null;
     var mtools = fileTools(files, function () {
       return starterTitle(ch, ex);
     });
     mw.useFiles(files, function (i) {
       mtools.sync(i);
+      if (fsFx) fsFx.refresh();
+    });
+    var fileById = function (id) {
+      for (var k = 0; k < files.length; k++) if (files[k].id === id) return files[k];
+      return null;
+    };
+    // a file or a folder was created or deleted (in the explorer of this window or in the playground): keep it, and tell the answer boxes
+    var applyFs = function (evt) {
+      fsApply(fsm, evt);
+      if (evt.t === "file") {
+        if (!fileById(evt.id)) mw.addFile({ id: evt.id, name: evt.path, lang: langOfName(evt.path), ta: fileField(ch, ex, evt.id, onInput) }, false);
+      } else if (evt.t === "del") {
+        evt.ids.forEach(function (id) {
+          var f = fileById(id);
+          if (f) mw.removeFile(f);
+          drafts[fsKey + "#" + id] = ""; // saved over the old text, so a deleted file leaves nothing behind
+        });
+      }
+      drafts[fsKey + "#fs"] = fsToDraft(fsm);
+      queueSave(ch.id, ex.id);
+      if (fsSink)
+        fsSink(
+          files.slice(1).map(function (f) {
+            return f.ta;
+          })
+        );
+      if (fsFx) fsFx.refresh();
+      mw.paint();
+    };
+    fsFx = fileExplorer({
+      model: fsm,
+      lang: ctx && ctx.getLang ? ctx.getLang() : "fr",
+      canEdit: function () {
+        return !ta.readOnly; // once the exercise is evaluated the files can be read, not changed
+      },
+      current: function () {
+        var c = mw.current();
+        return c ? c.id : 0;
+      },
+      onOpen: function (id) {
+        var f = fileById(id);
+        if (f) mw.showFile(f);
+      },
+      icon: function (path) {
+        return LANG_ICON[langOfName(path)] || "";
+      },
+      onChange: applyFs,
     });
     var mopen = runButton();
     mopen.addEventListener("click", function () {
       var em = /```htmlview\n?([\s\S]*?)```/.exec(ex.statement || "");
       openPlayground({
         files: files.map(function (f) {
-          return { name: f.name, lang: f.lang, value: f.ta.value };
+          return { id: f.id, name: f.name, lang: f.lang, value: f.ta.value };
         }),
+        fs: fsClone(fsm),
+        canEdit: function () {
+          return !ta.readOnly;
+        },
         title: starterTitle(ch, ex),
         tone: ex.difficulty === "bac" || ex.difficulty === "medium" ? ex.difficulty : "easy",
         statement: (ex.statement || "")
           .replace(/```htmlview\n?[\s\S]*?```/g, "")
           .replace(/\n[^\n]*:\s*$/, function (m) {
-            return em ? "" : m;
+            return em ? "" : m; // "Résultat attendu :" introduced the expected page, which now has its own tab
           })
           .trim(),
         expected: em ? em[1].replace(/\n+$/, "") : "",
-        onChange: function (v, i) {
-          files[i].ta.value = v;
-          files[i].ta.dispatchEvent(new Event("input", { bubbles: true })); // saves the draft and repaints the colours
+        onChange: function (v, id) {
+          var f = fileById(id);
+          if (!f) return;
+          f.ta.value = v;
+          f.ta.dispatchEvent(new Event("input", { bubbles: true })); // saves the draft and repaints the colours
         },
+        onStructure: applyFs,
         onClose: function () {
           files.forEach(function (f) {
             autoGrow(f.ta);
           });
+          if (fsFx) fsFx.refresh();
         },
       });
     });
-    mw.bar.append(mopen);
+    mw.bar.append(fsFx.button, mopen);
+    fsFx.mount(mw.win);
     mtools.el.classList.add("pg-tools");
     mw.win.append(mtools.el);
     wrap.append(mw.win);
@@ -2848,50 +2961,11 @@ function answerBox(ch, ex, boxId, placeholder, onInput, rows, asCode) {
       extra: files.slice(1).map(function (f) {
         return f.ta;
       }),
+      // the card follows the files: the ones the student creates are counted too (empty answer?) and locked after the evaluation
+      onFiles: function (fn) {
+        fsSink = fn;
+      },
     };
-  }
-  if (ex.lang === "html") {
-    tools.append(skeletonButton(ta, function () {
-      return starterTitle(ch, ex);
-    }));
-    tools.append(reindentButton(ta));
-    var cw = codeWindow("html");
-    cw.useField(ta);
-    ta.addEventListener("input", function () {
-      autoGrow(ta);
-    });
-    var open = runButton();
-    open.addEventListener("click", function () {
-      var em = /```htmlview\n?([\s\S]*?)```/.exec(ex.statement || "");
-      openPlayground({
-        code: ta.value,
-        title: starterTitle(ch, ex),
-        tone: ex.difficulty === "bac" || ex.difficulty === "medium" ? ex.difficulty : "easy",
-        statement: (ex.statement || "")
-          .replace(/```htmlview\n?[\s\S]*?```/g, "")
-          .replace(/\n[^\n]*:\s*$/, function (m) {
-            return em ? "" : m; // "Résultat attendu :" introduced the expected page, which now has its own tab
-          })
-          .trim(),
-        expected: em ? em[1].replace(/\n+$/, "") : "",
-        onChange: function (v) {
-          ta.value = v;
-          ta.dispatchEvent(new Event("input", { bubbles: true })); // saves the draft and repaints the colours
-        },
-        onClose: function () {
-          autoGrow(ta);
-        },
-      });
-    });
-    cw.bar.append(open);
-    tools.classList.add("pg-tools");
-    cw.win.append(tools);
-    wrap.append(cw.win);
-    setTimeout(function () {
-      cw.paint();
-      autoGrow(ta);
-    }, 0);
-    return { wrap: wrap, ta: ta };
   }
   if (progCode) {
     var curLang = answerLang(ch, ex);
@@ -3120,6 +3194,13 @@ function exerciseCard(ch, ex, index) {
     (bx1.extra || []).forEach(function (b) {
       boxes.push(b); // style.css, script.js: locked after the evaluation, and counted when checking for an empty answer
     });
+    if (bx1.onFiles)
+      bx1.onFiles(function (list) {
+        boxes.length = 1; // the page, then the files that exist now
+        list.forEach(function (b) {
+          boxes.push(b);
+        });
+      });
     wraps.push(bx1.wrap);
     if (isWeb) {
       work.append(label);
