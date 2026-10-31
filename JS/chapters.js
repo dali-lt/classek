@@ -615,7 +615,7 @@ function vizOpts() {
 
 /* ---------------- web code: coloured blocks, and a live result frame for HTML ---------------- */
 var WEB_KW = {
-  js: wordSet("function var let const if else for while do return new class this true false null undefined switch case break continue try catch typeof document window alert console confirm prompt NaN isNaN of in"),
+  js: wordSet("function var let const if else for while return new class this true false null undefined switch case break continue try catch typeof document window alert console"),
   php: wordSet("echo if else elseif foreach for while function return isset empty true false null include require array die exit as"),
   sql: wordSet("SELECT FROM WHERE INSERT INTO VALUES UPDATE SET DELETE CREATE TABLE DATABASE ALTER DROP ADD PRIMARY KEY FOREIGN REFERENCES NOT NULL AUTO_INCREMENT DEFAULT UNIQUE JOIN INNER LEFT ON GROUP BY ORDER ASC DESC AVG COUNT SUM MAX MIN AND OR LIKE IN AS DISTINCT HAVING INT VARCHAR CHAR DATE DATETIME DECIMAL LIMIT"),
 };
@@ -626,7 +626,7 @@ function webBlock(code, lang) {
   };
   var m;
   if (lang === "html" || lang === "htmlsrc") {
-    var re = /(<!--[\s\S]*?-->|<!doctype[^>]*>)|(<\/?)([A-Za-z][\w-]*)|(>)|("[^"]*"|'[^']*')|([A-Za-z_:][\w:.-]*)(?==)|([\s\S])/gi;
+    var re = /(<!--[\s\S]*?-->)|(<\/?)([A-Za-z][\w-]*)|(>)|("[^"]*"|'[^']*')|([A-Za-z_:][\w:.-]*)(?==)|([\s\S])/g;
     var inTag = false;
     var rawTag = ""; // "style" or "script" while its opening tag is being read
     while ((m = re.exec(code))) {
@@ -666,45 +666,25 @@ function webBlock(code, lang) {
       else add("", m[0]);
     }
   } else if (lang === "css") {
-    // depth 0 (and inside @media) = selectors; inside { } before ":" = property, after ":" = value up to ";"
-    var rc = /(\/\*[\s\S]*?\*\/)|("[^"\n]*"|'[^'\n]*')|(#[0-9a-fA-F]{3,8}\b)|(-?\d*\.?\d+(?:px|em|rem|%|vh|vw|vmin|vmax|ch|ms|s|deg|fr)?(?![\w-]))|(@[\w-]+)|(!important)|([\w-]+)(?=\()|(::?[\w-]+)|([.#][\w-]+)|(-?[A-Za-z_][\w-]*)|([{};])|([\s\S])/g;
+    var rc = /(\/\*[\s\S]*?\*\/)|("[^"]*"|'[^']*')|(#[0-9a-fA-F]{3,8}\b)|(-?\d*\.?\d+(?:px|em|rem|%|vh|vw|vmin|vmax|ch|ms|s|deg|fr)?(?![\w-]))|([\w-]+)|([{}])|([\s\S])/g;
     var depth = 0;
-    var inValue = false;
     while ((m = rc.exec(code))) {
       if (m[1]) add("tk-com", m[1]);
-      else if (m[2] || m[3]) add(m[3] && depth === 0 ? "tk-cls" : "tk-str", m[2] || m[3]);
-      else if (m[4]) add(inValue || depth > 0 ? "tk-num" : "", m[4]);
-      else if (m[5] || m[6]) add("tk-kw", m[5] || m[6]);
-      else if (m[7]) add("tk-fn", m[7]);
-      else if (m[8]) add(depth > 0 && inValue ? "" : "tk-fn", m[8]); // :hover, ::before
-      else if (m[9]) add(depth > 0 ? "" : "tk-cls", m[9]); // .class, #id
-      else if (m[10]) {
-        if (depth > 0 && !inValue && /^\s*:/.test(code.slice(rc.lastIndex))) add("tk-attr", m[10]);
-        else if (depth === 0) add("tk-kw", m[10]);
-        else add("", m[10]);
-      } else if (m[11]) {
-        if (m[11] === "{") {
-          depth++;
-          inValue = false;
-        } else if (m[11] === "}") {
-          depth = Math.max(0, depth - 1);
-          inValue = false;
-        } else inValue = false;
-        add("", m[11]);
-      } else {
-        if (m[12] === ":" && depth > 0) inValue = true;
-        add("", m[12]);
-      }
+      else if (m[2] || m[3]) add("tk-str", m[2] || m[3]);
+      else if (m[4]) add("tk-num", m[4]);
+      else if (m[6]) {
+        depth += m[6] === "{" ? 1 : -1;
+        add("", m[6]);
+      } else if (m[5]) {
+        if (depth > 0 && /^\s*:/.test(code.slice(rc.lastIndex)) ) add("tk-attr", m[5]);
+        else if (depth === 0) add("tk-kw", m[5]);
+        else add("", m[5]);
+      } else add("", m[0]);
     }
   } else {
     var kw = WEB_KW[lang] || {};
     var ci = lang === "sql";
-    var rg =
-      lang === "sql"
-        ? /(--[^\n]*|\/\*[\s\S]*?\*\/)|("[^"]*"|'[^']*')|(\$?[A-Za-z_][\w]*)|(\d+(?:\.\d+)?)|([\s\S])/g
-        : lang === "js"
-        ? /(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\$?[A-Za-z_][\w$]*)|(\d+(?:\.\d+)?)|([\s\S])/g
-        : /(\/\/[^\n]*|\/\*[\s\S]*?\*\/|#[^\n]*)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')|(\$?[A-Za-z_][\w]*)|(\d+(?:\.\d+)?)|([\s\S])/g;
+    var rg = lang === "sql" ? /(--[^\n]*|\/\*[\s\S]*?\*\/)|("[^"]*"|'[^']*')|(\$?[A-Za-z_][\w]*)|([\s\S])/g : /(\/\/[^\n]*|\/\*[\s\S]*?\*\/|#[^\n]*)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')|(\$?[A-Za-z_][\w]*)|([\s\S])/g;
     while ((m = rg.exec(code))) {
       if (m[1]) add("tk-com", m[1]);
       else if (m[2]) add("tk-str", m[2]);
@@ -712,10 +692,8 @@ function webBlock(code, lang) {
         var w = ci ? m[3].toUpperCase() : m[3];
         if (kw[w]) add("tk-kw", m[3]);
         else if (m[3].charAt(0) === "$") add("tk-attr", m[3]);
-        else if (lang !== "sql" && /^\s*\(/.test(code.slice(rg.lastIndex))) add("tk-fn", m[3]); // a name followed by ( : a function
         else add("", m[3]);
-      } else if (m[4]) add("tk-num", m[4]);
-      else add("", m[0]);
+      } else add("", m[0]);
     }
   }
   return pre;
@@ -742,11 +720,8 @@ function runButton() {
 var COPY_ICON = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V6.5A2.5 2.5 0 0 1 7.5 4H15"/></svg>';
 var CHECK_ICON = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 // solutions are for reading: an icon that copies the code (the code itself cannot be edited there)
-function copyButton(src) {
+function copyButton(code) {
   var b = el("button", "pg-copy");
-  var code = typeof src === "function" ? src : function () {
-    return src;
-  };
   b.type = "button";
   b.innerHTML = COPY_ICON; // static, trusted SVG
   b.title = t("copyCode");
@@ -764,7 +739,7 @@ function copyButton(src) {
     }
     function fallback() {
       var ta = document.createElement("textarea");
-      ta.value = code();
+      ta.value = code;
       ta.style.cssText = "position:fixed;opacity:0;top:0;left:0";
       document.body.append(ta);
       ta.select();
@@ -774,7 +749,7 @@ function copyButton(src) {
       } catch (e) {}
       ta.remove();
     }
-    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code()).then(done, fallback);
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(done, fallback);
     else fallback();
   });
   return b;
@@ -818,7 +793,7 @@ function lineNumbers(code) {
 function codeWindow(lang, opts) {
   var win = el("div", "pg-win pg-code");
   var bar = el("div", "pg-bar");
-  var fname = (opts && opts.name) || FILE_NAME[lang] || "code";
+  var fname = FILE_NAME[lang] || "code";
   var tab = el("span", "pg-tab");
   var ico = el("span", "pg-ico");
   ico.innerHTML = LANG_ICON[lang === "htmlsrc" ? "html" : lang] || ""; // static, trusted SVG
@@ -977,44 +952,6 @@ function codeWindow(lang, opts) {
     paint();
     watch(st);
   };
-  // the same tabs for code that is only read (a lesson, a solution): files [{ name, lang, code }]
-  api.showFiles = function (files, onSwitch) {
-    edit.textContent = "";
-    if (tab.parentNode) tab.remove();
-    var tabs = el("span", "pg-tabs");
-    tabs.setAttribute("role", "tablist");
-    var views = files.map(function (f, i) {
-      var pre = el("pre", "pg-hl pg-static");
-      pre.append(webTokens(f.code, f.lang));
-      edit.append(pre);
-      var btn = el("button", "pg-tab pg-tab-btn");
-      btn.type = "button";
-      btn.setAttribute("role", "tab");
-      var ic = el("span", "pg-ico");
-      ic.innerHTML = LANG_ICON[f.lang] || ""; // static, trusted SVG
-      btn.append(ic, el("span", "pg-tab-full", f.name), el("span", "pg-tab-short", f.name.slice(0, 3) + "…"));
-      btn.title = f.name;
-      btn.addEventListener("click", function () {
-        show(i);
-      });
-      tabs.append(btn);
-      return { pre: pre, btn: btn };
-    });
-    function show(i) {
-      views.forEach(function (v, k) {
-        v.btn.classList.toggle("is-on", k === i);
-        v.btn.setAttribute("aria-selected", k === i ? "true" : "false");
-        v.pre.classList.toggle("is-off", k !== i);
-      });
-      lang = files[i].lang;
-      win.setAttribute("data-lang", lang);
-      gutter.textContent = lineNumbers(files[i].code);
-      if (onSwitch) onSwitch(i);
-    }
-    bar.insertBefore(tabs, right);
-    api.show = show;
-    show(0);
-  };
   // several files side by side, like the tabs of a real editor (index.html, style.css, script.js): only the logo and the name change.
   // files: [{ id, name, lang, ta }]. Only the text of the open file is shown, and each one is coloured by its own language.
   // The list can change afterwards: addFile / removeFile (index.html, the first one, stays).
@@ -1058,9 +995,11 @@ function codeWindow(lang, opts) {
       btn.setAttribute("role", "tab");
       var ic = el("span", "pg-ico");
       ic.innerHTML = LANG_ICON[f.lang] || ""; // static, trusted SVG
-      btn.append(ic, el("span", "pg-tab-full", f.name), el("span", "pg-tab-short", f.name.slice(0, 3) + "…"));
+      var full = el("span", "pg-tab-full", f.name);
+      var short = el("span", "pg-tab-short", f.name.slice(0, 3) + "…");
+      btn.append(ic, full, short);
       btn.title = f.name;
-      var v = { hl: hl, ta: f.ta, btn: btn };
+      var v = { hl: hl, ta: f.ta, btn: btn, full: full, short: short };
       btn.addEventListener("click", function () {
         show(views.indexOf(v), true);
       });
@@ -1115,6 +1054,14 @@ function codeWindow(lang, opts) {
     api.showFile = function (f) {
       var k = files.indexOf(f);
       if (k >= 0) show(k, true);
+    };
+    api.renameFile = function (f, name) {
+      var k = files.indexOf(f);
+      if (k < 1) return; // the extension never changes, so the colours and the logo stay
+      f.name = name;
+      views[k].full.textContent = name;
+      views[k].short.textContent = name.slice(0, 3) + "…";
+      views[k].btn.title = name;
     };
     api.current = function () {
       return files[cur];
@@ -1302,6 +1249,7 @@ var FILE_SYMBOLS = {
   html: ["<", ">", "</", '"', "=", "/>"],
   css: ["{", "}", ":", ";", "#", ".", '"'],
   js: ["{", "}", "(", ")", "[", "]", ";", '"', "="],
+  php: ["<?php", "?>", "$", ";", "(", ")", "{", "}", '"', "="],
 };
 // the symbol bar of a window with several files: it follows the open tab
 function fileTools(files, getTitle) {
@@ -1526,6 +1474,11 @@ function openPlayground(opts) {
             var f = pfileById(id);
             if (f) win.removeFile(f);
           });
+        } else if (evt.t === "ren") {
+          pfiles.forEach(function (f) {
+            if (!f.id) return;
+            for (var k = 0; k < pm.files.length; k++) if (pm.files[k].id === f.id && pm.files[k].path !== f.name) win.renameFile(f, pm.files[k].path);
+          });
         }
         live.update();
         if (opts.onStructure) opts.onStructure(evt); // the exercise behind keeps the same files
@@ -1644,35 +1597,7 @@ function openCodeFull(opts) {
   }
 }
 // a lesson example: colourful code, its result under it, and a button to edit it and watch the result change
-// consecutive named blocks (```html index.html, ```css style.css, ```js script.js) are one window with a tab per file
-function webFilesExample(list, noRun) {
-  var box = el("div", "code-one code-web");
-  var win = codeWindow("html");
-  var files = list.map(function (f) {
-    return { name: f.name, lang: f.lang === "htmlsrc" ? "html" : f.lang, code: f.v };
-  });
-  var cur = 0;
-  win.showFiles(files, function (i) {
-    cur = i;
-  });
-  if (files[0].lang === "html" && !noRun) {
-    var tryBtn = runButton();
-    tryBtn.addEventListener("click", function () {
-      openPlayground({
-        files: files.map(function (f) {
-          return { name: f.name, lang: f.lang, value: f.code };
-        }),
-      });
-    });
-    win.bar.append(tryBtn);
-  }
-  if (noRun) win.bar.append(copyButton(function () {
-    return files[cur].code;
-  }));
-  box.append(win.win);
-  return box;
-}
-function webExample(code, lang, noRun, name) {
+function webExample(code, lang, noRun) {
   if (lang === "htmlview") {
     // result only (the page to reproduce, without its code)
     var only = el("div", "code-one code-web");
@@ -1684,7 +1609,7 @@ function webExample(code, lang, noRun, name) {
     return only;
   }
   var box = el("div", "code-one code-web");
-  var win = codeWindow(lang, { name: name });
+  var win = codeWindow(lang);
   win.showStatic(code);
   if (lang === "html" && !noRun) {
     var tryBtn = runButton();
@@ -1731,13 +1656,12 @@ function md(text, opts) {
   box.setAttribute("dir", "ltr");
   var src = String(text || "");
   var segs = [];
-  // ```html index.html : the name of the file may follow the language
-  var fence = /```([a-zA-Z]*)(?:[ \t]+([\w-]+\.[A-Za-z0-9]+)(?=[ \t]*\n))?[ \t]*\n?([\s\S]*?)```/g;
+  var fence = /```([a-zA-Z]*)\n?([\s\S]*?)```/g;
   var last = 0;
   var f;
   while ((f = fence.exec(src))) {
     if (f.index > last) segs.push({ code: false, v: src.slice(last, f.index) });
-    segs.push({ code: true, lang: f[1], name: f[2] || "", v: f[3].replace(/\n+$/, "") });
+    segs.push({ code: true, lang: f[1], v: f[2].replace(/\n+$/, "") });
     last = fence.lastIndex;
   }
   if (last < src.length) segs.push({ code: false, v: src.slice(last) });
@@ -1753,22 +1677,6 @@ function md(text, opts) {
           var h = el("h3", "ch-h");
           inline(h, para.slice(3));
           box.append(h);
-        } else if (/^(?:[-•] |\d+[.)] )/.test(para) && para.split("\n").every(function (ln) {
-          return /^(?:[-•] |\d+[.)] )/.test(ln) || /^\s+\S/.test(ln);
-        })) {
-          // a list: every line starts with "- " or "1. " (a line that starts with spaces goes on with the item above)
-          var ordered = /^\d/.test(para);
-          var list = el(ordered ? "ol" : "ul", "ch-list");
-          para.split("\n").forEach(function (ln) {
-            if (/^\s+\S/.test(ln) && list.lastChild) {
-              inline(list.lastChild, " " + ln.trim());
-              return;
-            }
-            var li = el("li", "");
-            inline(li, ln.replace(/^(?:[-•] |\d+[.)] )/, ""));
-            list.append(li);
-          });
-          box.append(list);
         } else {
           var p = el("p", "ch-p");
           inline(p, para);
@@ -1788,32 +1696,7 @@ function md(text, opts) {
       continue;
     }
     if (WEB_FENCE[s.lang]) {
-      if (s.name && /^(html|htmlsrc|css|js)$/.test(s.lang)) {
-        // named files one after the other: the tabs of one editor
-        var group = [s];
-        var gj = i + 1;
-        while (gj < segs.length) {
-          if (!segs[gj].code && !segs[gj].v.trim()) {
-            gj++;
-            continue;
-          }
-          var sg = segs[gj];
-          if (sg.code && sg.name && /^(css|js)$/.test(sg.lang) && group.every(function (g) {
-            return g.name !== sg.name;
-          })) {
-            group.push(sg);
-            gj++;
-            continue;
-          }
-          break;
-        }
-        if (group.length > 1) {
-          box.append(webFilesExample(group, opts && opts.noRun));
-          i = gj - 1;
-          continue;
-        }
-      }
-      box.append(webExample(s.v, s.lang, opts && opts.noRun, s.name)); // a solution is for reading: no editor to open
+      box.append(webExample(s.v, s.lang, opts && opts.noRun)); // a solution is for reading: no editor to open
       continue;
     }
     var known = s.lang === "algo" || s.lang === "python";
@@ -2560,33 +2443,40 @@ function lessonBlock(ch, always) {
     sections.forEach(function (s, i) {
       if (firstNamed < 0 && s.title) firstNamed = i;
     });
-    var cardNo = 0;
-    var TONES = ["t1", "t2", "t3"];
     sections.forEach(function (s, i) {
       if (!s.title) {
         body.append(md(s.body));
         return;
       }
-      cardNo++;
       var k = ch.id + "#" + i;
-      var kp = splitKeep(s.body);
-      var tone = /erreur|piège|piege|faute/i.test(s.title) ? "t-warn" : /retenir|résumé|resume/i.test(s.title) ? "t-lime" : TONES[(cardNo - 1) % TONES.length];
-      var wide = tone === "t-lime" || /```|<svg/.test(kp.rest) || kp.rest.length > 900;
-      var d = el("details", "lesson-sec lesson-card " + tone + (wide ? " is-wide" : ""));
+      var d = el("details", "lesson-sec");
       d.setAttribute("lang", "fr");
       d.setAttribute("dir", "ltr");
-      d.open = sectionOpen[k] !== undefined ? !!sectionOpen[k] : true; // a lesson is a set of cards, all visible: a section only closes if the student closes it
+      d.open = sectionOpen[k] !== undefined ? !!sectionOpen[k] : false; // every section starts closed: the student opens the one they want
+      var kp = splitKeep(s.body);
       var sum = el("summary", "");
-      sum.append(el("span", "lc-no", String(cardNo)), el("span", "lesson-sec-t", s.title));
-      d.append(sum, md(kp.rest));
+      sum.append(el("span", "lesson-sec-t", s.title));
       if (kp.keep) {
-        var kk = el("p", "lesson-keep lc-keep");
+        var kk = el("small", "lesson-keep");
         kk.append(el("span", "lesson-keep-tag", "À retenir"));
         inline(kk, kp.keep);
-        d.append(kk);
+        sum.append(kk);
+      } else {
+        var auto = autoKeep(s.body);
+        if (auto) sum.append(el("small", "lesson-keep is-auto", auto));
       }
+      d.append(sum, md(kp.rest));
       d.addEventListener("toggle", function () {
         sectionOpen[k] = d.open;
+        if (!d.open) return;
+        // one section at a time: opening this one closes the others
+        body.querySelectorAll("details.lesson-sec[open]").forEach(function (o) {
+          if (o !== d) o.open = false;
+        });
+        // closing a section above can push this one off screen: bring it back to the top
+        requestAnimationFrame(function () {
+          if (d.getBoundingClientRect().top < 70) d.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
       });
       body.append(d);
     });
@@ -2886,7 +2776,6 @@ function asksForCode(text) {
     return CODE_VERB.test(piece) && CODE_OBJECT.test(piece);
   });
 }
-var openTab = {}; // exercise -> index of the file tab that was open
 function answerBox(ch, ex, boxId, placeholder, onInput, rows, asCode) {
   var progCode = !!asCode && (ex.lang === "algo" || ex.lang === "python");
   var dk = ch.id + "/" + ex.id + "#" + boxId;
@@ -2976,8 +2865,18 @@ function answerBox(ch, ex, boxId, placeholder, onInput, rows, asCode) {
   var wrap = el("div", "ex-box");
   if (ex.lang === "html") {
     var fsKey = ch.id + "/" + ex.id;
-    // the files of this exercise: the names of the statement the first time, then what the student made (saved as answer "fs")
-    var fsm = fsParse(drafts[fsKey + "#fs"], webFilesOf(ex).slice(1));
+    // the files of this exercise: only index.html at first, the student makes the others (saved as answer "fs").
+    // An answer saved before the explorer existed has its style.css / script.js text under "1", "2": those files are kept.
+    var legacy = [];
+    webFilesOf(ex)
+      .slice(1)
+      .forEach(function (nm, i) {
+        if (drafts[fsKey + "#" + (i + 1)]) legacy.push([i + 1, nm]);
+      });
+    var fsm = fsParse(
+      drafts[fsKey + "#fs"] || (legacy.length ? JSON.stringify({ f: legacy, d: [], n: legacy[legacy.length - 1][0] + 1 }) : ""),
+      []
+    );
     var files = [{ id: 0, name: "index.html", lang: "html", ta: ta }];
     fsm.files.forEach(function (f) {
       files.push({ id: f.id, name: f.path, lang: langOfName(f.path), ta: fileField(ch, ex, f.id, onInput) });
@@ -2988,10 +2887,8 @@ function answerBox(ch, ex, boxId, placeholder, onInput, rows, asCode) {
     var mtools = fileTools(files, function () {
       return starterTitle(ch, ex);
     });
-    var tabKey = ch.id + "/" + ex.id;
     mw.useFiles(files, function (i) {
       mtools.sync(i);
-      openTab[tabKey] = i; // the page is redrawn now and then: the file the student was in stays open
       if (fsFx) fsFx.refresh();
     });
     var fileById = function (id) {
@@ -2999,8 +2896,15 @@ function answerBox(ch, ex, boxId, placeholder, onInput, rows, asCode) {
       return null;
     };
     // a file or a folder was created or deleted (in the explorer of this window or in the playground): keep it, and tell the answer boxes
+    var syncNames = function () {
+      files.forEach(function (f) {
+        if (!f.id) return;
+        for (var k = 0; k < fsm.files.length; k++) if (fsm.files[k].id === f.id && fsm.files[k].path !== f.name) mw.renameFile(f, fsm.files[k].path);
+      });
+    };
     var applyFs = function (evt) {
       fsApply(fsm, evt);
+      syncNames(); // a file or folder renamed: the tabs follow
       if (evt.t === "file") {
         if (!fileById(evt.id)) mw.addFile({ id: evt.id, name: evt.path, lang: langOfName(evt.path), ta: fileField(ch, ex, evt.id, onInput) }, false);
       } else if (evt.t === "del") {
@@ -3040,7 +2944,6 @@ function answerBox(ch, ex, boxId, placeholder, onInput, rows, asCode) {
       },
       onChange: applyFs,
     });
-    if (openTab[tabKey] > 0 && openTab[tabKey] < files.length) mw.show(openTab[tabKey], false);
     var mopen = runButton();
     mopen.addEventListener("click", function () {
       var em = /```htmlview\n?([\s\S]*?)```/.exec(ex.statement || "");

@@ -2,7 +2,7 @@
 
    - the model of the files (names, folders, limits) and how it is saved inside the student's answer;
    - the page the browser would build from those files (assembleWeb);
-   - the explorer: a drawer, like the side bar of VS Code, to create a file, create a folder or delete one.
+   - the explorer ("Fichiers du projet"): a drawer, like the side bar of VS Code, to create a file or a folder, rename or delete one.
 
    Saved answer of an exercise (users/{uid}/answers/{chapterId}, items[exId].a):
      "0"   the text of index.html
@@ -15,12 +15,12 @@ export var FS_MAX_DIRS = 6;
 export var FS_MAX_DEPTH = 2; // folders inside folders
 
 var SEG = /^[A-Za-z0-9_-]{1,30}$/;
-var FILE_EXT = /^(html|css|js)$/i;
+var FILE_EXT = /^(html|css|js|php)$/i;
 
 export function langOfName(name) {
   var m = /\.([A-Za-z0-9]+)$/.exec(String(name || ""));
   var e = m ? m[1].toLowerCase() : "";
-  return e === "css" ? "css" : e === "js" ? "js" : "html";
+  return e === "css" ? "css" : e === "js" ? "js" : e === "php" ? "php" : "html";
 }
 
 function normSlashes(raw) {
@@ -32,7 +32,7 @@ function normSlashes(raw) {
     .replace(/\/+$/, "");
 }
 
-// a clean relative path, or an error code: empty | badname | ext | depth
+// a clean relative path, or an error code: empty | badname | dirdot | ext | depth
 export function checkPath(raw, kind) {
   var p = normSlashes(raw);
   if (!p) return { error: "empty" };
@@ -42,7 +42,7 @@ export function checkPath(raw, kind) {
     var part = parts[i];
     var isFile = kind === "file" && i === parts.length - 1;
     if (!isFile) {
-      if (!SEG.test(part)) return { error: "badname" };
+      if (!SEG.test(part)) return { error: hasDot(part) ? "dirdot" : "badname" };
       continue;
     }
     if (!/^[A-Za-z0-9_.-]+$/.test(part)) return { error: "badname" };
@@ -54,6 +54,10 @@ export function checkPath(raw, kind) {
   return { path: p };
 }
 
+// a name with a dot and nothing else wrong ("my.dir", "style.css" typed as a name), as opposed to ".." or a name with spaces
+function hasDot(part) {
+  return /[A-Za-z0-9_-]/.test(part) && /\./.test(part) && /^[A-Za-z0-9_.-]+$/.test(part);
+}
 function low(s) {
   return String(s).toLowerCase();
 }
@@ -216,6 +220,42 @@ export function fsRemove(m, path, kind) {
   });
   return { evt: { t: "del", kind: "dir", path: path, ids: ids } };
 }
+// a new name for a file (its extension stays the same) or for a folder: only the last part of the path changes.
+// The id of a file stays, so its text, saved under that id, follows it.
+export function fsRename(m, path, kind, rawBase) {
+  var base = String(rawBase == null ? "" : rawBase).trim();
+  if (!base) return { error: "empty" };
+  if (!SEG.test(base)) return { error: hasDot(base) ? (kind === "file" ? "noext" : "dirdot") : "badname" };
+  var dir = dirName(path);
+  var oldLast = path.slice(path.lastIndexOf("/") + 1);
+  var ext = kind === "file" ? oldLast.slice(oldLast.lastIndexOf(".")) : "";
+  var to = (dir ? dir + "/" : "") + base + ext;
+  if (to === path) return { same: true };
+  var self = kind === "file" ? fileAt(m, path) : null;
+  if (kind === "file" && !self) return { error: "none" };
+  if (kind === "dir" && !hasDir(m, path)) return { error: "none" };
+  // a name that only differs by upper/lower case from its own is allowed; any other name already used is not
+  if (low(to) !== low(path) && taken(m, to)) return { error: "dup" };
+  var evt = { t: "ren", kind: kind, path: path, to: to };
+  if (self) {
+    evt.id = self.id;
+    self.path = to;
+  } else {
+    movePrefix(m, path, to);
+  }
+  return { evt: evt };
+}
+function movePrefix(m, from, to) {
+  var pre = low(from) + "/";
+  var swap = function (p) {
+    if (low(p) === low(from)) return to;
+    return low(p).indexOf(pre) === 0 ? to + p.slice(from.length) : p;
+  };
+  m.files.forEach(function (f) {
+    f.path = swap(f.path);
+  });
+  m.dirs = m.dirs.map(swap);
+}
 // the same change, made by another window: harmless if the model already has it
 export function fsApply(m, evt) {
   if (!evt) return;
@@ -232,6 +272,14 @@ export function fsApply(m, evt) {
   } else if (evt.t === "dir") {
     if (!hasDir(m, evt.path)) m.dirs.push(evt.path);
     ensureDirs(m, evt.path);
+  } else if (evt.t === "ren") {
+    if (evt.kind === "file") {
+      m.files.forEach(function (f) {
+        if (f.id === evt.id) f.path = evt.to;
+      });
+    } else if (hasDir(m, evt.path)) {
+      movePrefix(m, evt.path, evt.to);
+    }
   } else if (evt.t === "del") {
     var ids = evt.ids || [];
     m.files = m.files.filter(function (f) {
@@ -309,41 +357,61 @@ export function assembleWeb(list) {
 /* ---------------- the explorer ---------------- */
 var STR = {
   fr: {
-    files: "Fichiers",
+    files: "Fichiers du projet",
     newFile: "Nouveau fichier",
     newDir: "Nouveau dossier",
+    btnFile: "Fichier",
+    btnDir: "Dossier",
     close: "Fermer",
     toggle: "Fichiers du projet",
+    rename: "Renommer",
     del: "Supprimer",
     sure: "Sûr ?",
     holderFile: "nom.css",
     holderDir: "nom-du-dossier",
+    holderRename: "nouveau nom",
+    hintFile: "Le nom finit par .html, .css, .js ou .php",
+    hintDir: "Un dossier s’écrit sans extension",
+    hintRename: "Seul le nom change, pas l’extension",
     err: {
       empty: "Écris un nom.",
       badname: "Nom invalide : lettres, chiffres, - et _ seulement.",
-      ext: "Le fichier doit finir par .html, .css ou .js.",
+      ext: "Le fichier doit finir par .html, .css, .js ou .php.",
+      noext: "Écris seulement le nom : l’extension ne change pas.",
+      dirdot: "Un dossier s’écrit sans extension (pas de point).",
       depth: "Trop de dossiers imbriqués (2 au maximum).",
       dup: "Ce nom existe déjà.",
       limit: "Nombre maximal de fichiers atteint.",
+      none: "Introuvable.",
     },
   },
   ar: {
-    files: "الملفات",
+    files: "ملفات المشروع",
     newFile: "ملف جديد",
     newDir: "مجلد جديد",
+    btnFile: "ملف",
+    btnDir: "مجلد",
     close: "إغلاق",
     toggle: "ملفات المشروع",
+    rename: "إعادة تسمية",
     del: "حذف",
     sure: "متأكد؟",
     holderFile: "nom.css",
     holderDir: "nom-du-dossier",
+    holderRename: "الاسم الجديد",
+    hintFile: "ينتهي الاسم بـ .html أو .css أو .js أو .php",
+    hintDir: "اسم المجلد بدون امتداد",
+    hintRename: "يتغير الاسم فقط، وليس الامتداد",
     err: {
       empty: "اكتب اسماً.",
       badname: "اسم غير صالح: حروف لاتينية وأرقام و - و _ فقط.",
-      ext: "يجب أن ينتهي الملف بـ .html أو .css أو .js",
+      ext: "يجب أن ينتهي الملف بـ .html أو .css أو .js أو .php",
+      noext: "اكتب الاسم فقط: الامتداد لا يتغير.",
+      dirdot: "اسم المجلد بدون امتداد (بدون نقطة).",
       depth: "مجلدات متداخلة أكثر من اللازم (2 على الأكثر).",
       dup: "هذا الاسم موجود بالفعل.",
       limit: "وصلت إلى الحد الأقصى من الملفات.",
+      none: "غير موجود.",
     },
   },
 };
@@ -390,6 +458,7 @@ var ICON = {
   newFile: ["M14 3.5H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8.5z", "M14 3.5v5h5", "M12 12v5M9.5 14.5h5"],
   newDir: ["M3.5 6.5a2 2 0 0 1 2-2H10l2 2.5h6.5a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z", "M12 11v5M9.5 13.5h5"],
   close: ["m6 6 12 12M18 6 6 18"],
+  pencil: ["M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17z", "M14.5 7.5l3 3"],
   trash: ["M4.5 7h15M9.5 7V4.5h5V7M6.5 7l.8 12.5h9.4L17.5 7", "M10 11v5M14 11v5"],
   dir: ["M3.5 6.5a2 2 0 0 1 2-2H10l2 2.5h6.5a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"],
   file: ["M14 3.5H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8.5z", "M14 3.5v5h5"],
@@ -402,6 +471,7 @@ export function fileExplorer(opts) {
   var model = opts.model;
   var sel = ""; // the folder where a new file or folder goes
   var adding = null; // { kind: "file" | "dir", parent }
+  var renaming = null; // { kind, path }
   var armed = ""; // the row that waits for a second click on its trash can
   var armTimer = 0;
   var isOpen = false;
@@ -413,24 +483,33 @@ export function fileExplorer(opts) {
   drawer.setAttribute("dir", opts.lang === "ar" ? "rtl" : "ltr");
   var head = h("div", "fx-head");
   var title = h("span", "fx-title", S.files);
-  function actBtn(cls, icon, label) {
-    var b = h("button", "fx-act " + cls);
+  var bClose = h("button", "fx-act fx-close");
+  bClose.type = "button";
+  bClose.title = S.close;
+  bClose.setAttribute("aria-label", S.close);
+  bClose.append(svg(ICON.close));
+  head.append(title, bClose);
+  // the two ways to create something: a file or a folder
+  var toolsRow = h("div", "fx-tools");
+  function toolBtn(cls, icon, label, text) {
+    var b = h("button", "fx-btn " + cls);
     b.type = "button";
     b.title = label;
     b.setAttribute("aria-label", label);
-    b.append(svg(ICON[icon]));
+    b.append(svg(ICON[icon]), h("span", "fx-btn-text", text));
     return b;
   }
-  var bFile = actBtn("fx-new-file", "newFile", S.newFile);
-  var bDir = actBtn("fx-new-dir", "newDir", S.newDir);
-  var bClose = actBtn("fx-close", "close", S.close);
-  head.append(title, bFile, bDir, bClose);
+  var bFile = toolBtn("fx-new-file", "newFile", S.newFile, S.btnFile);
+  var bDir = toolBtn("fx-new-dir", "newDir", S.newDir, S.btnDir);
+  toolsRow.append(bFile, bDir);
   var tree = h("ul", "fx-tree");
   tree.setAttribute("role", "tree");
+  var hint = h("p", "fx-hint");
+  hint.hidden = true;
   var err = h("p", "fx-err");
   err.setAttribute("role", "alert");
   err.hidden = true;
-  drawer.append(head, tree, err);
+  drawer.append(head, toolsRow, tree, hint, err);
 
   var button = h("button", "pg-copy pg-fx-toggle");
   button.type = "button";
@@ -450,11 +529,16 @@ export function fileExplorer(opts) {
     err.hidden = true;
     err.textContent = "";
   }
-  function iconFor(path) {
-    var box = h("span", "fx-ico");
+  // the icon of a file follows its language; a name that is not finished yet has the plain file icon
+  function paintIcon(box, path) {
+    box.textContent = "";
     var markup = opts.icon ? opts.icon(path) : "";
     if (markup) box.innerHTML = markup; // static, trusted SVG from the page
     else box.append(svg(ICON.file));
+  }
+  function iconFor(path) {
+    var box = h("span", "fx-ico");
+    paintIcon(box, path);
     return box;
   }
   function dirIcon() {
@@ -479,16 +563,35 @@ export function fileExplorer(opts) {
     li.append(b);
     return b;
   }
-  function delBtn(li, path, kind) {
-    var b = h("button", "fx-del");
+  function rowBtn(li, cls, icon, label) {
+    var b = h("button", "fx-row-btn " + cls);
     b.type = "button";
-    b.title = S.del;
-    b.setAttribute("aria-label", S.del + " " + path);
-    b.append(svg(ICON.trash));
-    b.addEventListener("click", function () {
+    b.title = label;
+    b.setAttribute("aria-label", label);
+    b.append(svg(ICON[icon]));
+    li.append(b);
+    return b;
+  }
+  // rename and delete: the two things that can be done to a file or a folder
+  function rowActions(li, path, kind) {
+    rowBtn(li, "fx-ren", "pencil", S.rename + " " + path).addEventListener("click", function () {
+      if (!canEdit()) return;
+      adding = null;
+      armed = "";
+      renaming = { kind: kind, path: path };
+      hideErr();
+      render();
+      var input = tree.querySelector(".fx-input");
+      if (input) {
+        input.focus();
+        input.select();
+      }
+    });
+    rowBtn(li, "fx-del", "trash", S.del + " " + path).addEventListener("click", function () {
       if (!canEdit()) return;
       if (armed !== path) {
         armed = path;
+        renaming = null;
         clearTimeout(armTimer);
         armTimer = setTimeout(function () {
           armed = "";
@@ -509,43 +612,79 @@ export function fileExplorer(opts) {
       if (opts.onChange) opts.onChange(r.evt);
       render();
     });
-    li.append(b);
   }
-  function addRow(depth) {
+  // a text field in a row: Enter keeps it, Escape or leaving it cancels
+  function inputRow(depth, icon, value, placeholder, label, onInput, onEnter) {
     var li = h("li", "fx-row fx-add");
     li.style.setProperty("--d", String(depth));
-    var box = h("span", "fx-ico");
-    box.append(svg(ICON[adding.kind === "dir" ? "dir" : "file"]));
     var input = h("input", "fx-input");
     input.type = "text";
     input.maxLength = 64;
     input.spellcheck = false;
-    input.placeholder = adding.kind === "dir" ? S.holderDir : S.holderFile;
+    input.value = value;
+    input.placeholder = placeholder;
     input.setAttribute("autocapitalize", "off");
     input.setAttribute("autocomplete", "off");
     input.setAttribute("autocorrect", "off");
     input.setAttribute("dir", "ltr");
-    input.setAttribute("aria-label", adding.kind === "dir" ? S.newDir : S.newFile);
+    input.setAttribute("aria-label", label);
     input.addEventListener("keydown", function (e) {
       if (e.key === "Enter") {
         e.preventDefault();
-        submit(input.value);
+        onEnter(input.value);
       } else if (e.key === "Escape") {
         e.preventDefault();
         e.stopPropagation();
         cancel();
       }
     });
-    input.addEventListener("input", hideErr);
+    input.addEventListener("input", function () {
+      hideErr();
+      if (onInput) onInput(input.value);
+    });
     input.addEventListener("blur", function () {
       setTimeout(function () {
-        if (adding && document.activeElement !== input && !drawer.contains(document.activeElement)) cancel();
+        if ((adding || renaming) && document.activeElement !== input && !drawer.contains(document.activeElement)) cancel();
       }, 120);
     });
-    li.append(box, input);
+    li.append(icon, input);
     return li;
   }
-  function submit(value) {
+  function addRow(depth) {
+    var kind = adding.kind;
+    var box = h("span", "fx-ico");
+    if (kind === "dir") box.append(svg(ICON.dir));
+    else paintIcon(box, ""); // the plain file icon, until the name ends with .html, .css, .js or .php
+    var li = inputRow(
+      depth,
+      box,
+      "",
+      kind === "dir" ? S.holderDir : S.holderFile,
+      kind === "dir" ? S.newDir : S.newFile,
+      kind === "file"
+        ? function (v) {
+            paintIcon(box, /\.(html|css|js|php)$/i.test(v.trim()) ? v.trim() : "");
+          }
+        : null,
+      submitAdd
+    );
+    return li;
+  }
+  function renameRow(kind, path, depth) {
+    var last = path.slice(path.lastIndexOf("/") + 1);
+    var dot = kind === "file" ? last.lastIndexOf(".") : -1;
+    var base = dot > 0 ? last.slice(0, dot) : last;
+    var ext = dot > 0 ? last.slice(dot) : "";
+    var li = inputRow(depth, kind === "file" ? iconFor(path) : dirIcon(), base, S.holderRename, S.rename + " " + path, null, submitRename);
+    li.classList.add("fx-rename");
+    if (ext) {
+      var suffix = h("span", "fx-ext", ext); // the extension stays: it is shown, not editable
+      suffix.setAttribute("dir", "ltr");
+      li.append(suffix);
+    }
+    return li;
+  }
+  function submitAdd(value) {
     if (!adding || !canEdit()) return;
     var r = adding.kind === "dir" ? fsAddDir(model, value, adding.parent) : fsAddFile(model, value, adding.parent);
     if (r.error) {
@@ -556,17 +695,39 @@ export function fileExplorer(opts) {
     hideErr();
     render();
     if (opts.onChange) opts.onChange(r.evt);
-    if (r.evt.t === "file" && opts.onOpen) opts.onOpen(r.evt.id);
+    if (r.evt.t === "file" && opts.onOpen) opts.onOpen(r.evt.id); // the new file opens in the code window
+    render();
+  }
+  function submitRename(value) {
+    if (!renaming || !canEdit()) return;
+    var info = renaming;
+    var r = fsRename(model, info.path, info.kind, value);
+    if (r.error) {
+      showErr(r.error);
+      return;
+    }
+    renaming = null;
+    hideErr();
+    if (r.same) {
+      render();
+      return;
+    }
+    if (info.kind === "dir" && sel && (low(sel) === low(info.path) || low(sel).indexOf(low(info.path) + "/") === 0)) sel = r.evt.to + sel.slice(info.path.length);
+    render();
+    if (opts.onChange) opts.onChange(r.evt);
     render();
   }
   function cancel() {
     adding = null;
+    renaming = null;
     hideErr();
     render();
   }
   function startAdd(kind) {
     if (!canEdit()) return;
     hideErr();
+    renaming = null;
+    armed = "";
     adding = { kind: kind, parent: sel };
     render();
     var input = tree.querySelector(".fx-input");
@@ -576,6 +737,8 @@ export function fileExplorer(opts) {
   function render() {
     tree.textContent = "";
     drawer.classList.toggle("is-readonly", !canEdit());
+    hint.hidden = !(adding || renaming);
+    hint.textContent = adding ? (adding.kind === "dir" ? S.hintDir : S.hintFile) : renaming ? S.hintRename : "";
     var cur = opts.current ? opts.current() : 0;
     var top = row("file", "index.html", 0);
     top.classList.toggle("is-cur", cur === 0);
@@ -590,20 +753,28 @@ export function fileExplorer(opts) {
     (function walk(dir, depth) {
       var kids = fsChildren(model, dir);
       kids.dirs.forEach(function (d) {
-        var li = row("dir", d, depth);
-        li.classList.toggle("is-sel", low(sel) === low(d));
-        li.classList.toggle("is-armed", armed === d);
-        nameBtn(li, dirIcon(), d.slice(d.lastIndexOf("/") + 1), function () {
-          sel = low(sel) === low(d) ? dirName(d) : d;
-          render();
-        });
-        delBtn(li, d, "dir");
-        if (armed === d) li.append(h("span", "fx-sure", S.sure));
-        tree.append(li);
+        if (renaming && renaming.kind === "dir" && low(renaming.path) === low(d)) {
+          tree.append(renameRow("dir", d, depth));
+        } else {
+          var li = row("dir", d, depth);
+          li.classList.toggle("is-sel", low(sel) === low(d));
+          li.classList.toggle("is-armed", armed === d);
+          nameBtn(li, dirIcon(), d.slice(d.lastIndexOf("/") + 1), function () {
+            sel = low(sel) === low(d) ? dirName(d) : d;
+            render();
+          });
+          rowActions(li, d, "dir");
+          if (armed === d) li.append(h("span", "fx-sure", S.sure));
+          tree.append(li);
+        }
         if (adding && adding.parent === d) tree.append(addRow(depth + 1));
         walk(d, depth + 1);
       });
       kids.files.forEach(function (f) {
+        if (renaming && renaming.kind === "file" && low(renaming.path) === low(f.path)) {
+          tree.append(renameRow("file", f.path, depth));
+          return;
+        }
         var li = row("file", f.path, depth);
         li.classList.toggle("is-cur", cur === f.id);
         li.classList.toggle("is-armed", armed === f.path);
@@ -612,7 +783,7 @@ export function fileExplorer(opts) {
           if (opts.onOpen) opts.onOpen(f.id);
           render();
         });
-        delBtn(li, f.path, "file");
+        rowActions(li, f.path, "file");
         if (armed === f.path) li.append(h("span", "fx-sure", S.sure));
         tree.append(li);
       });
@@ -628,7 +799,7 @@ export function fileExplorer(opts) {
     if (isOpen) {
       if (bar && bar.offsetHeight) drawer.style.top = bar.offsetHeight + "px";
       render();
-    } else if (adding) {
+    } else if (adding || renaming) {
       cancel();
     }
   }
