@@ -365,6 +365,7 @@ var STR = {
     close: "Fermer",
     toggle: "Fichiers du projet",
     rename: "Renommer",
+    more: "Options",
     del: "Supprimer",
     sure: "Sûr ?",
     holderFile: "nom.css",
@@ -394,6 +395,7 @@ var STR = {
     close: "إغلاق",
     toggle: "ملفات المشروع",
     rename: "إعادة تسمية",
+    more: "خيارات",
     del: "حذف",
     sure: "متأكد؟",
     holderFile: "nom.css",
@@ -423,7 +425,7 @@ function ensureCss() {
   try {
     var link = document.createElement("link");
     link.rel = "stylesheet";
-    link.href = new URL("../CSS/webfiles.css?v=1", import.meta.url).href;
+    link.href = new URL("../CSS/webfiles.css?v=2", import.meta.url).href;
     document.head.append(link);
   } catch (e) {}
 }
@@ -435,14 +437,14 @@ function h(tag, cls, text) {
   return n;
 }
 var NS = "http://www.w3.org/2000/svg";
-function svg(paths) {
+function svg(paths, width) {
   var s = document.createElementNS(NS, "svg");
   s.setAttribute("viewBox", "0 0 24 24");
-  s.setAttribute("width", "16");
-  s.setAttribute("height", "16");
+  s.setAttribute("width", "17");
+  s.setAttribute("height", "17");
   s.setAttribute("fill", "none");
   s.setAttribute("stroke", "currentColor");
-  s.setAttribute("stroke-width", "1.9");
+  s.setAttribute("stroke-width", String(width || 1.9));
   s.setAttribute("stroke-linecap", "round");
   s.setAttribute("stroke-linejoin", "round");
   s.setAttribute("aria-hidden", "true");
@@ -453,15 +455,18 @@ function svg(paths) {
   });
   return s;
 }
+var FILE_PATHS = ["M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z", "M13 2v7h7"];
+var DIR_PATHS = ["M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"];
 var ICON = {
-  tree: ["M4 5.5h6l2 2.5h8v10.5H4z", "M9 13h6"],
-  newFile: ["M14 3.5H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8.5z", "M14 3.5v5h5", "M12 12v5M9.5 14.5h5"],
-  newDir: ["M3.5 6.5a2 2 0 0 1 2-2H10l2 2.5h6.5a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z", "M12 11v5M9.5 13.5h5"],
-  close: ["m6 6 12 12M18 6 6 18"],
-  pencil: ["M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17z", "M14.5 7.5l3 3"],
-  trash: ["M4.5 7h15M9.5 7V4.5h5V7M6.5 7l.8 12.5h9.4L17.5 7", "M10 11v5M14 11v5"],
-  dir: ["M3.5 6.5a2 2 0 0 1 2-2H10l2 2.5h6.5a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"],
-  file: ["M14 3.5H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8.5z", "M14 3.5v5h5"],
+  tree: DIR_PATHS,
+  newFile: FILE_PATHS.concat(["M12 18v-6M9 15h6"]),
+  newDir: DIR_PATHS.concat(["M12 11v6M9 14h6"]),
+  close: ["m6 6 12 12M18 6 6 18"], // the same cross as the one that closes the playground
+  pencil: ["M12 20h9", "M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"], // the pencil used elsewhere on the site
+  trash: ["M3 6h18", "M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6", "M10 11v6M14 11v6", "M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"],
+  dots: ["M5 12h.01M12 12h.01M19 12h.01"],
+  dir: DIR_PATHS,
+  file: FILE_PATHS,
 };
 
 // opts: { model, lang, canEdit(), current() -> id, onOpen(id), onChange(evt), icon(path) -> trusted svg text (optional) }
@@ -472,10 +477,12 @@ export function fileExplorer(opts) {
   var sel = ""; // the folder where a new file or folder goes
   var adding = null; // { kind: "file" | "dir", parent }
   var renaming = null; // { kind, path }
-  var armed = ""; // the row that waits for a second click on its trash can
+  var menu = null; // { kind, path, left, top }: the little menu of the three dots
+  var armed = ""; // the path whose "Supprimer" waits for a second click
   var armTimer = 0;
   var isOpen = false;
   var bar = null;
+  var winEl = null;
 
   var drawer = h("aside", "fx");
   drawer.setAttribute("aria-label", S.files);
@@ -483,11 +490,12 @@ export function fileExplorer(opts) {
   drawer.setAttribute("dir", opts.lang === "ar" ? "rtl" : "ltr");
   var head = h("div", "fx-head");
   var title = h("span", "fx-title", S.files);
-  var bClose = h("button", "fx-act fx-close");
+  // the same round cross as the one that closes the playground
+  var bClose = h("button", "fx-x");
   bClose.type = "button";
   bClose.title = S.close;
   bClose.setAttribute("aria-label", S.close);
-  bClose.append(svg(ICON.close));
+  bClose.append(svg(ICON.close, 2.2));
   head.append(title, bClose);
   // the two ways to create something: a file or a folder
   var toolsRow = h("div", "fx-tools");
@@ -509,7 +517,10 @@ export function fileExplorer(opts) {
   var err = h("p", "fx-err");
   err.setAttribute("role", "alert");
   err.hidden = true;
-  drawer.append(head, toolsRow, tree, hint, err);
+  var menuEl = h("div", "fx-menu");
+  menuEl.setAttribute("role", "menu");
+  menuEl.hidden = true;
+  drawer.append(head, toolsRow, tree, hint, err, menuEl);
 
   var button = h("button", "pg-copy pg-fx-toggle");
   button.type = "button";
@@ -551,6 +562,7 @@ export function fileExplorer(opts) {
     li.style.setProperty("--d", String(depth));
     li.setAttribute("role", "treeitem");
     li.setAttribute("data-path", path);
+    if (menu && low(menu.path) === low(path)) li.classList.add("is-menu");
     return li;
   }
   function nameBtn(li, icon, text, onClick) {
@@ -563,56 +575,104 @@ export function fileExplorer(opts) {
     li.append(b);
     return b;
   }
-  function rowBtn(li, cls, icon, label) {
-    var b = h("button", "fx-row-btn " + cls);
+
+  /* the three dots of a row and their little menu: Renommer, Supprimer */
+  function closeMenu() {
+    if (!menu) return;
+    menu = null;
+    armed = "";
+    clearTimeout(armTimer);
+    renderMenu();
+    render();
+  }
+  function moreBtn(li, path, kind) {
+    var b = h("button", "fx-more");
     b.type = "button";
-    b.title = label;
-    b.setAttribute("aria-label", label);
-    b.append(svg(ICON[icon]));
+    b.title = S.more;
+    b.setAttribute("aria-label", S.more + " " + path);
+    b.setAttribute("aria-haspopup", "menu");
+    b.append(svg(ICON.dots, 3.2));
+    b.addEventListener("click", function () {
+      if (!canEdit()) return;
+      if (menu && low(menu.path) === low(path)) {
+        closeMenu();
+        return;
+      }
+      var dr = drawer.getBoundingClientRect();
+      var br = b.getBoundingClientRect();
+      var mw = 176;
+      var mh = 96;
+      var left = Math.min(Math.max(8, br.right - dr.left - mw), Math.max(8, dr.width - mw - 8));
+      var top = br.bottom - dr.top + 4;
+      if (dr.height && top + mh > dr.height - 8) top = Math.max(8, br.top - dr.top - mh - 4); // not enough room below: above
+      adding = null;
+      renaming = null;
+      hideErr();
+      armed = "";
+      clearTimeout(armTimer);
+      menu = { kind: kind, path: path, left: left, top: top };
+      render();
+      renderMenu();
+      var first = menuEl.querySelector("button");
+      if (first) first.focus();
+    });
     li.append(b);
+  }
+  function menuItem(cls, icon, text, onClick) {
+    var b = h("button", "fx-item " + cls);
+    b.type = "button";
+    b.setAttribute("role", "menuitem");
+    b.append(svg(ICON[icon]), h("span", "fx-item-text", text));
+    b.addEventListener("click", onClick);
     return b;
   }
-  // rename and delete: the two things that can be done to a file or a folder
-  function rowActions(li, path, kind) {
-    rowBtn(li, "fx-ren", "pencil", S.rename + " " + path).addEventListener("click", function () {
-      if (!canEdit()) return;
-      adding = null;
-      armed = "";
-      renaming = { kind: kind, path: path };
-      hideErr();
-      render();
-      var input = tree.querySelector(".fx-input");
-      if (input) {
-        input.focus();
-        input.select();
-      }
-    });
-    rowBtn(li, "fx-del", "trash", S.del + " " + path).addEventListener("click", function () {
-      if (!canEdit()) return;
-      if (armed !== path) {
-        armed = path;
-        renaming = null;
-        clearTimeout(armTimer);
-        armTimer = setTimeout(function () {
+  function renderMenu() {
+    menuEl.textContent = "";
+    menuEl.hidden = !menu;
+    if (!menu) return;
+    menuEl.style.left = menu.left + "px";
+    menuEl.style.top = menu.top + "px";
+    var info = menu;
+    menuEl.append(
+      menuItem("fx-item-ren", "pencil", S.rename, function () {
+        menu = null;
+        startRename(info.kind, info.path);
+        renderMenu();
+      }),
+      (function () {
+        var del = menuItem("fx-item-del" + (armed === info.path ? " is-armed" : ""), "trash", armed === info.path ? S.sure : S.del, function () {
+          if (!canEdit()) return;
+          if (armed !== info.path) {
+            // a first click asks "Sûr ?", a second one deletes
+            armed = info.path;
+            clearTimeout(armTimer);
+            armTimer = setTimeout(function () {
+              armed = "";
+              renderMenu();
+            }, 3000);
+            renderMenu();
+            var again = menuEl.querySelector(".fx-item-del");
+            if (again) again.focus();
+            return;
+          }
+          clearTimeout(armTimer);
           armed = "";
+          menu = null;
+          var r = fsRemove(model, info.path, info.kind);
+          if (!r.error) {
+            if (sel && (low(sel) === low(info.path) || low(sel).indexOf(low(info.path) + "/") === 0)) sel = "";
+            render();
+            renderMenu();
+            if (opts.onChange) opts.onChange(r.evt);
+          }
           render();
-        }, 3000);
-        render();
-        return;
-      }
-      clearTimeout(armTimer);
-      armed = "";
-      var r = fsRemove(model, path, kind);
-      if (r.error) {
-        render();
-        return;
-      }
-      if (sel && (low(sel) === low(path) || low(sel).indexOf(low(path) + "/") === 0)) sel = "";
-      render();
-      if (opts.onChange) opts.onChange(r.evt);
-      render();
-    });
+          renderMenu();
+        });
+        return del;
+      })()
+    );
   }
+
   // a text field in a row: Enter keeps it, Escape or leaving it cancels
   function inputRow(depth, icon, value, placeholder, label, onInput, onEnter) {
     var li = h("li", "fx-row fx-add");
@@ -655,7 +715,7 @@ export function fileExplorer(opts) {
     var box = h("span", "fx-ico");
     if (kind === "dir") box.append(svg(ICON.dir));
     else paintIcon(box, ""); // the plain file icon, until the name ends with .html, .css, .js or .php
-    var li = inputRow(
+    return inputRow(
       depth,
       box,
       "",
@@ -668,7 +728,6 @@ export function fileExplorer(opts) {
         : null,
       submitAdd
     );
-    return li;
   }
   function renameRow(kind, path, depth) {
     var last = path.slice(path.lastIndexOf("/") + 1);
@@ -727,11 +786,27 @@ export function fileExplorer(opts) {
     if (!canEdit()) return;
     hideErr();
     renaming = null;
+    menu = null;
     armed = "";
+    renderMenu();
     adding = { kind: kind, parent: sel };
     render();
     var input = tree.querySelector(".fx-input");
     if (input) input.focus();
+  }
+  function startRename(kind, path) {
+    if (!canEdit()) return;
+    adding = null;
+    armed = "";
+    clearTimeout(armTimer);
+    renaming = { kind: kind, path: path };
+    hideErr();
+    render();
+    var input = tree.querySelector(".fx-input");
+    if (input) {
+      input.focus();
+      input.select();
+    }
   }
 
   function render() {
@@ -758,13 +833,11 @@ export function fileExplorer(opts) {
         } else {
           var li = row("dir", d, depth);
           li.classList.toggle("is-sel", low(sel) === low(d));
-          li.classList.toggle("is-armed", armed === d);
           nameBtn(li, dirIcon(), d.slice(d.lastIndexOf("/") + 1), function () {
             sel = low(sel) === low(d) ? dirName(d) : d;
             render();
           });
-          rowActions(li, d, "dir");
-          if (armed === d) li.append(h("span", "fx-sure", S.sure));
+          moreBtn(li, d, "dir");
           tree.append(li);
         }
         if (adding && adding.parent === d) tree.append(addRow(depth + 1));
@@ -777,30 +850,45 @@ export function fileExplorer(opts) {
         }
         var li = row("file", f.path, depth);
         li.classList.toggle("is-cur", cur === f.id);
-        li.classList.toggle("is-armed", armed === f.path);
         nameBtn(li, iconFor(f.path), f.path.slice(f.path.lastIndexOf("/") + 1), function () {
           sel = dirName(f.path);
           if (opts.onOpen) opts.onOpen(f.id);
           render();
         });
-        rowActions(li, f.path, "file");
-        if (armed === f.path) li.append(h("span", "fx-sure", S.sure));
+        moreBtn(li, f.path, "file");
         tree.append(li);
       });
     })("", 0);
   }
 
+  // a click anywhere else closes the little menu, and a click outside the drawer closes the drawer
+  function onDocDown(e) {
+    var t = e.target;
+    if (menu && !menuEl.contains(t) && !(t.closest && t.closest(".fx-more"))) closeMenu();
+    if (isOpen && !drawer.contains(t) && !button.contains(t)) setOpen(false);
+  }
   function setOpen(v) {
-    isOpen = !!v;
+    v = !!v;
+    if (v === isOpen) return;
+    isOpen = v;
     drawer.classList.toggle("is-open", isOpen);
     drawer.setAttribute("aria-hidden", isOpen ? "false" : "true");
     button.setAttribute("aria-expanded", isOpen ? "true" : "false");
     button.classList.toggle("is-on", isOpen);
+    if (winEl) winEl.classList.toggle("fx-open", isOpen); // a short code window grows while the drawer is open
     if (isOpen) {
       if (bar && bar.offsetHeight) drawer.style.top = bar.offsetHeight + "px";
+      document.addEventListener("pointerdown", onDocDown, true);
       render();
-    } else if (adding || renaming) {
-      cancel();
+    } else {
+      document.removeEventListener("pointerdown", onDocDown, true);
+      if (menu) {
+        menu = null;
+        armed = "";
+        clearTimeout(armTimer);
+        renderMenu();
+      }
+      if (adding || renaming) cancel();
     }
   }
   button.addEventListener("click", function () {
@@ -817,11 +905,17 @@ export function fileExplorer(opts) {
     startAdd("dir");
   });
   drawer.addEventListener("keydown", function (e) {
-    if (e.key === "Escape" && isOpen) {
-      e.stopPropagation(); // the playground behind must stay open
-      setOpen(false);
-      button.focus();
+    if (e.key !== "Escape" || !isOpen) return;
+    e.stopPropagation(); // the playground behind must stay open
+    if (menu) {
+      var path = menu.path;
+      closeMenu();
+      var back = tree.querySelector('[data-path="' + path.replace(/"/g, "") + '"] .fx-more');
+      if (back) back.focus();
+      return;
     }
+    setOpen(false);
+    button.focus();
   });
 
   render();
@@ -831,6 +925,7 @@ export function fileExplorer(opts) {
     // the window the drawer belongs to: it opens over its code, under its title bar
     mount: function (win) {
       win.classList.add("has-fx");
+      winEl = win;
       bar = win.querySelector(".pg-bar");
       win.append(drawer);
     },

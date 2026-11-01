@@ -1,74 +1,97 @@
-/* Explorer of the files of a web exercise (JS/webfiles.js): a drawer that slides in from the right, over the code,
-   like the side bar of VS Code. It lives inside the dark code window (.pg-win.has-fx). */
+/* "Fichiers du projet" (JS/webfiles.js): a drawer that slides in from the right, over the code, like the side bar of VS Code.
+   It lives inside the dark code window (.pg-win.has-fx). Its inner side is curved, like the cards of the site. */
 .pg-win.has-fx { position: relative; }
+.pg-win.fx-open { min-height: 360px; } /* room for the drawer, even in a small code window of an exercise */
 .pg-fx-toggle.is-on { background: #aee37b; color: #10260a; }
 
 .fx {
   position: absolute; top: 43px; right: 0; bottom: 0; z-index: 6;
-  width: min(270px, 86%); box-sizing: border-box; display: flex; flex-direction: column;
-  background: #050f3a; color: #cfe0ff; border-left: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: -14px 0 28px -14px rgba(0, 0, 0, 0.55);
+  width: min(280px, 88%); box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden;
+  border-radius: 22px 0 0 22px; background: #071448; color: #cfe0ff; border-left: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: -16px 0 32px -14px rgba(0, 0, 0, 0.6);
   transform: translateX(100%); visibility: hidden;
-  transition: transform 0.2s ease, visibility 0s linear 0.2s;
-  font: 600 13px/1.3 ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  transition: transform 0.22s ease, visibility 0s linear 0.22s;
+  font-family: "Space Grotesk", "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif; font-size: 14px; font-weight: 600; line-height: 1.3;
 }
-.fx.is-open { transform: none; visibility: visible; transition: transform 0.2s ease, visibility 0s; }
+.fx.is-open { transform: none; visibility: visible; transition: transform 0.22s ease, visibility 0s; }
 
-.fx-head { display: flex; align-items: center; gap: 4px; padding: 8px 8px 8px 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
-.fx-title { flex: 1; min-width: 0; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(207, 224, 255, 0.7); }
-.fx-act, .fx-row-btn {
-  appearance: none; border: 0; cursor: pointer; flex: none; display: inline-flex; align-items: center; justify-content: center;
-  width: 30px; height: 30px; padding: 0; border-radius: 8px; background: transparent; color: #cfe0ff;
+.fx-head { display: flex; align-items: center; gap: 8px; padding: 14px 14px 10px 20px; }
+.fx-title { flex: 1; min-width: 0; font-size: 16px; font-weight: 700; color: #fff; letter-spacing: -0.01em; }
+/* the same round cross as the one that closes the playground (.pg-modal-x) */
+.fx-x {
+  flex: none; width: 36px; height: 36px; padding: 0; border-radius: 50%; cursor: pointer;
+  border: 1px solid var(--color-border, #dce6f0); background: var(--color-surface, #fff); color: #032c7b;
+  box-shadow: 0 6px 18px rgba(1, 9, 45, 0.18); display: inline-flex; align-items: center; justify-content: center;
 }
-.fx-act:hover, .fx-row-btn:hover { background: rgba(255, 255, 255, 0.12); color: #fff; }
-.fx-act:focus-visible, .fx-row-btn:focus-visible, .fx-name:focus-visible, .fx-input:focus-visible, .fx-btn:focus-visible { outline: 2px solid #aee37b; outline-offset: -2px; }
+.fx-x:hover { background: var(--color-light-blue, #e6f0fc); border-color: #0464de; }
+.fx-x:focus-visible, .fx-name:focus-visible, .fx-input:focus-visible, .fx-btn:focus-visible, .fx-more:focus-visible, .fx-item:focus-visible { outline: 2px solid #aee37b; outline-offset: 2px; }
 
 /* the two buttons that create something */
-.fx-tools { display: flex; gap: 6px; padding: 8px 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+.fx-tools { display: flex; gap: 8px; padding: 2px 14px 14px; }
 .fx-btn {
-  appearance: none; cursor: pointer; flex: 1; min-width: 0; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  padding: 7px 8px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.22); background: rgba(255, 255, 255, 0.06); color: #fff; font: inherit;
+  appearance: none; cursor: pointer; flex: 1; min-width: 0; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 8px 10px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.08);
+  color: #fff; font: inherit; font-size: 13px; font-weight: 700; transition: background 0.15s, border-color 0.15s;
 }
-.fx-btn:hover { background: rgba(255, 255, 255, 0.14); }
-.fx-btn svg { flex: none; }
+.fx-btn:hover { background: rgba(255, 255, 255, 0.16); border-color: rgba(174, 227, 123, 0.7); }
+.fx-btn svg { flex: none; color: #aee37b; }
 
-.fx-tree { list-style: none; margin: 0; padding: 6px 0; overflow: auto; flex: 1; min-height: 0; }
-.fx-row { display: flex; align-items: center; gap: 2px; padding-inline-start: calc(6px + var(--d, 0) * 14px); padding-inline-end: 4px; min-height: 32px; position: relative; }
-.fx-row:hover { background: rgba(255, 255, 255, 0.06); }
+.fx-tree { list-style: none; margin: 0; padding: 2px 0 8px; overflow: auto; flex: 1; min-height: 0; border-top: 1px solid rgba(255, 255, 255, 0.09); }
+.fx-row { display: flex; align-items: center; gap: 2px; margin: 2px 10px; padding-inline-start: calc(4px + var(--d, 0) * 16px); padding-inline-end: 4px; min-height: 36px; position: relative; border-radius: 12px; }
+.fx-row:hover { background: rgba(255, 255, 255, 0.07); }
 .fx-name {
   appearance: none; border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; text-align: start;
-  flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 6px 6px; border-radius: 8px;
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 9px; padding: 7px 8px; border-radius: 12px;
 }
-.fx-ico { display: inline-flex; flex: none; color: rgba(207, 224, 255, 0.75); }
-.fx-ico svg { display: block; width: 16px; height: 16px; }
-.fx-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; unicode-bidi: plaintext; }
+.fx-ico { display: inline-flex; flex: none; color: rgba(207, 224, 255, 0.8); }
+.fx-ico svg { display: block; width: 17px; height: 17px; }
+.fx-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; unicode-bidi: plaintext; font: 700 13px ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; }
 .fx-row.is-dir .fx-ico { color: #aee37b; }
-.fx-row.is-cur { background: rgba(4, 100, 222, 0.32); color: #fff; box-shadow: inset 3px 0 0 #0464de; }
-.fx-row.is-sel:not(.is-cur), .fx-row.is-root-sel:not(.is-cur) { background: rgba(255, 255, 255, 0.07); }
+.fx-row.is-cur { background: rgba(4, 100, 222, 0.38); color: #fff; }
+.fx-row.is-sel:not(.is-cur), .fx-row.is-root-sel:not(.is-cur), .fx-row.is-menu { background: rgba(255, 255, 255, 0.1); }
 
-/* rename and delete: shown when the row is pointed at or focused */
-.fx-row-btn { width: 28px; height: 28px; opacity: 0; }
-.fx-row:hover .fx-row-btn, .fx-row:focus-within .fx-row-btn, .fx-row.is-armed .fx-row-btn { opacity: 1; }
-.fx-row.is-armed { background: rgba(230, 77, 107, 0.18); }
-.fx-row.is-armed .fx-del { background: #e64d6b; color: #fff; }
-.fx-sure { position: absolute; inset-inline-end: 66px; font-size: 11px; font-weight: 800; color: #ff9aae; pointer-events: none; }
-.fx-row.is-armed .fx-name { padding-inline-end: 80px; }
+/* the three dots of a row */
+.fx-more {
+  appearance: none; border: 0; cursor: pointer; flex: none; width: 30px; height: 30px; padding: 0; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center; background: transparent; color: #cfe0ff; opacity: 0;
+  transition: background 0.15s, opacity 0.15s;
+}
+.fx-row:hover .fx-more, .fx-row:focus-within .fx-more, .fx-row.is-menu .fx-more { opacity: 1; }
+.fx-more:hover { background: rgba(255, 255, 255, 0.16); color: #fff; }
+
+/* the little menu: Renommer, Supprimer (same look as the menu of the profile) */
+.fx-menu {
+  position: absolute; z-index: 8; width: 176px; padding: 6px; box-sizing: border-box; display: flex; flex-direction: column;
+  border: 1px solid var(--color-border, #dce6f0); border-radius: 14px; background: var(--color-surface, #fff);
+  box-shadow: 0 10px 28px rgba(1, 9, 45, 0.35);
+}
+.fx-menu[hidden] { display: none; }
+.fx-item {
+  appearance: none; border: 0; cursor: pointer; display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 8px 12px;
+  border-radius: 10px; background: none; color: var(--color-text, #01092d); font: inherit; font-size: 14px; font-weight: 600; text-align: start;
+}
+.fx-item:hover { background: var(--color-light-blue, #e6f0fc); }
+.fx-item svg { flex: none; }
+.fx-item-del { color: var(--color-danger, #e0473e); }
+.fx-item-del:hover { background: rgba(224, 71, 62, 0.12); }
+.fx-item-del.is-armed { background: var(--color-danger, #e0473e); color: #fff; }
 
 /* a text field in a row: new file, new folder, new name */
-.fx-add { background: rgba(255, 255, 255, 0.05); }
-.fx-add .fx-ico { margin-inline-start: 6px; }
+.fx-add { background: rgba(255, 255, 255, 0.07); }
+.fx-add .fx-ico { margin-inline-start: 8px; }
 .fx-input {
-  flex: 1; min-width: 0; box-sizing: border-box; margin: 4px 4px 4px 8px; padding: 5px 8px; border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.28); background: #000a2e; color: #fff; font: inherit; caret-color: #fff;
+  flex: 1; min-width: 0; box-sizing: border-box; margin: 4px 4px 4px 8px; padding: 6px 10px; border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.3); background: #000a2e; color: #fff; caret-color: #fff;
+  font: 700 13px ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
 }
-.fx-ext { flex: none; margin-inline-end: 8px; font-weight: 800; color: #aee37b; }
-.fx-hint { margin: 0; padding: 8px 12px; border-top: 1px solid rgba(255, 255, 255, 0.1); color: rgba(207, 224, 255, 0.75); font-size: 12px; font-weight: 600; line-height: 1.4; }
-.fx-err { margin: 0; padding: 8px 12px 10px; border-top: 1px solid rgba(255, 255, 255, 0.1); color: #ff9aae; font-size: 12px; font-weight: 700; line-height: 1.4; }
+.fx-ext { flex: none; margin-inline-end: 8px; font: 800 13px ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; color: #aee37b; }
+.fx-hint { margin: 0; padding: 10px 18px; border-top: 1px solid rgba(255, 255, 255, 0.09); color: rgba(207, 224, 255, 0.78); font-size: 12.5px; font-weight: 600; line-height: 1.4; }
+.fx-err { margin: 0; padding: 4px 18px 12px; color: #ff9aae; font-size: 12.5px; font-weight: 700; line-height: 1.4; }
 .fx-hint[hidden], .fx-err[hidden] { display: none; }
 
 /* the exercise is finished: the files can be read, not changed */
-.fx.is-readonly .fx-tools, .fx.is-readonly .fx-row-btn { display: none; }
+.fx.is-readonly .fx-tools, .fx.is-readonly .fx-more { display: none; }
 
-/* touch screens have no hover: the two buttons of a row stay visible */
-@media (hover: none) { .fx-row-btn { opacity: 0.75; } }
+/* touch screens have no hover: the three dots stay visible */
+@media (hover: none) { .fx-more { opacity: 0.8; } }
 @media (prefers-reduced-motion: reduce) { .fx, .fx.is-open { transition: none; } }
