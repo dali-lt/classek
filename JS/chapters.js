@@ -9,7 +9,7 @@
 
    The page chrome is in the student's language (EN / AR); the course content is French. */
 
-import { lintWeb } from "./weblint.js?v=1";
+import { lintWeb } from "./weblint.js?v=2";
 import { openAlgoViz, openAlgoLibrary, libraryLabel, algoTitle, hasAlgoViz, kindForCode, registerAnimations } from "./algoviz.js?v=67";
 import { assembleWeb, fileExplorer, fsParse, fsToDraft, fsClone, fsApply, langOfName } from "./webfiles.js?v=2";
 

@@ -3,7 +3,7 @@
    The profile card ("My account") reuses the teacher app's modal look (style.css)
    and saves to users/{uid}/meta/profile. */
 
-import { Chapters } from "./chapters.js?v=101";
+import { Chapters } from "./chapters.js?v=102";
 import * as Cy from "./cycle.js?v=68";
 import {
   MAX_SHOWN,
@@ -176,6 +176,7 @@ var STR = {
     bIntroTitle: "C’est l’heure du bilan",
     bIntro: "Des questions sur ce que tu as travaillé cette semaine, avec quelques-unes d’avant pour voir ce qui est resté. Pas de pression : le but est de mesurer ton progrès.",
     bChipChap: "{n} chapitre(s)",
+    bCovers: "Chapitres couverts : {l}",
     bLater: "Plus tard",
     bStart: "Commencer",
     bLoading: "Préparation du bilan…",
@@ -357,6 +358,7 @@ var STR = {
     bIntroTitle: "حان وقت التقييم",
     bIntro: "أسئلة على الي خدمتو في الأسبوع هذا، وبعضها من دروس قبل باش نشوفو شنوة ثبت. بلا ضغط: الهدف نقيسو تقدمك.",
     bChipChap: "{n} دروس",
+    bCovers: "الدروس اللي يغطّيها التقييم : {l}",
     bLater: "بعد شوية",
     bStart: "ابدا",
     bLoading: "نحضّرو في التقييم…",
@@ -2265,7 +2267,7 @@ async function openBilan() {
   var others = Object.keys(snap.status || {}).filter(function (id) {
     var st = snap.status[id] || {};
     return touched.indexOf(id) < 0 && Object.keys(st).some(function (k) {
-      return st[k] === "done";
+      return st[k] === "done" || st[k] === "mid" || st[k] === "review"; // finished = any of the three evaluations
     });
   });
   var avoid = {};
@@ -2319,6 +2321,12 @@ function renderBilanIntro(body) {
       chips.append(chip);
     });
     body.append(chips);
+    var names = Object.keys(seen)
+      .map(function (id) {
+        return (test.labels && test.labels[id]) || "";
+      })
+      .filter(Boolean);
+    if (names.length) body.append(el("p", "tc-p tc-covers", tf("bCovers", { l: names.join(" · ") })));
   }
   var start = pBtn(t("bStart"), "", function () {
     test.qs.forEach(function (q) {

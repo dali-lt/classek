@@ -26,6 +26,7 @@ var MSG = {
     strOpen: "Guillemet fermant manquant",
     closerExtra: "« {a} » en trop : rien à fermer",
     closerMismatch: "« {a} » trouvée, mais « {b} » était attendue (ouverte ligne {l})",
+    openerMismatch: "« {a} » ouverte ici n'est pas fermée correctement : « {c} » trouvée ligne {l} à la place de « {b} »",
     openerUnclosed: "« {a} » jamais fermée : il manque « {b} »",
     syntax: "Erreur de syntaxe : vérifie les virgules, parenthèses et guillemets",
     synMissingParen: "Il manque une parenthèse « ) » ou une virgule",
@@ -59,6 +60,7 @@ var MSG = {
     strOpen: "ناقصة الڤيّمة (guillemet) الي تسكّر",
     closerExtra: "« {a} » زايدة : ما فما شيء يتسكّر",
     closerMismatch: "لقيت « {a} » أما كنت نستنّى « {b} » (مفتوحة في السطر {l})",
+    openerMismatch: "« {a} » مفتوحة هنا أما ما تسكّرتش مليح : لقيت « {c} » في السطر {l} عوض « {b} »",
     openerUnclosed: "« {a} » ما تسكّرتش : ناقصة « {b} »",
     syntax: "غلطة syntaxe : شوف الفواصل والأقواس والـ guillemets",
     synMissingParen: "ناقصة قوس « ) » ولا فاصلة",
@@ -445,8 +447,7 @@ function lintCss(code, base, ui) {
   // a declaration, or several that miss their ";" (the next one starts on a new line with "name:")
   function decl(text, ln) {
     var t = text.replace(/^\s+/, "");
-    if (!t.trim()) return;
-    ln += countNl(text.slice(0, text.length - t.length));
+    if (!t.trim()) return; // ln is already the line of the first character that is not a space
     var re = /\n[ \t]*(-{0,2}[A-Za-z][\w-]*)[ \t]*:(?!:)/g;
     var m;
     var first = true;
@@ -723,7 +724,8 @@ function scanJs(code) {
         return { errs: errs, stack: stack };
       }
       if (CLOSE[top.ch] !== c) {
-        errs.push({ line: line, key: "closerMismatch", a: c, b: CLOSE[top.ch], l: top.line });
+        errs.push({ line: top.line, key: "openerMismatch", a: top.ch, b: CLOSE[top.ch], c: c, l: line });
+        if (top.line !== line) errs.push({ line: line, key: "closerMismatch", a: c, b: CLOSE[top.ch], l: top.line });
         return { errs: errs, stack: stack };
       }
       stack.pop();
