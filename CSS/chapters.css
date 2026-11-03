@@ -206,11 +206,11 @@
   --fd-bottom: #9fd868;
   --fd-ink: #01092d;
 }
-/* folder colours: brand colours picked per chapter (see folderColor in chapters.js) */
-.folder.fc0 { --fd-top: #4f9bff; --fd-bottom: #0464de; --fd-ink: #fff; }
-.folder.fc1 { --fd-top: #c3ec9a; --fd-bottom: #9fd868; --fd-ink: #01092d; }
-.folder.fc2 { --fd-top: #2a63c9; --fd-bottom: #032c7b; --fd-ink: #fff; }
-.folder.fc3 { --fd-top: #d9e8ff; --fd-bottom: #a9cbf8; --fd-ink: #032c7b; }
+/* folder colours = state of the chapter (see folderState in chapters.js):
+   light blue = not started, blue = in progress, green = done */
+.folder.fd-idle  { --fd-top: #d9e8ff; --fd-bottom: #a9cbf8; --fd-ink: #032c7b; }
+.folder.fd-doing { --fd-top: #4f9bff; --fd-bottom: #0464de; --fd-ink: #fff; }
+.folder.fd-done  { --fd-top: #c3ec9a; --fd-bottom: #9fd868; --fd-ink: #01092d; }
 .fd-tab {
   position: absolute;
   top: 0;
@@ -3646,3 +3646,61 @@ body:has(.av-modal) .ch-back.ch-back-float {
   .ch-fig { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .ch-fig svg { width: 360px; max-width: none; }
 }
+
+
+/* ---- v52: readable text on folders + one-line folder titles ---- */
+/* title: big, ONE line with "…" on desktop; two lines on phone */
+.fd-title {
+  display: block;
+  min-width: 0;
+  font-size: 18px;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fd-meta {
+  display: block;
+  min-width: 0;
+  font-size: 13.5px;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fd-gauge-n { font-size: 13.5px; }
+.fd-sheet-t { font-size: 12px; }
+.fd-gauge { width: 68px; height: 40px; }
+
+@media (max-width: 520px) {
+  .folder { height: 204px; }
+  .fd-sheet { bottom: 108px; height: 54px; }
+  .fd-sheet.s2 { height: 60px; }
+  .fd-sheet.s3 { height: 56px; }
+  .fd-front { height: 128px; }
+  .fd-title {
+    font-size: 15px;
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow-wrap: anywhere;
+  }
+  .fd-meta { font-size: 13px; }
+  .fd-gauge { width: 56px; height: 34px; }
+  .fd-gauge-n { font-size: 13px; }
+  .folder.is-soon { height: 130px; }
+}
+
+/* small text everywhere in the student app: 13px minimum */
+.sc-pill, .sc-meta,
+.ex-state, .ex-hint-tag, .ex-hints-used, .ex-saved, .ex-label, .ex-tool, .ex-q-n,
+.notes-count, .note-date, .note-colors-label,
+.code-tab, .code-label, .code-run,
+.lesson-keep-tag, .lc-tag, .live-url,
+.pg-switch, .pg-run, .pg-views, .pg-sw, .pg-vw, .pg-side .pg-views3 .pg-vw,
+.ib-state, .ib-prev { font-size: 13px; }
+.lesson-keep { font-size: 14px; }
+.lesson-keep-tag { font-size: 12.5px; }
+.ex-locked-text { font-size: 14px; }
+.ex-card.is-locked { opacity: 0.8; }

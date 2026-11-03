@@ -2131,16 +2131,11 @@ function weightOf(ch) {
 }
 
 /* A chapter is a folder; its notes are the sheets peeking out of it.
-   Folder colours are picked among the brand colours: stable for a given chapter, never the same as the previous folder. */
-var FOLDER_COLORS = 4;
-var lastFolderColor = -1;
-function folderColor(id) {
-  var h = 0;
-  for (var i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
-  var c = h % FOLDER_COLORS;
-  if (c === lastFolderColor) c = (c + 1) % FOLDER_COLORS;
-  lastFolderColor = c;
-  return c;
+   The folder colour tells the state: not started (light blue), in progress (blue), done (green). */
+function folderState(done, total) {
+  if (total > 0 && done >= total) return "fd-done";
+  if (done > 0) return "fd-doing";
+  return "fd-idle";
 }
 var ICON_FOLDER_BOOK =
   '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.4C10.4 5.2 8.3 4.6 5.4 4.6H3.5v13.9h1.9c2.9 0 5 .6 6.6 1.8 1.6-1.2 3.7-1.8 6.6-1.8h1.9V4.6h-1.9c-2.9 0-5 .6-6.6 1.8z"/><path d="M12 6.4v13.9"/></svg>';
@@ -2184,8 +2179,9 @@ function chapterCard(ch) {
   var nNotes = notesOf(ch.id).length;
   var title = ctx.getLang() === "ar" && ch.title_ar ? ch.title_ar : ch.title;
   var soon = total === 0; // listed in the programme, exercises not written yet
-  var card = el("button", "folder fc" + folderColor(ch.id) + (soon ? " is-soon" : ""));
+  var card = el("button", "folder " + folderState(done, total) + (soon ? " is-soon" : ""));
   card.type = "button";
+  card.title = title || "";
   card.disabled = soon;
   card.append(el("span", "fd-tab"));
   var back = el("span", "fd-back");
@@ -2293,7 +2289,6 @@ function renderList(host, route) {
     message(host, "emptyTitle", "emptyText", false);
     return;
   }
-  lastFolderColor = -1;
   var lastPart = null;
   shown.forEach(function (c) {
     // chapters grouped by part of the programme (when the chapter file says which part it belongs to)
