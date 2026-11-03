@@ -3715,3 +3715,6 @@ body:has(.av-modal) .ch-back.ch-back-float {
   background: var(--color-light-blue); color: #032c7b;
 }
 .ex-card.is-locked .ex-lock svg { width: 16px; height: 16px; }
+
+/* landing on the current exercise: leave room for the sticky top bar */
+.ex-card { scroll-margin-top: 96px; }

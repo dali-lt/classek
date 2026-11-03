@@ -368,6 +368,7 @@ var saveVer = {}; // "chapterId/exId" -> counter, to know if more was typed whil
 var hintShown = {}; // "chapterId/exId" -> how many hints the student has revealed (one per click)
 var deskOpen = {}; // "chapterId/exId" -> true/false once the student opened/closed an exercise on a wide screen (until then: only finished exercises are closed)
 var autoSol = {}; // "chapterId/exId" -> the solution of an evaluated exercise is being loaded
+var autoScrolled = {}; // chapterId -> true once the page has scrolled to the exercise the student reached (reset when entering the exercises again)
 var openEx = {}; // chapterId -> id of the exercise that is open on phones (the others are one row each)
 var tabs = {}; // chapterId -> "course" | "ex" | "notes": what the middle of the chapter page shows
 var notesWide = window.matchMedia("(min-width: 1101px)"); // wide: notes sit in a column on the right; narrower: they are a third tab
@@ -3754,8 +3755,10 @@ function pickTab(tab) {
   if (!ch) return;
   if (tab === "notes" && notesWide.matches) return;
   tabs[ch.id] = tab;
+  if (tab === "ex") autoScrolled[ch.id] = false; // coming back to the exercises: jump to the current one again
   render();
   window.scrollTo(0, 0);
+  scrollToCurrentExercise(ch);
 }
 
 function exercisesPart(ch) {
@@ -3837,6 +3840,26 @@ function renderView(view, ch) {
     view.append(aside);
   }
   syncBackButton();
+  if (tab === "ex") scrollToCurrentExercise(ch);
+}
+
+/* Opening the exercises lands on the exercise the student has reached (not on the first one, already finished).
+   Runs once per visit: it waits for the exercises to be loaded, and does nothing if the first exercise is the current one. */
+function scrollToCurrentExercise(ch) {
+  if (autoScrolled[ch.id]) return;
+  if (!S.cur || S.cur.id !== ch.id || S.cur.loading || S.cur.failed || !S.cur.exercises) return;
+  var id = currentExerciseId(ch);
+  autoScrolled[ch.id] = true;
+  if (!id || S.cur.exercises[0].id === id) return;
+  // two frames: the cards are in the page and the layout has settled (opening animations included)
+  window.requestAnimationFrame(function () {
+    window.requestAnimationFrame(function () {
+      var card = document.getElementById("ex-" + id);
+      if (!card) return;
+      var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      card.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+    });
+  });
 }
 
 /* ---------------- entry points ---------------- */
@@ -4119,6 +4142,7 @@ function render() {
       return;
     }
     S.cur = null;
+    autoScrolled = {};
     renderList(list, route);
     return;
   }
