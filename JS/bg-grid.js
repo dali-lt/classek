@@ -25,8 +25,8 @@
   function place(el) {
     el.style.left = rand(cols) * cell + "px";
     el.style.top = rand(rows) * cell + "px";
-    el.style.setProperty("--dur", 5 + Math.random() * 5 + "s");
-    el.style.setProperty("--delay", Math.random() * 4 + "s");
+    el.style.setProperty("--dur", 16 + Math.random() * 8 + "s"); // slow: 16–24 s per light-up
+    el.style.setProperty("--delay", Math.random() * 10 + "s");
     el.classList.toggle("is-blue", Math.random() < 0.4);
   }
   function build() {
@@ -39,7 +39,7 @@
     grid.textContent = "";
     cells = [];
     if ((reduce && reduce.matches) || saver) return; // the grid alone
-    var count = Math.min(w < 700 ? 6 : 12, Math.round((cols * rows) / 45));
+    var count = Math.min(w < 700 ? 4 : 8, Math.round((cols * rows) / 45));
     for (var i = 0; i < count; i++) {
       var c = document.createElement("span");
       c.className = "bg-grid-cell";

@@ -3703,4 +3703,15 @@ body:has(.av-modal) .ch-back.ch-back-float {
 .lesson-keep { font-size: 14px; }
 .lesson-keep-tag { font-size: 12.5px; }
 .ex-locked-text { font-size: 14px; }
-.ex-card.is-locked { opacity: 0.8; }
+
+/* locked exercises: the card stays solid, only the lock + number say "not yet".
+   (the row is a disabled <button>: browsers grey its text by themselves, so the colour is set back here) */
+.ex-card.is-locked { opacity: 1; background: color-mix(in srgb, var(--color-light-blue) 45%, var(--color-surface)); }
+.ex-card.is-locked .ex-sum:disabled { color: var(--color-text); opacity: 1; }
+.ex-card.is-locked .ex-num { opacity: 0.55; }
+.ex-card.is-locked .ex-locked-text { color: var(--color-text); font-weight: 600; font-size: 14px; }
+.ex-card.is-locked .ex-lock {
+  width: 30px; height: 30px; border-radius: 50%; flex: none;
+  background: var(--color-light-blue); color: #032c7b;
+}
+.ex-card.is-locked .ex-lock svg { width: 16px; height: 16px; }
