@@ -1894,3 +1894,45 @@ html[dir="rtl"] .lv-mid .lv-overall {
 }
 .bl-rev-go { border: 0; background: none; font: inherit; font-weight: 700; color: var(--color-primary); cursor: pointer; white-space: nowrap; }
 .bl-newweek { margin: 12px 0 2px; text-align: center; font-weight: 700; color: var(--color-primary); }
+
+
+/* ---------- v52: result / bilan on a phone — the card stays put, the tiles are one row you swipe sideways ---------- */
+/* .modal-scroll had overflow-y:auto only, so overflow-x became auto too: wide tiles made the whole card slide sideways */
+.test-modal .modal-scroll {
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.tc-tile { min-width: 0; }
+.tc-tile-head b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (min-width: 521px) {
+  .tc-tiles:not(.is-one) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 520px) {
+  .test-modal { max-height: calc(100dvh - 48px); }
+  /* one row of tiles, swiped sideways inside the card (the card itself never moves) */
+  .tc-tiles:not(.is-one) {
+    display: flex;
+    gap: 10px;
+    margin-inline: -22px;           /* reach the card edges, like a carousel */
+    padding: 4px 22px 10px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 22px;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y;
+    scrollbar-width: none;
+  }
+  .tc-tiles:not(.is-one)::-webkit-scrollbar { display: none; }
+  .tc-tiles:not(.is-one) .tc-tile {
+    flex: 0 0 86%;
+    scroll-snap-align: start;
+  }
+  .tc-tiles.is-one { grid-template-columns: minmax(0, 1fr); }
+  .tc-tile { padding: 13px 14px; }
+  .tc-tile-head { font-size: 14px; }
+  .tc-tile-score b { font-size: 28px; }
+}
