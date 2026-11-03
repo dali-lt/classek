@@ -3797,59 +3797,61 @@ body:has(.av-modal) .ch-back.ch-back-float {
 }
 
 
-/* ---- v54: lesson cards, closer to a "node" card: clear colour per kind, one icon, arrow in the title row ----
-   idea = royal blue · method = green · algo = teal (blue + green) · code = dark azure (like the code windows)
-   warn = pink-red · note = slate (the neutral default for a section with no kind) */
-.lesson-card { --lc-on: #fff; }
-.lesson-card.lk-idea   { --lc: #0464de; }
-.lesson-card.lk-method { --lc: #2e7d1d; }
-.lesson-card.lk-algo   { --lc: #107eaa; }
-.lesson-card.lk-code   { --lc: #032c7b; }
-.lesson-card.lk-warn   { --lc: #d23b5a; }
-.lesson-card.lk-note   { --lc: #5b6785; }
-/* dark theme: the colours are lighter, so the icon on them is dark */
-:root[data-theme="dark"] .lesson-card { --lc-on: #01092d; }
-:root[data-theme="dark"] .lesson-card.lk-idea   { --lc: #5a9cf5; }
-:root[data-theme="dark"] .lesson-card.lk-method { --lc: #aee37b; }
-:root[data-theme="dark"] .lesson-card.lk-algo   { --lc: #4fc3e0; }
-:root[data-theme="dark"] .lesson-card.lk-code   { --lc: #8aa4ee; }
-:root[data-theme="dark"] .lesson-card.lk-warn   { --lc: #f08aa0; }
-:root[data-theme="dark"] .lesson-card.lk-note   { --lc: #9aa8cf; }
+/* ---- v54: lesson cards. Brand colours only (royal blue, dark azure, lime, deep navy + their tints) ----
+   --lc  = the colour of the kind (dot, icon box)   --lc-ink = text on its tint   --lc-on = the icon on the solid box
+   idea = royal blue · method = lime · algo = light azure · code = dark azure · warn = deep navy (lime icon) · note = pale blue */
+.lesson-card { --lc-on: #fff; --lc-ink: var(--lc); }
+.lesson-card.lk-idea   { --lc: #0464de; --lc-ink: #0464de; --lc-on: #fff; }
+.lesson-card.lk-method { --lc: #aee37b; --lc-ink: #3b6a1c; --lc-on: #01092d; }
+.lesson-card.lk-algo   { --lc: #68a2eb; --lc-ink: #032c7b; --lc-on: #01092d; }
+.lesson-card.lk-code   { --lc: #032c7b; --lc-ink: #032c7b; --lc-on: #fff; }
+.lesson-card.lk-warn   { --lc: #01092d; --lc-ink: #01092d; --lc-on: #aee37b; }
+.lesson-card.lk-note   { --lc: #b9d4f6; --lc-ink: #032c7b; --lc-on: #032c7b; }
+/* dark theme: lighter tints of the same colours */
+:root[data-theme="dark"] .lesson-card.lk-idea   { --lc: #5a9cf5; --lc-ink: #8fbaf8; --lc-on: #01092d; }
+:root[data-theme="dark"] .lesson-card.lk-method { --lc: #aee37b; --lc-ink: #aee37b; --lc-on: #01092d; }
+:root[data-theme="dark"] .lesson-card.lk-algo   { --lc: #9cc3f7; --lc-ink: #9cc3f7; --lc-on: #01092d; }
+:root[data-theme="dark"] .lesson-card.lk-code   { --lc: #4d7fe0; --lc-ink: #8fa9ee; --lc-on: #fff; }
+:root[data-theme="dark"] .lesson-card.lk-warn   { --lc: #f0fff4; --lc-ink: #f0fff4; --lc-on: #01092d; }
+:root[data-theme="dark"] .lesson-card.lk-note   { --lc: #7f9bd0; --lc-ink: #a9bde6; --lc-on: #01092d; }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .lesson-card { --lc-on: #01092d; }
-  :root:not([data-theme="light"]) .lesson-card.lk-idea   { --lc: #5a9cf5; }
-  :root:not([data-theme="light"]) .lesson-card.lk-method { --lc: #aee37b; }
-  :root:not([data-theme="light"]) .lesson-card.lk-algo   { --lc: #4fc3e0; }
-  :root:not([data-theme="light"]) .lesson-card.lk-code   { --lc: #8aa4ee; }
-  :root:not([data-theme="light"]) .lesson-card.lk-warn   { --lc: #f08aa0; }
-  :root:not([data-theme="light"]) .lesson-card.lk-note   { --lc: #9aa8cf; }
+  :root:not([data-theme="light"]) .lesson-card.lk-idea   { --lc: #5a9cf5; --lc-ink: #8fbaf8; --lc-on: #01092d; }
+  :root:not([data-theme="light"]) .lesson-card.lk-method { --lc: #aee37b; --lc-ink: #aee37b; --lc-on: #01092d; }
+  :root:not([data-theme="light"]) .lesson-card.lk-algo   { --lc: #9cc3f7; --lc-ink: #9cc3f7; --lc-on: #01092d; }
+  :root:not([data-theme="light"]) .lesson-card.lk-code   { --lc: #4d7fe0; --lc-ink: #8fa9ee; --lc-on: #fff; }
+  :root:not([data-theme="light"]) .lesson-card.lk-warn   { --lc: #f0fff4; --lc-ink: #f0fff4; --lc-on: #01092d; }
+  :root:not([data-theme="light"]) .lesson-card.lk-note   { --lc: #7f9bd0; --lc-ink: #a9bde6; --lc-on: #01092d; }
 }
 
-/* the tab: a dot + the kind (the big icon is in the box next to the title, so it is not drawn twice) */
+/* the tab sits BEHIND the card: only its top peeks out, the card's own edge runs in front of it */
 .lc-tag {
-  padding: 4px 12px 4px 10px;
-  background: color-mix(in srgb, var(--lc) 16%, var(--color-surface));
-  border: 1px solid color-mix(in srgb, var(--lc) 28%, transparent);
+  z-index: -1;
+  top: -24px;
+  padding: 4px 12px 5px 10px;
+  color: var(--lc-ink);
+  background: color-mix(in srgb, var(--lc) 22%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--lc) 35%, transparent);
   border-bottom: 0;
 }
 .lc-tag-ico { display: none; }
-.lc-tag::before { display: block; content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--lc); }
+.lc-tag::before { display: block; content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--lc); box-shadow: 0 0 0 1px color-mix(in srgb, var(--lc-ink) 25%, transparent); }
+.lesson-body { margin-top: 38px; row-gap: 44px; }
 
-/* the icon box: solid colour, white icon */
+/* the icon box: solid colour of the kind */
 .lc-no {
   background: var(--lc);
   color: var(--lc-on);
   box-shadow: 0 6px 14px -6px color-mix(in srgb, var(--lc) 65%, transparent);
 }
 
-/* summary grid: icon | title | arrow on the first row, then the "À retenir" box, then the chips */
+/* summary grid: icon | title | arrow on the first row, then the key sentence, then the chips */
 .lesson-card > summary > .lc-no { grid-column: 1; grid-row: 1; }
 .lesson-card > summary > .lesson-sec-t { grid-column: 2; grid-row: 1; }
 .lesson-card > summary::after { grid-column: 3; grid-row: 1; align-self: center; margin: 0 6px 3px 0; }
 
-/* the "À retenir" box: tinted, with a bar in the card colour */
+/* the key sentence: a soft box in the colour of the kind, no label, no side line */
 .lesson-card > summary .lc-keep {
-  background: color-mix(in srgb, var(--lc) 9%, var(--color-surface));
-  border: 1px solid color-mix(in srgb, var(--lc) 16%, transparent);
-  border-inline-start: 3px solid var(--lc);
+  background: color-mix(in srgb, var(--lc) 12%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--lc) 22%, transparent);
 }
+.lc-chip.is-lang { color: var(--lc-ink); }

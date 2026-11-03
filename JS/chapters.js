@@ -2448,7 +2448,7 @@ var LC_RULES = [
   ["algo", /parcour|boucle|compteur|remettre|diagonale|voisin|tri\b|tris\b|recherche|algorithme|recurs|iterat/],
   ["idea", /idee|principe|definition|rappel|notion|objectif|introduction|role\b|c.est quoi/],
 ];
-function lessonKind(title) {
+function lessonKind(title, body) {
   var m = /\s*\{(idea|method|algo|code|warn|note)\}\s*$/i.exec(title);
   if (m) return { kind: m[1].toLowerCase(), title: title.slice(0, m.index).trim() };
   var norm = String(title || "")
@@ -2456,22 +2456,28 @@ function lessonKind(title) {
     .replace(/[̀-ͯ]/g, "")
     .toLowerCase();
   for (var i = 0; i < LC_RULES.length; i++) if (LC_RULES[i][1].test(norm)) return { kind: LC_RULES[i][0], title: title };
+  // the title says nothing: a section with real code in it (html, css, js, php, sql, python) is a "Code" section
+  var fence = /```(python|html|htmlsrc|htmlview|css|js|php|sql)\b/i.exec(body || "");
+  if (fence) return { kind: "code", title: title };
   return { kind: "note", title: title };
 }
 function lessonChips(body) {
   var chips = el("span", "lc-chips");
   var words = String(body || "").replace(/```[\s\S]*?```/g, " ").split(/\s+/).filter(Boolean).length;
   var mins = Math.max(1, Math.round(words / 110));
-  var c1 = el("span", "lc-chip");
-  c1.append(icon(LC_CLOCK, "lc-chip-ico"), document.createTextNode(tf("lcMin", { n: mins })));
-  chips.append(c1);
+  if (mins >= 2) {
+    // estimated reading time (about 110 words a minute): only shown for a longer section, "1 min" says nothing
+    var c1 = el("span", "lc-chip");
+    c1.append(icon(LC_CLOCK, "lc-chip-ico"), document.createTextNode(tf("lcMin", { n: mins })));
+    chips.append(c1);
+  }
   var fence = /```([a-zA-Z]*)/.exec(body || "");
-  if (fence) {
+  if (fence && (fence[1] || "").toLowerCase() !== "svg") { // an SVG is a drawing, not code to learn: no chip
     var c2 = el("span", "lc-chip is-lang");
     c2.append(icon(LC_ICONS.code, "lc-chip-ico"), document.createTextNode(LC_LANG[(fence[1] || "").toLowerCase()] || t("lcCode")));
     chips.append(c2);
   }
-  return chips;
+  return chips.childNodes.length ? chips : null;
 }
 
 function lessonBlock(ch, always) {
@@ -2509,7 +2515,7 @@ function lessonBlock(ch, always) {
         return;
       }
       var k = ch.id + "#" + i;
-      var kd = lessonKind(s.title);
+      var kd = lessonKind(s.title, s.body);
       var d = el("details", "lesson-card lk-" + kd.kind);
       d.setAttribute("lang", "fr");
       d.setAttribute("dir", "ltr");
@@ -2526,14 +2532,14 @@ function lessonBlock(ch, always) {
       sum.append(tag, no, el("span", "lesson-sec-t", kd.title));
       if (kp.keep) {
         var kk = el("small", "lc-keep");
-        kk.append(el("b", "", "À retenir"));
         inline(kk, kp.keep);
         sum.append(kk);
       } else {
         var auto = autoKeep(s.body);
         if (auto) sum.append(el("small", "lc-keep is-auto", auto));
       }
-      sum.append(lessonChips(s.body));
+      var chipsRow = lessonChips(s.body);
+      if (chipsRow) sum.append(chipsRow);
       d.append(sum, md(kp.rest));
       d.addEventListener("toggle", function () {
         sectionOpen[k] = d.open;
