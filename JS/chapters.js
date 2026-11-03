@@ -123,6 +123,13 @@ var STR = {
     s_info: "Informatique",
     chaptersCount: "{n} chapitres",
     chaptersOne: "1 chapitre",
+    lcIdea: "Idée",
+    lcMethod: "Méthode",
+    lcAlgo: "Algo",
+    lcCode: "Code",
+    lcWarn: "Piège",
+    lcNote: "Notion",
+    lcMin: "{n} min",
     soon: "Bientôt disponible",
     notes: "Mes notes",
     notesHint: "Écris ce qui compte pour toi dans ce cours.",
@@ -258,6 +265,13 @@ var STR = {
     s_info: "الإعلامية",
     chaptersCount: "{n} فصول",
     chaptersOne: "فصل واحد",
+    lcIdea: "فكرة",
+    lcMethod: "طريقة",
+    lcAlgo: "خوارزمية",
+    lcCode: "كود",
+    lcWarn: "انتبه",
+    lcNote: "مفهوم",
+    lcMin: "{n} د",
     soon: "قريبا",
     notes: "ملاحظاتي",
     notesHint: "اكتب اللي يهمك من الدرس.",
@@ -2410,6 +2424,56 @@ function autoKeep(body) {
 }
 
 // closed by default: the student opens the lesson (and then each section) only if they want it
+/* ---- lesson cards: a coloured tab (the kind of section), an icon, the "À retenir" line and small chips ----
+   The kind comes from the title ("Idée", "Méthode", "Erreurs fréquentes"…), or from a tag at the end of it:
+   "## Mon titre {warn}"  (idea | method | algo | code | warn | note). */
+var LC_SVG = function (d) {
+  return '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + d + "</svg>";
+};
+var LC_ICONS = {
+  idea: LC_SVG('<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1 2V16h5.2v-.2c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/>'),
+  method: LC_SVG('<path d="M9 6h11M9 12h11M9 18h11"/><path d="M3.5 6l1 1 2-2M3.5 12l1 1 2-2M3.5 18l1 1 2-2"/>'),
+  algo: LC_SVG('<path d="M17 3l3 3-3 3"/><path d="M4 11V9a3 3 0 0 1 3-3h13"/><path d="M7 21l-3-3 3-3"/><path d="M20 13v2a3 3 0 0 1-3 3H4"/>'),
+  code: LC_SVG('<path d="M8 8l-4 4 4 4M16 8l4 4-4 4M13.5 5l-3 14"/>'),
+  warn: LC_SVG('<path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17.2v.1"/>'),
+  note: LC_SVG('<path d="M12 6.4C10.4 5.2 8.3 4.6 5.4 4.6H3.5v13.9h1.9c2.9 0 5 .6 6.6 1.8 1.6-1.2 3.7-1.8 6.6-1.8h1.9V4.6h-1.9c-2.9 0-5 .6-6.6 1.8z"/><path d="M12 6.4v13.9"/>'),
+};
+var LC_CLOCK = LC_SVG('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>');
+var LC_LABEL = { idea: "lcIdea", method: "lcMethod", algo: "lcAlgo", code: "lcCode", warn: "lcWarn", note: "lcNote" };
+var LC_LANG = { python: "Python", html: "HTML", htmlsrc: "HTML", htmlview: "HTML", css: "CSS", js: "JavaScript", php: "PHP", sql: "SQL", svg: "SVG" };
+var LC_RULES = [
+  ["warn", /erreur|piege|attention|danger|faute|a eviter|confusion/],
+  ["method", /methode|etape|demarche|procedure|astuce|conseil/],
+  ["code", /ecriture|syntaxe|python|\bcode\b|exemple|construire|declarer|creer|ecrire|instruction/],
+  ["algo", /parcour|boucle|compteur|remettre|diagonale|voisin|tri\b|tris\b|recherche|algorithme|recurs|iterat/],
+  ["idea", /idee|principe|definition|rappel|notion|objectif|introduction|role\b|c.est quoi/],
+];
+function lessonKind(title) {
+  var m = /\s*\{(idea|method|algo|code|warn|note)\}\s*$/i.exec(title);
+  if (m) return { kind: m[1].toLowerCase(), title: title.slice(0, m.index).trim() };
+  var norm = String(title || "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase();
+  for (var i = 0; i < LC_RULES.length; i++) if (LC_RULES[i][1].test(norm)) return { kind: LC_RULES[i][0], title: title };
+  return { kind: "note", title: title };
+}
+function lessonChips(body) {
+  var chips = el("span", "lc-chips");
+  var words = String(body || "").replace(/```[\s\S]*?```/g, " ").split(/\s+/).filter(Boolean).length;
+  var mins = Math.max(1, Math.round(words / 110));
+  var c1 = el("span", "lc-chip");
+  c1.append(icon(LC_CLOCK, "lc-chip-ico"), document.createTextNode(tf("lcMin", { n: mins })));
+  chips.append(c1);
+  var fence = /```([a-zA-Z]*)/.exec(body || "");
+  if (fence) {
+    var c2 = el("span", "lc-chip is-lang");
+    c2.append(icon(LC_ICONS.code, "lc-chip-ico"), document.createTextNode(LC_LANG[(fence[1] || "").toLowerCase()] || t("lcCode")));
+    chips.append(c2);
+  }
+  return chips;
+}
+
 function lessonBlock(ch, always) {
   // always: the Course tab of the chapter page, where the lesson is simply open (no "open" button)
   var sections = lessonSections(ch.rappel);
@@ -2445,28 +2509,38 @@ function lessonBlock(ch, always) {
         return;
       }
       var k = ch.id + "#" + i;
-      var d = el("details", "lesson-sec");
+      var kd = lessonKind(s.title);
+      var d = el("details", "lesson-card lk-" + kd.kind);
       d.setAttribute("lang", "fr");
       d.setAttribute("dir", "ltr");
       d.open = sectionOpen[k] !== undefined ? !!sectionOpen[k] : false; // every section starts closed: the student opens the one they want
+      d.classList.toggle("is-wide", d.open); // an open card takes the whole row; closed ones sit side by side
       var kp = splitKeep(s.body);
       var sum = el("summary", "");
-      sum.append(el("span", "lesson-sec-t", s.title));
+      var tag = el("span", "lc-tag");
+      tag.append(icon(LC_ICONS[kd.kind], "lc-tag-ico"), el("span", "", t(LC_LABEL[kd.kind])));
+      tag.lastChild.setAttribute("lang", ctx.getLang());
+      tag.lastChild.setAttribute("dir", "auto");
+      var no = el("span", "lc-no");
+      no.innerHTML = LC_ICONS[kd.kind]; // static, trusted SVG
+      sum.append(tag, no, el("span", "lesson-sec-t", kd.title));
       if (kp.keep) {
-        var kk = el("small", "lesson-keep");
-        kk.append(el("span", "lesson-keep-tag", "À retenir"));
+        var kk = el("small", "lc-keep");
+        kk.append(el("b", "", "À retenir"));
         inline(kk, kp.keep);
         sum.append(kk);
       } else {
         var auto = autoKeep(s.body);
-        if (auto) sum.append(el("small", "lesson-keep is-auto", auto));
+        if (auto) sum.append(el("small", "lc-keep is-auto", auto));
       }
+      sum.append(lessonChips(s.body));
       d.append(sum, md(kp.rest));
       d.addEventListener("toggle", function () {
         sectionOpen[k] = d.open;
+        d.classList.toggle("is-wide", d.open);
         if (!d.open) return;
         // one section at a time: opening this one closes the others
-        body.querySelectorAll("details.lesson-sec[open]").forEach(function (o) {
+        body.querySelectorAll("details.lesson-card[open]").forEach(function (o) {
           if (o !== d) o.open = false;
         });
         // closing a section above can push this one off screen: bring it back to the top

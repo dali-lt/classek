@@ -3718,3 +3718,138 @@ body:has(.av-modal) .ch-back.ch-back-float {
 
 /* landing on the current exercise: leave room for the sticky top bar */
 .ex-card { scroll-margin-top: 96px; }
+
+
+/* ---- v53: lesson = cards with a coloured tab (kind), an icon, the "À retenir" line and small chips ----
+   colours (brand only): idea = blue, method = dark blue, algo = azure, code = green, warn = red, note = deep blue */
+.lesson-card { scroll-margin-top: 70px; min-width: 0; }
+.lesson-card.lk-idea   { --lc: var(--color-primary); }
+.lesson-card.lk-method { --lc: var(--color-navy); }
+.lesson-card.lk-algo   { --lc: color-mix(in srgb, var(--color-primary) 62%, #7aa8ee); }
+.lesson-card.lk-code   { --lc: var(--color-accent-ink); }
+.lesson-card.lk-warn   { --lc: var(--color-danger); }
+.lesson-card.lk-note   { --lc: var(--color-primary-dark); }
+.lesson-body { gap: 34px 16px; margin-top: 30px; }
+
+.lesson-card > summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px 11px;
+  padding: 22px 16px 14px;
+}
+.lesson-card:not([open]) > summary { padding-bottom: 14px; }
+.lesson-card > summary > .lesson-sec-t { min-width: 0; font-size: 1.05rem; line-height: 1.25; overflow-wrap: anywhere; }
+/* the tab on the top edge: icon + kind */
+.lc-tag { gap: 6px; padding: 4px 12px 4px 9px; font-size: 13px; border-radius: 10px 10px 0 0; }
+.lc-tag::before { display: none; }
+.lc-tag-ico { display: inline-grid; place-items: center; }
+.lc-tag-ico svg { width: 15px; height: 15px; }
+/* the "À retenir" line, or the first sentence while the card is closed: a soft box in the card colour */
+.lesson-card > summary .lc-keep {
+  grid-column: 1 / -1;
+  display: block;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--lc) 7%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--lc) 15%, transparent);
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+.lesson-card > summary .lc-keep b {
+  margin-inline-end: 7px;
+  color: var(--lc);
+  font-size: 13px;
+  font-weight: 800;
+}
+.lesson-card[open] > summary .lc-keep.is-auto { display: none; }
+/* small chips at the bottom: reading time, code language */
+.lc-chips { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; }
+.lc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px 3px 7px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--color-navy) 12%, transparent);
+  background: var(--color-sunken);
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+.lc-chip-ico { display: inline-grid; place-items: center; }
+.lc-chip-ico svg { width: 14px; height: 14px; }
+.lc-chip.is-lang {
+  color: var(--lc);
+  background: color-mix(in srgb, var(--lc) 10%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--lc) 22%, transparent);
+}
+/* an open card: its content under a thin line in the card colour */
+.lesson-card[open] { border-color: color-mix(in srgb, var(--lc) 35%, transparent); box-shadow: 0 1px 2px rgba(1, 9, 45, 0.05), 0 14px 30px -14px color-mix(in srgb, var(--lc) 45%, transparent); }
+.lesson-card[open] > .ch-content { border-top: 1px solid color-mix(in srgb, var(--lc) 16%, transparent); margin: 0 16px; padding: 14px 0 16px; }
+@media (max-width: 720px) {
+  .lesson-card > summary { padding: 22px 14px 13px; }
+  .lesson-card[open] > .ch-content { margin: 0 14px; }
+}
+
+
+/* ---- v54: lesson cards, closer to a "node" card: clear colour per kind, one icon, arrow in the title row ----
+   idea = royal blue · method = green · algo = teal (blue + green) · code = dark azure (like the code windows)
+   warn = pink-red · note = slate (the neutral default for a section with no kind) */
+.lesson-card { --lc-on: #fff; }
+.lesson-card.lk-idea   { --lc: #0464de; }
+.lesson-card.lk-method { --lc: #2e7d1d; }
+.lesson-card.lk-algo   { --lc: #107eaa; }
+.lesson-card.lk-code   { --lc: #032c7b; }
+.lesson-card.lk-warn   { --lc: #d23b5a; }
+.lesson-card.lk-note   { --lc: #5b6785; }
+/* dark theme: the colours are lighter, so the icon on them is dark */
+:root[data-theme="dark"] .lesson-card { --lc-on: #01092d; }
+:root[data-theme="dark"] .lesson-card.lk-idea   { --lc: #5a9cf5; }
+:root[data-theme="dark"] .lesson-card.lk-method { --lc: #aee37b; }
+:root[data-theme="dark"] .lesson-card.lk-algo   { --lc: #4fc3e0; }
+:root[data-theme="dark"] .lesson-card.lk-code   { --lc: #8aa4ee; }
+:root[data-theme="dark"] .lesson-card.lk-warn   { --lc: #f08aa0; }
+:root[data-theme="dark"] .lesson-card.lk-note   { --lc: #9aa8cf; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .lesson-card { --lc-on: #01092d; }
+  :root:not([data-theme="light"]) .lesson-card.lk-idea   { --lc: #5a9cf5; }
+  :root:not([data-theme="light"]) .lesson-card.lk-method { --lc: #aee37b; }
+  :root:not([data-theme="light"]) .lesson-card.lk-algo   { --lc: #4fc3e0; }
+  :root:not([data-theme="light"]) .lesson-card.lk-code   { --lc: #8aa4ee; }
+  :root:not([data-theme="light"]) .lesson-card.lk-warn   { --lc: #f08aa0; }
+  :root:not([data-theme="light"]) .lesson-card.lk-note   { --lc: #9aa8cf; }
+}
+
+/* the tab: a dot + the kind (the big icon is in the box next to the title, so it is not drawn twice) */
+.lc-tag {
+  padding: 4px 12px 4px 10px;
+  background: color-mix(in srgb, var(--lc) 16%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--lc) 28%, transparent);
+  border-bottom: 0;
+}
+.lc-tag-ico { display: none; }
+.lc-tag::before { display: block; content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--lc); }
+
+/* the icon box: solid colour, white icon */
+.lc-no {
+  background: var(--lc);
+  color: var(--lc-on);
+  box-shadow: 0 6px 14px -6px color-mix(in srgb, var(--lc) 65%, transparent);
+}
+
+/* summary grid: icon | title | arrow on the first row, then the "À retenir" box, then the chips */
+.lesson-card > summary > .lc-no { grid-column: 1; grid-row: 1; }
+.lesson-card > summary > .lesson-sec-t { grid-column: 2; grid-row: 1; }
+.lesson-card > summary::after { grid-column: 3; grid-row: 1; align-self: center; margin: 0 6px 3px 0; }
+
+/* the "À retenir" box: tinted, with a bar in the card colour */
+.lesson-card > summary .lc-keep {
+  background: color-mix(in srgb, var(--lc) 9%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--lc) 16%, transparent);
+  border-inline-start: 3px solid var(--lc);
+}
