@@ -154,6 +154,7 @@ export function pickBilan(opts) {
     pools[id] = pool(id);
   });
   var chosen = [];
+  var used = {}; // an id is never chosen twice: answers are stored by id, two questions with the same id would share one answer
   function take(ids, count) {
     var got = 0;
     var guard = 0;
@@ -161,7 +162,9 @@ export function pickBilan(opts) {
       var any = false;
       for (var i = 0; i < ids.length && got < count; i++) {
         var q = pools[ids[i]].shift();
+        while (q && used[q.id]) q = pools[ids[i]].shift();
         if (q) {
+          used[q.id] = true;
           chosen.push(Object.assign({}, q, { _chap: ids[i] }));
           got++;
           any = true;
