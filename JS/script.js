@@ -283,6 +283,24 @@
       paymentVeryLate: "Very late",
       dueOn: "Due",
       dtSuffix: "DT",
+      planTitle: "Monthly plan",
+      planHint: "Split what you earn: save first, cover debts and needs, then spend freely.",
+      planMonthOf: "Month of",
+      planRenews: "Renews on",
+      planBasisCollected: "Collected",
+      planBasisExpected: "Expected",
+      planBase: "To split",
+      planSavings: "Savings",
+      planNeeds: "Debts & needs",
+      planSpend: "Spending",
+      planEdit: "Edit split",
+      planSave: "Save",
+      planCancel: "Cancel",
+      planReset: "Default 20 / 50 / 30",
+      planTooMuch: "Savings + debts & needs can't pass 100%.",
+      planEmpty: "Nothing collected yet this month. The plan fills in as students pay.",
+      planSaved: "Plan saved.",
+      planSpendAuto: "the rest",
       statusOverdue: "Overdue",
       statusPaidUp: "Paid up",
       statusAmountDue: "Amount due",
@@ -552,6 +570,24 @@
       paymentVeryLate: "متأخر برشة",
       dueOn: "يخلص في",
       dtSuffix: "د.ت",
+      planTitle: "خطة الشهر",
+      planHint: "قسّم مدخولك: خبّي الأول، اخلص الديون واللوازم، والباقي مصروف.",
+      planMonthOf: "شهر",
+      planRenews: "تتجدد في",
+      planBasisCollected: "المقبوض",
+      planBasisExpected: "المتوقع",
+      planBase: "المبلغ للتقسيم",
+      planSavings: "ادخار",
+      planNeeds: "ديون ولوازم",
+      planSpend: "مصروف",
+      planEdit: "بدّل النسب",
+      planSave: "حفظ",
+      planCancel: "إلغاء",
+      planReset: "الافتراضي 20 / 50 / 30",
+      planTooMuch: "الادخار + الديون واللوازم ما يلزمهمش يفوتو 100%.",
+      planEmpty: "ما تقبض حتى شيء هالشهر. الخطة تتعمّر كي يخلصو التلاميذ.",
+      planSaved: "تحفظت الخطة.",
+      planSpendAuto: "الباقي",
       statusOverdue: "متأخر",
       statusPaidUp: "مخلّص",
       statusAmountDue: "معلوم مطلوب",
@@ -1162,6 +1198,7 @@
       now.getDate() + 1,
     );
     window.setTimeout(function () {
+      syncToday();
       refreshMonthEndNotice();
       scheduleMonthEndNoticeRefresh();
     }, nextDay.getTime() - now.getTime());
@@ -1321,6 +1358,7 @@
         students: students,
         groups: groups,
         profile: profile,
+        plan: plan,
         lang: currentLang,
       };
       var blob = new Blob([JSON.stringify(backup, null, 2)], {
@@ -1543,6 +1581,10 @@
               profileHasContent(cleanProfile(backup.profile))
             )
               setProfile(backup.profile); // an empty profile in the file never wipes the current one
+            if (backup.plan && typeof backup.plan === "object") {
+              plan = cleanPlan(backup.plan);
+              savePlan();
+            }
             students = importedStudents;
             groups = importedGroups;
             activeGroup = "";
@@ -1773,6 +1815,7 @@
 
   /* ---------------- navigation ---------------- */
   function switchPage(pageName) {
+    syncToday();
     currentPage = pageName;
     document.querySelectorAll(".nav-target").forEach(function (btn) {
       btn.classList.toggle("active", btn.dataset.page === pageName);
@@ -2467,6 +2510,302 @@
     renderTable();
   }
 
+  /* ---------------- payment month: it follows the students, not the calendar ---------------- */
+  // The month of the plan starts on the day the first student's month ends (the earliest due day among the
+  // students who study) and lasts until the day before that same day next month.
+  // Example: students due on the 1st, 13th and 14th -> the month runs 1st -> end of month.
+  // Students due on the 13th and 20th -> it runs 13th -> 12th of the next month.
+  function lastDayOfMonth(y, m) {
+    return new Date(y, m + 1, 0).getDate();
+  }
+  function cycleAnchorDay(list) {
+    var day = 0;
+    list.forEach(function (student) {
+      if (!student || isStopped(student) || typeof student.endDate !== "string") return;
+      var d = Number(student.endDate.split("-")[2]);
+      if (d >= 1 && d <= 31 && (!day || d < day)) day = d;
+    });
+    return day || 1; // nobody studies yet: plain calendar months
+  }
+  function paymentWindow(today, anchorDay) {
+    var y = today.getFullYear();
+    var m = today.getMonth();
+    function startIn(yy, mm) {
+      var dd = Math.min(anchorDay, lastDayOfMonth(yy, mm)); // a due day of 31 still works in a 30-day month
+      return new Date(yy, mm, dd);
+    }
+    var start = startIn(y, m);
+    if (start > new Date(y, m, today.getDate())) start = startIn(y, m - 1);
+    var next = startIn(start.getFullYear(), start.getMonth() + 1);
+    return { start: start, end: next }; // [start, end): "end" is the first day of the next month
+  }
+  function collectedBetween(list, fromKey, toKey) {
+    var total = 0;
+    list.forEach(function (student) {
+      (Array.isArray(student && student.paymentHistory) ? student.paymentHistory : []).forEach(function (p) {
+        if (
+          p &&
+          typeof p.amount === "number" &&
+          typeof p.paidAt === "string" &&
+          p.paidAt >= fromKey &&
+          p.paidAt < toKey
+        )
+          total += p.amount;
+      });
+    });
+    return total;
+  }
+
+  /* ---------------- monthly plan: how the money of the month is shared ---------------- */
+  var PLAN_KEY = "classledger:plan";
+  var PLAN_DEFAULT = { basis: "collected", savings: 20, needs: 50 }; // spending = what is left (30)
+  var plan = { basis: PLAN_DEFAULT.basis, savings: PLAN_DEFAULT.savings, needs: PLAN_DEFAULT.needs };
+  var planEditing = false;
+
+  function cleanPlan(raw) {
+    raw = raw && typeof raw === "object" ? raw : {};
+    function pct(v, fallback) {
+      v = Math.round(Number(v));
+      return isFinite(v) && v >= 0 && v <= 100 ? v : fallback;
+    }
+    var out = {
+      basis: raw.basis === "expected" ? "expected" : "collected",
+      savings: pct(raw.savings, PLAN_DEFAULT.savings),
+      needs: pct(raw.needs, PLAN_DEFAULT.needs),
+    };
+    if (out.savings + out.needs > 100) {
+      out.savings = PLAN_DEFAULT.savings;
+      out.needs = PLAN_DEFAULT.needs;
+    }
+    return out;
+  }
+  function loadPlan() {
+    try {
+      plan = cleanPlan(JSON.parse(localStorage.getItem(PLAN_KEY) || "null"));
+    } catch (e) {
+      plan = cleanPlan(null);
+    }
+  }
+  function savePlan() {
+    try {
+      localStorage.setItem(PLAN_KEY, JSON.stringify(plan));
+    } catch (e) {
+      showToast(t("saveError"), true);
+    }
+  }
+  function planSplit(base, savingsPct, needsPct) {
+    var savings = Math.round(base * savingsPct) / 100;
+    var needs = Math.round(base * needsPct) / 100;
+    return {
+      savings: savings,
+      needs: needs,
+      spend: Math.round((base - savings - needs) * 100) / 100, // what is left, so the three always add up
+      spendPct: 100 - savingsPct - needsPct,
+    };
+  }
+  function planMoney(n) {
+    return n.toLocaleString(t("locale"), { maximumFractionDigits: 2 }) + " " + t("dtSuffix");
+  }
+  var PLAN_ICONS = {
+    savings:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>',
+    needs:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16v12H4z"/><path d="M9 7V5h6v2"/><path d="M4 12h16"/></svg>',
+    spend:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M3 7l2-3h11"/><circle cx="16.5" cy="13.5" r="1.2"/></svg>',
+  };
+
+  function renderPlanBox() {
+    var box = document.getElementById("planBox");
+    if (!box) return;
+    if (!students.length) {
+      box.hidden = true;
+      box.innerHTML = "";
+      return;
+    }
+    box.hidden = false;
+    var today = new Date();
+    var win = paymentWindow(today, cycleAnchorDay(students));
+    var lastDay = new Date(win.end.getFullYear(), win.end.getMonth(), win.end.getDate() - 1);
+    var collected = collectedBetween(students, toDateKey(win.start), toDateKey(win.end));
+    var expectedTotal = activeStudents().reduce(function (sum, s) {
+      return sum + studentFee(s);
+    }, 0);
+    var base = plan.basis === "expected" ? expectedTotal : collected;
+    var split = planSplit(base, plan.savings, plan.needs);
+    var pctOf = { savings: plan.savings, needs: plan.needs, spend: split.spendPct };
+    var amountOf = { savings: split.savings, needs: split.needs, spend: split.spend };
+    var labelOf = { savings: t("planSavings"), needs: t("planNeeds"), spend: t("planSpend") };
+    var range = formatDate(toDateKey(win.start)) + " → " + formatDate(toDateKey(lastDay));
+
+    var html =
+      '<div class="plan-head"><div class="plan-head-copy"><h2 class="plan-title">' +
+      t("planTitle") +
+      '</h2><p class="plan-hint">' +
+      t("planHint") +
+      '</p></div><div class="plan-basis" role="group">' +
+      ["collected", "expected"]
+        .map(function (b) {
+          return (
+            '<button type="button" class="plan-basis-btn' +
+            (plan.basis === b ? " active" : "") +
+            '" data-action="plan-basis" data-basis="' +
+            b +
+            '" aria-pressed="' +
+            (plan.basis === b) +
+            '">' +
+            t(b === "collected" ? "planBasisCollected" : "planBasisExpected") +
+            "</button>"
+          );
+        })
+        .join("") +
+      '</div></div><p class="plan-month"><b>' +
+      t("planMonthOf") +
+      " " +
+      formatPaymentMonth(toDateKey(win.start)) +
+      "</b><span>" +
+      range +
+      " · " +
+      t("planRenews") +
+      " " +
+      formatDate(toDateKey(win.end)) +
+      "</span></p>";
+
+    html +=
+      '<div class="plan-base"><span>' +
+      t("planBase") +
+      "</span><b>" +
+      planMoney(base) +
+      "</b></div>";
+
+    if (base > 0) {
+      html +=
+        '<div class="plan-bar" role="img" aria-label="' +
+        ["savings", "needs", "spend"]
+          .map(function (k) {
+            return labelOf[k] + " " + pctOf[k] + "%";
+          })
+          .join(", ") +
+        '">' +
+        ["savings", "needs", "spend"]
+          .map(function (k) {
+            return pctOf[k] > 0 ? '<i class="plan-seg is-' + k + '" style="flex-grow:' + pctOf[k] + '"></i>' : "";
+          })
+          .join("") +
+        "</div>";
+    } else {
+      html += '<p class="plan-empty">' + t("planEmpty") + "</p>";
+    }
+
+    html += '<div class="plan-cards">';
+    ["savings", "needs", "spend"].forEach(function (k) {
+      html +=
+        '<article class="plan-card is-' +
+        k +
+        '"><span class="plan-card-ico">' +
+        PLAN_ICONS[k] +
+        '</span><div class="plan-card-copy"><span class="plan-card-name">' +
+        labelOf[k] +
+        '</span><b class="plan-card-amount">' +
+        planMoney(amountOf[k]) +
+        '</b></div><span class="plan-card-pct">' +
+        pctOf[k] +
+        "%</span></article>";
+    });
+    html += "</div>";
+
+    if (planEditing) {
+      html +=
+        '<form class="plan-form" data-action="plan-form" novalidate>' +
+        '<label class="plan-field is-savings"><span>' +
+        t("planSavings") +
+        '</span><input type="number" min="0" max="100" step="1" inputmode="numeric" id="planSavingsInput" value="' +
+        plan.savings +
+        '"><em>%</em></label>' +
+        '<label class="plan-field is-needs"><span>' +
+        t("planNeeds") +
+        '</span><input type="number" min="0" max="100" step="1" inputmode="numeric" id="planNeedsInput" value="' +
+        plan.needs +
+        '"><em>%</em></label>' +
+        '<div class="plan-field is-spend"><span>' +
+        t("planSpend") +
+        '</span><b id="planSpendOut">' +
+        split.spendPct +
+        "%</b><small>" +
+        t("planSpendAuto") +
+        '</small></div><p class="plan-error" id="planError" hidden>' +
+        t("planTooMuch") +
+        '</p><div class="plan-form-actions"><button type="button" class="plan-link" data-action="plan-reset">' +
+        t("planReset") +
+        '</button><span class="plan-form-spacer"></span><button type="button" class="plan-btn" data-action="plan-cancel">' +
+        t("planCancel") +
+        '</button><button type="submit" class="plan-btn is-primary">' +
+        t("planSave") +
+        "</button></div></form>";
+    } else {
+      html +=
+        '<div class="plan-foot"><button type="button" class="plan-link" data-action="plan-edit">' +
+        t("planEdit") +
+        "</button></div>";
+    }
+    box.innerHTML = html;
+  }
+
+  function readPlanInputs() {
+    var s = document.getElementById("planSavingsInput");
+    var n = document.getElementById("planNeedsInput");
+    if (!s || !n) return null;
+    var savings = Math.round(Number(s.value));
+    var needs = Math.round(Number(n.value));
+    var ok = isFinite(savings) && isFinite(needs) && savings >= 0 && needs >= 0 && savings + needs <= 100;
+    return { ok: ok, savings: savings, needs: needs };
+  }
+  function handlePlanClick(e) {
+    var btn = e.target.closest("[data-action]");
+    if (!btn) return;
+    var action = btn.dataset.action;
+    if (action === "plan-basis") {
+      plan.basis = btn.dataset.basis === "expected" ? "expected" : "collected";
+      savePlan();
+      renderPlanBox();
+    } else if (action === "plan-edit") {
+      planEditing = true;
+      renderPlanBox();
+    } else if (action === "plan-cancel") {
+      planEditing = false;
+      renderPlanBox();
+    } else if (action === "plan-reset") {
+      plan.savings = PLAN_DEFAULT.savings;
+      plan.needs = PLAN_DEFAULT.needs;
+      savePlan();
+      renderPlanBox();
+    }
+  }
+  function handlePlanInput() {
+    var v = readPlanInputs();
+    var out = document.getElementById("planSpendOut");
+    var err = document.getElementById("planError");
+    if (!v) return;
+    if (out) out.textContent = v.ok ? 100 - v.savings - v.needs + "%" : "—";
+    if (err) err.hidden = v.ok;
+  }
+  function handlePlanSubmit(e) {
+    if (!e.target.closest('[data-action="plan-form"]')) return;
+    e.preventDefault();
+    var v = readPlanInputs();
+    if (!v || !v.ok) {
+      var err = document.getElementById("planError");
+      if (err) err.hidden = false;
+      return;
+    }
+    plan.savings = v.savings;
+    plan.needs = v.needs;
+    planEditing = false;
+    savePlan();
+    renderPlanBox();
+    showToast(t("planSaved"), false);
+  }
+
   /* ---------------- payments ---------------- */
   function studentFee(student) {
     var priceGroup = studentGroupNames(student)
@@ -2805,6 +3144,7 @@
     });
     renderHalfMonthPicker();
     updateHalfMonthCalcState();
+    renderPlanBox();
 
     var rows = paymentStudents().map(function (s) {
       var charges = halfMonthChargeTotals(s);
@@ -4713,9 +5053,43 @@
     toast: showToast,
   };
 
+  /* ---------------- a new day starts while the page is open ---------------- */
+  // The calendar used to stay on the month that was open when the page was loaded (a tab or phone app left open
+  // over midnight). When the day changes, whatever was following "today" follows it: the calendar month and the selected day.
+  var knownDay = toDateKey(new Date());
+  function syncToday() {
+    var nowKey = toDateKey(new Date());
+    if (nowKey === knownDay) return;
+    var p = knownDay.split("-").map(Number);
+    knownDay = nowKey;
+    var before = new Date(p[0], p[1] - 1, p[2]);
+    var now = new Date();
+    if (calendarCursor.getFullYear() === before.getFullYear() && calendarCursor.getMonth() === before.getMonth()) {
+      calendarCursor = new Date(now.getFullYear(), now.getMonth(), 1);
+    }
+    if (sameDay(selectedDate, before)) selectedDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    setHeaderDate();
+    refreshMonthEndNotice();
+    if (currentPage === "calendar") renderCalendar();
+    else if (currentPage === "payments") renderPaymentsPage();
+    else if (currentPage === "students") renderStudentsPage();
+  }
+  document.addEventListener("visibilitychange", function () {
+    if (!document.hidden) syncToday();
+  });
+  window.addEventListener("focus", syncToday);
+
+  var planBoxEl = document.getElementById("planBox");
+  if (planBoxEl) {
+    planBoxEl.addEventListener("click", handlePlanClick);
+    planBoxEl.addEventListener("input", handlePlanInput);
+    planBoxEl.addEventListener("submit", handlePlanSubmit);
+  }
+
   /* ---------------- init ---------------- */
   loadLang();
   loadProfile();
+  loadPlan();
   loadStudents();
   loadGroups();
   applyStaticText();

@@ -4179,3 +4179,143 @@ html[dir="rtl"] .month-end-modal::after {
     radial-gradient(circle at 92% -10%, rgba(255, 255, 255, 0.4) 0, transparent 52%),
     linear-gradient(135deg, #b8325a, #e64d6b 55%, #ff9db0);
 }
+
+
+/* ---------- Monthly plan (Payments): a dark box that shares the money of the month ----------
+   deep navy + brand colours: lime = savings, blue = debts & needs, pale blue = spending */
+.plan-box {
+  display: grid;
+  gap: 14px;
+  margin: 0 0 14px;
+  padding: 18px;
+  border: 1px solid #0f1f5e;
+  border-radius: 17px;
+  background: #01092d;
+  color: #f0fff4;
+}
+.plan-box[hidden] { display: none; }
+.plan-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.plan-head-copy { min-width: 0; flex: 1 1 260px; }
+.plan-title { margin: 0; color: #f0fff4; font-size: 16px; font-weight: 800; }
+.plan-hint { margin: 4px 0 0; color: rgba(240, 255, 244, 0.72); font-size: 13px; line-height: 1.45; }
+.plan-basis {
+  display: inline-flex;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid #14286e;
+  border-radius: 999px;
+  background: #0a1647;
+}
+.plan-basis-btn {
+  min-height: 32px;
+  padding: 5px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #9fb4e8;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.plan-basis-btn.active { background: #0464de; color: #fff; }
+.plan-month { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; margin: 0; font-size: 13px; color: rgba(240, 255, 244, 0.72); }
+.plan-month b { color: #c6eea3; font-size: 14px; font-weight: 800; }
+.plan-base { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.plan-base span { color: rgba(240, 255, 244, 0.72); font-size: 13px; font-weight: 700; }
+.plan-base b { color: #fff; font-size: 30px; font-weight: 900; line-height: 1.1; }
+.plan-bar { display: flex; gap: 4px; height: 12px; }
+.plan-seg { flex: 1 1 0; min-width: 8px; height: 12px; border-radius: 999px; }
+.plan-seg.is-savings { background: #aee37b; }
+.plan-seg.is-needs { background: #4f9bff; }
+.plan-seg.is-spend { background: #d9e8ff; }
+.plan-empty { margin: 0; padding: 10px 12px; border: 1px dashed #14286e; border-radius: 12px; color: rgba(240, 255, 244, 0.72); font-size: 13px; }
+.plan-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.plan-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #14286e;
+  border-radius: 14px;
+  background: #0a1647;
+  --pc: #aee37b;
+  --pc-ink: #01092d;
+}
+.plan-card.is-needs { --pc: #4f9bff; --pc-ink: #01092d; }
+.plan-card.is-spend { --pc: #d9e8ff; --pc-ink: #01092d; }
+.plan-card-ico { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px; background: var(--pc); color: var(--pc-ink); }
+.plan-card-ico svg { width: 20px; height: 20px; }
+.plan-card-copy { min-width: 0; display: grid; gap: 1px; }
+.plan-card-name { color: rgba(240, 255, 244, 0.78); font-size: 13px; font-weight: 700; }
+.plan-card-amount { color: #fff; font-size: 18px; font-weight: 900; line-height: 1.2; overflow-wrap: anywhere; }
+.plan-card-pct { padding: 3px 9px; border-radius: 999px; background: rgba(255, 255, 255, 0.08); color: var(--pc); font-size: 13px; font-weight: 800; }
+.plan-foot { display: flex; }
+.plan-link {
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: #8fbaf8;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.plan-form { display: flex; flex-wrap: wrap; align-items: stretch; gap: 10px; padding-top: 12px; border-top: 1px solid #14286e; }
+.plan-field {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 2px 6px;
+  flex: 1 1 140px;
+  padding: 9px 12px;
+  border: 1px solid #14286e;
+  border-radius: 12px;
+  background: #0a1647;
+  color: #f0fff4;
+}
+.plan-field > span { grid-column: 1 / -1; font-size: 13px; font-weight: 700; color: rgba(240, 255, 244, 0.78); }
+.plan-field input {
+  min-width: 0;
+  width: 100%;
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  font: inherit;
+  font-size: 20px;
+  font-weight: 900;
+  outline: none;
+}
+.plan-field input:focus-visible { box-shadow: 0 2px 0 #4f9bff; }
+.plan-field em { font-style: normal; font-weight: 800; color: rgba(240, 255, 244, 0.6); }
+.plan-field.is-savings { border-color: color-mix(in srgb, #aee37b 45%, #14286e); }
+.plan-field.is-needs { border-color: color-mix(in srgb, #4f9bff 45%, #14286e); }
+.plan-field.is-spend { border-style: dashed; }
+.plan-field.is-spend b { grid-column: 1 / -1; font-size: 20px; font-weight: 900; color: #d9e8ff; }
+.plan-field.is-spend small { grid-column: 1 / -1; font-size: 12px; color: rgba(240, 255, 244, 0.6); }
+.plan-error { flex: 1 1 100%; margin: 0; color: #ffb4c0; font-size: 13px; font-weight: 700; }
+.plan-error[hidden] { display: none; }
+.plan-form-actions { display: flex; flex: 1 1 100%; flex-wrap: wrap; align-items: center; gap: 10px; }
+.plan-form-spacer { flex: 1; }
+.plan-btn {
+  min-height: 38px;
+  padding: 8px 18px;
+  border: 1px solid #14286e;
+  border-radius: 999px;
+  background: #0a1647;
+  color: #f0fff4;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.plan-btn.is-primary { border-color: #0464de; background: #0464de; color: #fff; }
+@media (max-width: 720px) {
+  .plan-cards { grid-template-columns: minmax(0, 1fr); }
+  .plan-box { padding: 14px; }
+  .plan-base b { font-size: 26px; }
+}
