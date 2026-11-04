@@ -4319,3 +4319,142 @@ html[dir="rtl"] .month-end-modal::after {
   .plan-box { padding: 14px; }
   .plan-base b { font-size: 26px; }
 }
+
+
+/* ---------- Monthly plan v2: under the payments box; debts & needs typed by hand ---------- */
+.plan-box { margin: 14px 0 0; }
+.plan-card-tag { color: rgba(240, 255, 244, 0.65); font-size: 13px; font-weight: 700; }
+.plan-warn {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, #ffb4c0 40%, #14286e);
+  border-radius: 12px;
+  background: rgba(255, 180, 192, 0.08);
+  color: #ffb4c0;
+  font-size: 13px;
+  font-weight: 700;
+}
+.plan-items-view { display: grid; gap: 8px; }
+.plan-items-head { color: rgba(240, 255, 244, 0.78); font-size: 13px; font-weight: 700; }
+.plan-items-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.plan-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 6px 5px 12px;
+  border: 1px solid #14286e;
+  border-radius: 999px;
+  background: #0a1647;
+  color: #f0fff4;
+  font-size: 13px;
+  font-weight: 700;
+}
+.plan-item.is-view { padding-inline-end: 12px; }
+.plan-item b { color: #c6eea3; font-weight: 800; }
+.plan-item-del {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  color: #f0fff4;
+  font: inherit;
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+}
+.plan-item-del:hover { background: rgba(255, 255, 255, 0.2); }
+.plan-edit { display: grid; gap: 14px; padding-top: 14px; border-top: 1px solid #14286e; }
+.plan-edit-title { flex: 1 1 100%; margin: 0; color: #f0fff4; font-size: 14px; font-weight: 800; }
+.plan-edit-note { flex: 1 1 100%; margin: -6px 0 0; color: rgba(240, 255, 244, 0.65); font-size: 13px; }
+.plan-items { display: grid; gap: 10px; }
+.plan-item-row { display: flex; flex-wrap: wrap; align-items: stretch; gap: 10px; }
+.plan-combo { position: relative; flex: 2 1 230px; min-width: 0; }
+.plan-amount { position: relative; display: flex; align-items: center; flex: 1 1 140px; min-width: 0; }
+.plan-input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid #14286e;
+  border-radius: 12px;
+  background: #0a1647;
+  color: #fff;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  outline: none;
+}
+.plan-input::placeholder { color: rgba(240, 255, 244, 0.5); font-weight: 600; }
+.plan-input:focus-visible { border-color: #4f9bff; box-shadow: 0 0 0 2px rgba(79, 155, 255, 0.35); }
+.plan-combo-input { padding-inline-end: 46px; }
+.plan-amount .plan-input { padding-inline-end: 44px; }
+.plan-amount em { position: absolute; inset-inline-end: 14px; color: rgba(240, 255, 244, 0.6); font-size: 13px; font-style: normal; font-weight: 800; pointer-events: none; }
+.plan-combo-toggle {
+  position: absolute;
+  top: 50%;
+  inset-inline-end: 7px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  transform: translateY(-50%);
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #9fb4e8;
+  cursor: pointer;
+}
+.plan-combo-toggle:hover { background: rgba(255, 255, 255, 0.08); }
+.plan-combo-toggle svg { width: 18px; height: 18px; }
+.plan-combo-list {
+  position: absolute;
+  inset-inline: 0;
+  top: calc(100% + 6px);
+  z-index: 30;
+  max-height: 240px;
+  margin: 0;
+  padding: 6px;
+  overflow-y: auto;
+  list-style: none;
+  border: 1px solid #1d3a9a;
+  border-radius: 12px;
+  background: #0a1647;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.45);
+}
+.plan-combo-list[hidden] { display: none; }
+.plan-combo-opt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  color: #f0fff4;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.plan-combo-opt:hover, .plan-combo-opt.is-active { background: #14286e; }
+.plan-combo-opt.is-new { color: #c6eea3; font-weight: 800; }
+.plan-combo-del {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  color: #f0fff4;
+  font: inherit;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+.plan-combo-del:hover { background: rgba(255, 255, 255, 0.22); }
+.plan-edit .plan-form { padding-top: 14px; }
+@media (max-width: 720px) {
+  .plan-item-row .plan-btn { flex: 1 1 100%; }
+}

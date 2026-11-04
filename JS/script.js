@@ -301,6 +301,31 @@
       planEmpty: "Nothing collected yet this month. The plan fills in as students pay.",
       planSaved: "Plan saved.",
       planSpendAuto: "the rest",
+      planNeedsField: "Debts & needs (suggested)",
+      planSplitTitle: "Suggested split",
+      planSplitNote: "Used for debts & needs until you enter real amounts.",
+      planNeedsSuggested: "Suggested",
+      planNeedsEntered: function (n) {
+        return n === 1 ? "1 entered" : n + " entered";
+      },
+      planItemsTitle: "Debts & needs this month",
+      planItemLabelPh: "What is it for? (e.g. Internet)",
+      planItemAmountPh: "Amount",
+      planItemAdd: "Add",
+      planComboShow: "Show the list",
+      planComboNew: function (x) {
+        return "Add \u201c" + x + "\u201d";
+      },
+      planLabelRemove: "Remove from the list",
+      planItemRemove: function (x) {
+        return "Remove " + x;
+      },
+      planItemErrLabel: "Choose or type what the money is for.",
+      planItemErrAmount: "Enter an amount above 0.",
+      planItemAdded: "Added.",
+      planItemRemoved: "Removed.",
+      planOver: "Debts & needs are more than what is left after savings.",
+      planSeedLabels: ["Internet", "Rent", "Electricity", "Water", "Phone", "Supplies", "Debt", "Transport"],
       statusOverdue: "Overdue",
       statusPaidUp: "Paid up",
       statusAmountDue: "Amount due",
@@ -588,6 +613,31 @@
       planEmpty: "ما تقبض حتى شيء هالشهر. الخطة تتعمّر كي يخلصو التلاميذ.",
       planSaved: "تحفظت الخطة.",
       planSpendAuto: "الباقي",
+      planNeedsField: "ديون ولوازم (مقترح)",
+      planSplitTitle: "التقسيم المقترح",
+      planSplitNote: "يتستعمل للديون واللوازم لين تدخل المبالغ الحقيقية.",
+      planNeedsSuggested: "مقترح",
+      planNeedsEntered: function (n) {
+        return n + " مدخلة";
+      },
+      planItemsTitle: "ديون ولوازم هالشهر",
+      planItemLabelPh: "لأش المبلغ؟ (مثلا: إنترنات)",
+      planItemAmountPh: "المبلغ",
+      planItemAdd: "زيد",
+      planComboShow: "اعرض القائمة",
+      planComboNew: function (x) {
+        return "زيد \u00ab" + x + "\u00bb";
+      },
+      planLabelRemove: "نحّيه من القائمة",
+      planItemRemove: function (x) {
+        return "نحّي " + x;
+      },
+      planItemErrLabel: "اختار ولا اكتب المبلغ لأش.",
+      planItemErrAmount: "ادخل مبلغ أكبر من 0.",
+      planItemAdded: "تزاد.",
+      planItemRemoved: "تنحّى.",
+      planOver: "الديون واللوازم أكثر من اللي يبقى بعد الادخار.",
+      planSeedLabels: ["إنترنات", "كراء", "كهرباء", "ماء", "تليفون", "لوازم", "دين", "نقل"],
       statusOverdue: "متأخر",
       statusPaidUp: "مخلّص",
       statusAmountDue: "معلوم مطلوب",
@@ -1338,6 +1388,8 @@
       apply: function () {
         students = [];
         groups = [];
+        planItems = []; // the debts & needs typed for the months go with the students' payments (labels and % stay)
+        savePlanExtras();
         activeGroup = "";
         expandedGroup = "";
         saveStudents();
@@ -1359,6 +1411,8 @@
         groups: groups,
         profile: profile,
         plan: plan,
+        planItems: planItems,
+        planLabels: planLabels,
         lang: currentLang,
       };
       var blob = new Blob([JSON.stringify(backup, null, 2)], {
@@ -1584,6 +1638,11 @@
             if (backup.plan && typeof backup.plan === "object") {
               plan = cleanPlan(backup.plan);
               savePlan();
+            }
+            if (Array.isArray(backup.planItems) || Array.isArray(backup.planLabels)) {
+              if (Array.isArray(backup.planItems)) planItems = cleanPlanItems(backup.planItems);
+              if (Array.isArray(backup.planLabels)) planLabels = cleanPlanLabels(backup.planLabels);
+              savePlanExtras();
             }
             students = importedStudents;
             groups = importedGroups;
@@ -1830,6 +1889,7 @@
       pageName === "calendar" ? "flex" : "none";
     if (pageName === "calendar") renderCalendar();
     if (pageName === "payments") renderPaymentsPage();
+    else renderPlanBox(); // hides the plan box outside the payments page
   }
 
   /* ---------------- teacher profile modal (My account) ---------------- */
@@ -2593,14 +2653,113 @@
       showToast(t("saveError"), true);
     }
   }
-  function planSplit(base, savingsPct, needsPct) {
-    var savings = Math.round(base * savingsPct) / 100;
-    var needs = Math.round(base * needsPct) / 100;
+  // Debts & needs are typed by hand (what it is for, like "Internet", + an amount). An entry belongs to the plan month its
+  // date falls in, so it keeps following the right month even if the students' due days change.
+  // The 20 / 50 / 30 split stays as the suggestion: debts & needs use it until something is entered.
+  var PLAN_ITEMS_KEY = "classledger:planItems"; // [ { id, label, amount, date } ]
+  var PLAN_LABELS_KEY = "classledger:planLabels"; // labels the teacher added: they join the built-in ones in the list
+  var planItems = [];
+  var planLabels = [];
+  var planDraft = null; // % typed in the split form and not saved yet
+  var planDraftItem = { label: "", amount: "" }; // entry typed and not added yet
+  var planError = ""; // message under the entry form
+  var planComboActive = -1;
+  var planSkipOpen = false;
+
+  function planNorm(s) {
+    return String(s == null ? "" : s)
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .toLowerCase()
+      .trim();
+  }
+  function cleanPlanLabel(v) {
+    return String(v == null ? "" : v).replace(/\s+/g, " ").trim().slice(0, 40);
+  }
+  function cleanPlanItems(raw) {
+    var out = [];
+    (Array.isArray(raw) ? raw : []).slice(0, 2000).forEach(function (it) {
+      if (!it || typeof it !== "object") return;
+      var label = cleanPlanLabel(it.label);
+      var amount = Math.round(Number(it.amount) * 100) / 100;
+      var date = typeof it.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(it.date) ? it.date : "";
+      if (!label || !date || !isFinite(amount) || amount <= 0 || amount > 10000000) return;
+      out.push({
+        id: typeof it.id === "string" && it.id ? it.id.slice(0, 60) : makeId(),
+        label: label,
+        amount: amount,
+        date: date,
+      });
+    });
+    return out;
+  }
+  function cleanPlanLabels(raw) {
+    var out = [];
+    (Array.isArray(raw) ? raw : []).forEach(function (v) {
+      var label = cleanPlanLabel(v);
+      if (label && out.every(function (o) { return planNorm(o) !== planNorm(label); })) out.push(label);
+    });
+    return out.slice(0, 100);
+  }
+  function loadPlanExtras() {
+    try {
+      planItems = cleanPlanItems(JSON.parse(localStorage.getItem(PLAN_ITEMS_KEY) || "[]"));
+      planLabels = cleanPlanLabels(JSON.parse(localStorage.getItem(PLAN_LABELS_KEY) || "[]"));
+    } catch (e) {
+      planItems = [];
+      planLabels = [];
+    }
+  }
+  function savePlanExtras() {
+    try {
+      localStorage.setItem(PLAN_ITEMS_KEY, JSON.stringify(planItems));
+      localStorage.setItem(PLAN_LABELS_KEY, JSON.stringify(planLabels));
+    } catch (e) {
+      showToast(t("saveError"), true);
+    }
+  }
+  // the list of the dropdown: the built-in labels first, then the ones the teacher added (those can be removed)
+  function planKnownLabels() {
+    var all = [];
+    function add(label, custom) {
+      label = cleanPlanLabel(label);
+      if (label && all.every(function (o) { return planNorm(o.label) !== planNorm(label); })) all.push({ label: label, custom: custom });
+    }
+    (t("planSeedLabels") || []).forEach(function (l) { add(l, false); });
+    planLabels.forEach(function (l) { add(l, true); });
+    return all;
+  }
+  function planItemsIn(win) {
+    var from = toDateKey(win.start);
+    var to = toDateKey(win.end);
+    return planItems.filter(function (it) { return it.date >= from && it.date < to; });
+  }
+  // the three parts of the month. Debts & needs = what was entered; with nothing entered, the suggested % of the base.
+  function planNumbers(base, items) {
+    var has = items.length > 0;
+    var entered = Math.round(items.reduce(function (sum, it) { return sum + it.amount; }, 0) * 100) / 100;
+    var savings = Math.round(base * plan.savings) / 100;
+    var needs = has ? entered : Math.round(base * plan.needs) / 100;
+    var spend = Math.round((base - savings - needs) * 100) / 100; // what is left, so the three always add up
+    var needsPct;
+    var spendPct;
+    if (!has) {
+      needsPct = plan.needs;
+      spendPct = 100 - plan.savings - plan.needs;
+    } else if (base > 0) {
+      needsPct = Math.min(Math.round((needs / base) * 100), 100 - plan.savings);
+      spendPct = Math.max(0, 100 - plan.savings - needsPct);
+    } else {
+      needsPct = null;
+      spendPct = null;
+    }
     return {
+      has: has,
       savings: savings,
       needs: needs,
-      spend: Math.round((base - savings - needs) * 100) / 100, // what is left, so the three always add up
-      spendPct: 100 - savingsPct - needsPct,
+      spend: spend,
+      over: has && spend < 0,
+      pct: { savings: plan.savings, needs: needsPct, spend: spendPct },
     };
   }
   function planMoney(n) {
@@ -2615,14 +2774,137 @@
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M3 7l2-3h11"/><circle cx="16.5" cy="13.5" r="1.2"/></svg>',
   };
 
-  function renderPlanBox() {
-    var box = document.getElementById("planBox");
+  function planById(id) {
+    return document.getElementById(id);
+  }
+  function planPct(v) {
+    return v == null ? "—" : v + "%";
+  }
+  // what was typed in the open form survives a re-render (a payment marked, the day changing...)
+  function planCaptureDrafts(opts) {
+    if (!planEditing) return;
+    var l = planById("planItemLabel");
+    var a = planById("planItemAmount");
+    var s = planById("planSavingsInput");
+    var n = planById("planNeedsInput");
+    if (!opts.skipItem) {
+      if (l) planDraftItem.label = l.value;
+      if (a) planDraftItem.amount = a.value;
+    }
+    if (!opts.skipPct && s && n) planDraft = { savings: s.value, needs: n.value };
+  }
+  function planItemsListHtml(items, editable) {
+    if (!items.length) return "";
+    return (
+      '<ul class="plan-items-list">' +
+      items
+        .map(function (it) {
+          return (
+            '<li class="plan-item' + (editable ? "" : " is-view") + '"><span class="plan-item-label">' +
+            escapeHtml(it.label) +
+            "</span><b>" +
+            planMoney(it.amount) +
+            "</b>" +
+            (editable
+              ? '<button type="button" class="plan-item-del" data-action="plan-item-del" data-id="' +
+                escapeHtml(it.id) +
+                '" aria-label="' +
+                escapeHtml(t("planItemRemove")(it.label)) +
+                '">&times;</button>'
+              : "") +
+            "</li>"
+          );
+        })
+        .join("") +
+      "</ul>"
+    );
+  }
+  var PLAN_ICON_CHEVRON =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+
+  function planEditHtml(items) {
+    var sv = planDraft ? planDraft.savings : plan.savings;
+    var nd = planDraft ? planDraft.needs : plan.needs;
+    var sNum = Math.round(Number(sv));
+    var nNum = Math.round(Number(nd));
+    var okPct = isFinite(sNum) && isFinite(nNum) && sNum >= 0 && nNum >= 0 && sNum + nNum <= 100;
+    return (
+      '<div class="plan-edit">' +
+      // 1. debts & needs, typed by hand: what it is for (dropdown you can add to) + amount + add
+      '<form class="plan-items" data-action="plan-item-form" novalidate><h3 class="plan-edit-title">' +
+      t("planItemsTitle") +
+      '</h3><div class="plan-item-row"><div class="plan-combo">' +
+      '<input type="text" id="planItemLabel" class="plan-input plan-combo-input" maxlength="40" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="planComboList" aria-autocomplete="list" placeholder="' +
+      escapeHtml(t("planItemLabelPh")) +
+      '" value="' +
+      escapeHtml(planDraftItem.label) +
+      '"><button type="button" class="plan-combo-toggle" data-action="plan-combo-toggle" tabindex="-1" aria-label="' +
+      escapeHtml(t("planComboShow")) +
+      '">' +
+      PLAN_ICON_CHEVRON +
+      '</button><ul class="plan-combo-list" id="planComboList" role="listbox" hidden></ul></div>' +
+      '<label class="plan-amount"><input type="number" id="planItemAmount" class="plan-input" min="0" step="0.01" inputmode="decimal" placeholder="' +
+      escapeHtml(t("planItemAmountPh")) +
+      '" value="' +
+      escapeHtml(planDraftItem.amount) +
+      '"><em>' +
+      t("dtSuffix") +
+      '</em></label><button type="submit" class="plan-btn is-primary">' +
+      t("planItemAdd") +
+      '</button></div><p class="plan-error" id="planItemError"' +
+      (planError ? "" : " hidden") +
+      ">" +
+      escapeHtml(planError) +
+      "</p>" +
+      planItemsListHtml(items, true) +
+      "</form>" +
+      // 2. the suggested split (kept as a starting point; it can change from one month to another)
+      '<form class="plan-form" data-action="plan-form" novalidate><h3 class="plan-edit-title">' +
+      t("planSplitTitle") +
+      '</h3><p class="plan-edit-note">' +
+      t("planSplitNote") +
+      '</p><label class="plan-field is-savings"><span>' +
+      t("planSavings") +
+      '</span><input type="number" min="0" max="100" step="1" inputmode="numeric" id="planSavingsInput" value="' +
+      escapeHtml(sv) +
+      '"><em>%</em></label>' +
+      '<label class="plan-field is-needs"><span>' +
+      t("planNeedsField") +
+      '</span><input type="number" min="0" max="100" step="1" inputmode="numeric" id="planNeedsInput" value="' +
+      escapeHtml(nd) +
+      '"><em>%</em></label>' +
+      '<div class="plan-field is-spend"><span>' +
+      t("planSpend") +
+      '</span><b id="planSpendOut">' +
+      (okPct ? 100 - sNum - nNum + "%" : "—") +
+      "</b><small>" +
+      t("planSpendAuto") +
+      '</small></div><p class="plan-error" id="planError"' +
+      (okPct ? " hidden" : "") +
+      ">" +
+      t("planTooMuch") +
+      '</p><div class="plan-form-actions"><button type="button" class="plan-link" data-action="plan-reset">' +
+      t("planReset") +
+      '</button><span class="plan-form-spacer"></span><button type="button" class="plan-btn" data-action="plan-cancel">' +
+      t("planCancel") +
+      '</button><button type="submit" class="plan-btn is-primary">' +
+      t("planSave") +
+      "</button></div></form></div>"
+    );
+  }
+
+  // opts.skipItem / opts.skipPct: do not keep what is typed in that part of the form (it was just added / reset)
+  function renderPlanBox(opts) {
+    opts = opts || {};
+    var box = planById("planBox");
     if (!box) return;
-    if (!students.length) {
+    // the box sits under the payments page: only there, and only when there is somebody to be paid by
+    if (!students.length || currentPage !== "payments") {
       box.hidden = true;
       box.innerHTML = "";
       return;
     }
+    planCaptureDrafts(opts);
     box.hidden = false;
     var today = new Date();
     var win = paymentWindow(today, cycleAnchorDay(students));
@@ -2632,9 +2914,9 @@
       return sum + studentFee(s);
     }, 0);
     var base = plan.basis === "expected" ? expectedTotal : collected;
-    var split = planSplit(base, plan.savings, plan.needs);
-    var pctOf = { savings: plan.savings, needs: plan.needs, spend: split.spendPct };
-    var amountOf = { savings: split.savings, needs: split.needs, spend: split.spend };
+    var items = planItemsIn(win);
+    var n = planNumbers(base, items);
+    var amountOf = { savings: n.savings, needs: n.needs, spend: n.spend };
     var labelOf = { savings: t("planSavings"), needs: t("planNeeds"), spend: t("planSpend") };
     var range = formatDate(toDateKey(win.start)) + " → " + formatDate(toDateKey(lastDay));
 
@@ -2669,9 +2951,7 @@
       t("planRenews") +
       " " +
       formatDate(toDateKey(win.end)) +
-      "</span></p>";
-
-    html +=
+      "</span></p>" +
       '<div class="plan-base"><span>' +
       t("planBase") +
       "</span><b>" +
@@ -2683,13 +2963,13 @@
         '<div class="plan-bar" role="img" aria-label="' +
         ["savings", "needs", "spend"]
           .map(function (k) {
-            return labelOf[k] + " " + pctOf[k] + "%";
+            return labelOf[k] + " " + planPct(n.pct[k]);
           })
           .join(", ") +
         '">' +
         ["savings", "needs", "spend"]
           .map(function (k) {
-            return pctOf[k] > 0 ? '<i class="plan-seg is-' + k + '" style="flex-grow:' + pctOf[k] + '"></i>' : "";
+            return n.pct[k] > 0 ? '<i class="plan-seg is-' + k + '" style="flex-grow:' + n.pct[k] + '"></i>' : "";
           })
           .join("") +
         "</div>";
@@ -2708,41 +2988,27 @@
         labelOf[k] +
         '</span><b class="plan-card-amount">' +
         planMoney(amountOf[k]) +
-        '</b></div><span class="plan-card-pct">' +
-        pctOf[k] +
-        "%</span></article>";
+        "</b>" +
+        (k === "needs"
+          ? '<small class="plan-card-tag">' + (n.has ? t("planNeedsEntered")(items.length) : t("planNeedsSuggested")) + "</small>"
+          : "") +
+        '</div><span class="plan-card-pct">' +
+        planPct(n.pct[k]) +
+        "</span></article>";
     });
     html += "</div>";
+    if (n.over) html += '<p class="plan-warn">' + t("planOver") + "</p>";
 
     if (planEditing) {
-      html +=
-        '<form class="plan-form" data-action="plan-form" novalidate>' +
-        '<label class="plan-field is-savings"><span>' +
-        t("planSavings") +
-        '</span><input type="number" min="0" max="100" step="1" inputmode="numeric" id="planSavingsInput" value="' +
-        plan.savings +
-        '"><em>%</em></label>' +
-        '<label class="plan-field is-needs"><span>' +
-        t("planNeeds") +
-        '</span><input type="number" min="0" max="100" step="1" inputmode="numeric" id="planNeedsInput" value="' +
-        plan.needs +
-        '"><em>%</em></label>' +
-        '<div class="plan-field is-spend"><span>' +
-        t("planSpend") +
-        '</span><b id="planSpendOut">' +
-        split.spendPct +
-        "%</b><small>" +
-        t("planSpendAuto") +
-        '</small></div><p class="plan-error" id="planError" hidden>' +
-        t("planTooMuch") +
-        '</p><div class="plan-form-actions"><button type="button" class="plan-link" data-action="plan-reset">' +
-        t("planReset") +
-        '</button><span class="plan-form-spacer"></span><button type="button" class="plan-btn" data-action="plan-cancel">' +
-        t("planCancel") +
-        '</button><button type="submit" class="plan-btn is-primary">' +
-        t("planSave") +
-        "</button></div></form>";
+      html += planEditHtml(items);
     } else {
+      if (items.length)
+        html +=
+          '<div class="plan-items-view"><span class="plan-items-head">' +
+          t("planItemsTitle") +
+          "</span>" +
+          planItemsListHtml(items, false) +
+          "</div>";
       html +=
         '<div class="plan-foot"><button type="button" class="plan-link" data-action="plan-edit">' +
         t("planEdit") +
@@ -2751,16 +3017,108 @@
     box.innerHTML = html;
   }
 
+  /* the "what is it for" field: a dropdown of known labels that also takes a new one */
+  function planComboOpen(open) {
+    var input = planById("planItemLabel");
+    var list = planById("planComboList");
+    if (!input || !list) return;
+    var show = open && list.children.length > 0;
+    list.hidden = !show;
+    input.setAttribute("aria-expanded", show ? "true" : "false");
+    if (!show) {
+      planComboActive = -1;
+      input.removeAttribute("aria-activedescendant");
+    }
+  }
+  function planComboFill(filter) {
+    var list = planById("planComboList");
+    if (!list) return;
+    var q = planNorm(filter);
+    var known = planKnownLabels();
+    var html = known
+      .filter(function (k) {
+        return !q || planNorm(k.label).indexOf(q) !== -1;
+      })
+      .map(function (k, i) {
+        return (
+          '<li role="option" class="plan-combo-opt" id="planOpt' +
+          i +
+          '" aria-selected="false" data-action="plan-combo-pick" data-label="' +
+          escapeHtml(k.label) +
+          '"><span>' +
+          escapeHtml(k.label) +
+          "</span>" +
+          (k.custom
+            ? '<button type="button" class="plan-combo-del" tabindex="-1" data-action="plan-label-del" data-label="' +
+              escapeHtml(k.label) +
+              '" aria-label="' +
+              escapeHtml(t("planLabelRemove")) +
+              '">&times;</button>'
+            : "") +
+          "</li>"
+        );
+      })
+      .join("");
+    var typed = cleanPlanLabel(filter);
+    var exists = known.some(function (k) {
+      return planNorm(k.label) === planNorm(typed);
+    });
+    if (typed && !exists)
+      html +=
+        '<li role="option" class="plan-combo-opt is-new" id="planOptNew" aria-selected="false" data-action="plan-combo-pick" data-label="' +
+        escapeHtml(typed) +
+        '">' +
+        escapeHtml(t("planComboNew")(typed)) +
+        "</li>";
+    list.innerHTML = html;
+    planComboActive = -1;
+  }
+  function planComboMove(step) {
+    var list = planById("planComboList");
+    var input = planById("planItemLabel");
+    if (!list || !input) return;
+    var opts = list.querySelectorAll(".plan-combo-opt");
+    if (!opts.length) return;
+    if (planComboActive < 0) planComboActive = step > 0 ? 0 : opts.length - 1;
+    else planComboActive = (planComboActive + step + opts.length) % opts.length;
+    Array.prototype.forEach.call(opts, function (o, i) {
+      o.classList.toggle("is-active", i === planComboActive);
+      o.setAttribute("aria-selected", i === planComboActive ? "true" : "false");
+    });
+    var cur = opts[planComboActive];
+    input.setAttribute("aria-activedescendant", cur.id);
+    if (cur.scrollIntoView) cur.scrollIntoView({ block: "nearest" });
+  }
+  function planComboPick(label) {
+    var input = planById("planItemLabel");
+    if (!input) return;
+    input.value = label;
+    planDraftItem.label = label;
+    planComboOpen(false);
+    var amount = planById("planItemAmount");
+    if (amount) amount.focus();
+  }
+
   function readPlanInputs() {
-    var s = document.getElementById("planSavingsInput");
-    var n = document.getElementById("planNeedsInput");
+    var s = planById("planSavingsInput");
+    var n = planById("planNeedsInput");
     if (!s || !n) return null;
     var savings = Math.round(Number(s.value));
     var needs = Math.round(Number(n.value));
     var ok = isFinite(savings) && isFinite(needs) && savings >= 0 && needs >= 0 && savings + needs <= 100;
     return { ok: ok, savings: savings, needs: needs };
   }
+  function planClearDrafts() {
+    planDraft = null;
+    planDraftItem = { label: "", amount: "" };
+    planError = "";
+  }
   function handlePlanClick(e) {
+    if (e.target && e.target.id === "planItemLabel") {
+      planComboFill("");
+      planComboOpen(true);
+      return;
+    }
     var btn = e.target.closest("[data-action]");
     if (!btn) return;
     var action = btn.dataset.action;
@@ -2770,37 +3128,158 @@
       renderPlanBox();
     } else if (action === "plan-edit") {
       planEditing = true;
+      planError = "";
       renderPlanBox();
     } else if (action === "plan-cancel") {
       planEditing = false;
+      planClearDrafts();
       renderPlanBox();
     } else if (action === "plan-reset") {
       plan.savings = PLAN_DEFAULT.savings;
       plan.needs = PLAN_DEFAULT.needs;
+      planDraft = null;
       savePlan();
+      renderPlanBox({ skipPct: true });
+    } else if (action === "plan-combo-toggle") {
+      var input = planById("planItemLabel");
+      var list = planById("planComboList");
+      if (!input || !list) return;
+      if (list.hidden) {
+        planComboFill("");
+        planComboOpen(true);
+        planSkipOpen = true; // focusing the field must not open the list a second time
+        input.focus();
+      } else planComboOpen(false);
+    } else if (action === "plan-combo-pick") {
+      planComboPick(btn.dataset.label || "");
+    } else if (action === "plan-label-del") {
+      var gone = planNorm(btn.dataset.label);
+      planLabels = planLabels.filter(function (l) {
+        return planNorm(l) !== gone;
+      });
+      savePlanExtras();
+      var field = planById("planItemLabel");
+      planComboFill(""); // the list stays open, without the label that was removed
+      planComboOpen(true);
+      if (field) field.focus();
+    } else if (action === "plan-item-del") {
+      var id = btn.dataset.id;
+      planItems = planItems.filter(function (it) {
+        return it.id !== id;
+      });
+      savePlanExtras();
       renderPlanBox();
+      showToast(t("planItemRemoved"), false);
     }
   }
-  function handlePlanInput() {
+  function handlePlanInput(e) {
+    if (e.target && e.target.id === "planItemLabel") {
+      planDraftItem.label = e.target.value;
+      if (planError) {
+        planError = "";
+        var msg = planById("planItemError");
+        if (msg) msg.hidden = true;
+      }
+      planComboFill(e.target.value);
+      planComboOpen(true);
+      return;
+    }
     var v = readPlanInputs();
-    var out = document.getElementById("planSpendOut");
-    var err = document.getElementById("planError");
+    var out = planById("planSpendOut");
+    var err = planById("planError");
     if (!v) return;
     if (out) out.textContent = v.ok ? 100 - v.savings - v.needs + "%" : "—";
     if (err) err.hidden = v.ok;
   }
+  function handlePlanFocusIn(e) {
+    if (!e.target || e.target.id !== "planItemLabel") return;
+    if (planSkipOpen) {
+      planSkipOpen = false;
+      return;
+    }
+    planComboFill("");
+    planComboOpen(true);
+  }
+  function handlePlanKeydown(e) {
+    if (!e.target || e.target.id !== "planItemLabel") return;
+    var list = planById("planComboList");
+    var open = !!list && !list.hidden;
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      if (!open) {
+        planComboFill(e.target.value);
+        planComboOpen(true);
+      }
+      planComboMove(e.key === "ArrowDown" ? 1 : -1);
+    } else if (e.key === "Enter" && open && planComboActive >= 0) {
+      e.preventDefault();
+      var opt = list.querySelectorAll(".plan-combo-opt")[planComboActive];
+      if (opt) planComboPick(opt.dataset.label || "");
+    } else if (e.key === "Escape" && open) {
+      e.preventDefault();
+      planComboOpen(false);
+    } else if (e.key === "Tab") {
+      planComboOpen(false);
+    }
+  }
+  function handlePlanItemSubmit() {
+    var labelEl = planById("planItemLabel");
+    var amountEl = planById("planItemAmount");
+    if (!labelEl || !amountEl) return;
+    var label = cleanPlanLabel(labelEl.value);
+    var amount = Math.round(Number(amountEl.value) * 100) / 100;
+    planDraftItem.label = labelEl.value;
+    planDraftItem.amount = amountEl.value;
+    if (!label) {
+      planError = t("planItemErrLabel");
+      renderPlanBox();
+      planSkipOpen = true; // focus the field without opening the list over the entries
+      var l = planById("planItemLabel");
+      if (l) l.focus();
+      return;
+    }
+    if (!isFinite(amount) || amount <= 0 || amount > 10000000) {
+      planError = t("planItemErrAmount");
+      renderPlanBox();
+      var a = planById("planItemAmount");
+      if (a) a.focus();
+      return;
+    }
+    planItems.push({ id: makeId(), label: label, amount: amount, date: toDateKey(new Date()) });
+    if (planItems.length > 2000) planItems = planItems.slice(planItems.length - 2000);
+    // a label that was not in the list yet joins it, so it is there next time
+    var known = planKnownLabels().some(function (k) {
+      return planNorm(k.label) === planNorm(label);
+    });
+    if (!known) planLabels.push(label);
+    savePlanExtras();
+    planError = "";
+    planDraftItem = { label: "", amount: "" };
+    renderPlanBox({ skipItem: true });
+    planSkipOpen = true;
+    var next = planById("planItemLabel");
+    if (next) next.focus();
+    showToast(t("planItemAdded"), false);
+  }
   function handlePlanSubmit(e) {
-    if (!e.target.closest('[data-action="plan-form"]')) return;
+    var form = e.target.closest("[data-action]");
+    if (!form) return;
     e.preventDefault();
+    if (form.dataset.action === "plan-item-form") {
+      handlePlanItemSubmit();
+      return;
+    }
+    if (form.dataset.action !== "plan-form") return;
     var v = readPlanInputs();
     if (!v || !v.ok) {
-      var err = document.getElementById("planError");
+      var err = planById("planError");
       if (err) err.hidden = false;
       return;
     }
     plan.savings = v.savings;
     plan.needs = v.needs;
     planEditing = false;
+    planClearDrafts();
     savePlan();
     renderPlanBox();
     showToast(t("planSaved"), false);
@@ -5084,12 +5563,21 @@
     planBoxEl.addEventListener("click", handlePlanClick);
     planBoxEl.addEventListener("input", handlePlanInput);
     planBoxEl.addEventListener("submit", handlePlanSubmit);
+    planBoxEl.addEventListener("focusin", handlePlanFocusIn);
+    planBoxEl.addEventListener("keydown", handlePlanKeydown);
+    // a click anywhere else closes the dropdown of the "what is it for" field
+    document.addEventListener("click", function (e) {
+      var list = document.getElementById("planComboList");
+      if (!list || list.hidden) return;
+      if (!e.target.closest || !e.target.closest(".plan-combo")) planComboOpen(false);
+    });
   }
 
   /* ---------------- init ---------------- */
   loadLang();
   loadProfile();
   loadPlan();
+  loadPlanExtras();
   loadStudents();
   loadGroups();
   applyStaticText();
