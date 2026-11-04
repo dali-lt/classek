@@ -2014,3 +2014,30 @@ html[dir="rtl"] .lv-mid .lv-overall {
 @keyframes ltGrow { from { transform: scaleY(0); opacity: 0; } to { transform: scaleY(1); opacity: 1; } }
 @keyframes ltPulse { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, #0464de 30%, transparent); } 50% { box-shadow: 0 0 0 6px color-mix(in srgb, #0464de 0%, transparent); } }
 @media (prefers-reduced-motion: reduce) { .lt-bar { animation: none !important; } }
+
+/* bars are buttons: hover/focus shows a glass veil with an eye, click opens that test's details */
+.lt-col { appearance: none; background: none; border: 0; padding: 0; font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.lt-bar { position: relative; overflow: hidden; transition: transform 0.2s ease, filter 0.2s ease; }
+.lt-veil { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(1, 9, 45, 0.34); backdrop-filter: blur(2px); opacity: 0; transition: opacity 0.18s ease; }
+.lt-eye { display: grid; place-items: center; color: #fff; }
+.lt-eye svg { width: 20px; height: 20px; }
+.lt-col:hover .lt-veil, .lt-col:focus-visible .lt-veil, .lt-col:active .lt-veil { opacity: 1; }
+.lt-col:hover .lt-val, .lt-col:focus-visible .lt-val { opacity: 0; }
+.lt-col:hover .lt-bar { transform: translateY(-2px); }
+.lt-col:focus-visible { outline: 2px solid #0464de; outline-offset: 3px; border-radius: 8px; }
+.lt-val { position: absolute; top: 6px; transition: opacity 0.15s; }
+.lt-bar { position: relative; }
+
+/* pill bars, same look as the teacher "Students per level" chart */
+.lt-bars { --plot: 104px; height: calc(var(--plot) + 40px); gap: 8px; }
+.lt-col { max-width: 40px; gap: 5px; }
+.lt-bar { width: 28px; max-width: 100%; border-radius: 999px; background: #4aa52f; padding: 0; }
+.lt-col.is-high .lt-bar { background: #4aa52f; }
+.lt-col.is-mid .lt-bar { background: #0464de; }
+.lt-col.is-low .lt-bar { background: #e0473e; }
+.lt-col.is-last .lt-bar { filter: saturate(1.15) brightness(0.92); }
+.lt-name { font-size: 11.5px; font-weight: 700; }
+.lt-val { position: static; font-size: 11.5px; font-weight: 800; color: var(--color-text); opacity: 1 !important; }
+.lt-col.is-high .lt-val { color: var(--color-text); }
+.lt-col.is-last .lt-val { font-size: 11.5px; }
+.lt-goal { display: none; }

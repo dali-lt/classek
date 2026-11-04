@@ -169,6 +169,7 @@ var STR = {
     bNoteReady: "Une dizaine de questions. Il t’attend : ton compteur ne bouge pas tant que tu ne l’as pas passé.",
     bCardTitle: "Ton niveau et tes bilans",
     bTrendStart: "Test",
+    bTrendOpen: "Voir le détail :",
     bTrendLabel: "Évolution de ton niveau",
     bTrendFirst: "Point de départ",
     bTrendSame: "Stable",
@@ -356,6 +357,7 @@ var STR = {
     bNoteReady: "نحو 10 أسئلة. التقييم ينتظر فيك، والعداد ما يتحركش حتى تعدّيه.",
     bCardTitle: "مستواك وتقييماتك",
     bTrendStart: "الاختبار",
+    bTrendOpen: "عرض التفاصيل:",
     bTrendLabel: "تطور مستواك",
     bTrendFirst: "نقطة البداية",
     bTrendSame: "مستقر",
@@ -1577,9 +1579,9 @@ function enableDragScroll(row) {
 }
 function levelTrend() {
   var pts = [];
-  if (placement && placement.status === "done" && placement.total) pts.push({ c: placement.correct, t: placement.total, n: t("bTrendStart") });
+  if (placement && placement.status === "done" && placement.total) pts.push({ c: placement.correct, t: placement.total, n: t("bTrendStart"), item: null });
   bilans.items.forEach(function (b) {
-    if (b && b.total) pts.push({ c: b.correct, t: b.total, n: "B" + (b.no || pts.length) });
+    if (b && b.total) pts.push({ c: b.correct, t: b.total, n: "B" + (b.no || pts.length), item: b });
   });
   pts = pts.slice(-6);
   if (pts.length < 1) return null;
@@ -1594,15 +1596,22 @@ function levelTrend() {
   var bars = el("div", "lt-bars");
   pts.forEach(function (x, i) {
     var p = x.c / x.t;
-    var col = el("div", "lt-col is-" + levelKey(p) + (i === pts.length - 1 ? " is-last" : ""));
+    var col = el("button", "lt-col is-" + levelKey(p) + (i === pts.length - 1 ? " is-last" : ""));
+    col.type = "button";
+    col.setAttribute("aria-label", t("bTrendOpen") + " " + x.n + " · " + x.c + "/" + x.t);
+    col.addEventListener("click", function () {
+      if (x.item) viewBilan(x.item);
+      else viewResults();
+    });
     var bar = el("span", "lt-bar");
-    bar.style.setProperty("--p", String(Math.max(0.08, p)));
+    bar.style.setProperty("--p", String(Math.max(0.12, p)));
     bar.style.setProperty("--i", String(i));
-    bar.append(el("em", "lt-val", x.c + "/" + x.t));
-    col.append(bar, el("small", "lt-name", x.n));
+    var veil = el("span", "lt-veil");
+    veil.append(ico(I_EYE, "lt-eye"));
+    bar.append(veil);
+    col.append(bar, el("small", "lt-name", x.n), el("em", "lt-val", x.c + "/" + x.t));
     bars.append(col);
   });
-  bars.append(el("i", "lt-goal"));
   box.append(bars);
   var last = pts[pts.length - 1];
   var side = el("div", "lt-side");
@@ -1636,20 +1645,6 @@ function renderPlacementCard() {
     text.append(head);
     var trend = levelTrend();
     if (trend) text.append(trend);
-    var view = pBtn("", "is-ghost is-mini", function () {
-      if (lastB) viewBilan(lastB);
-      else viewResults();
-    });
-    view.setAttribute("aria-label", t("pViewResults"));
-    view.title = t("pViewResults");
-    view.append(ico(I_EYE, "tc-ico"), el("span", "pc-btn-label", t("pViewResults")));
-    actions.append(view);
-    if (lastB) {
-      var plc = pBtn(t("bPlacement"), "is-ghost is-mini", function () {
-        viewResults();
-      });
-      actions.append(plc);
-    }
   } else {
     var halo = el("div", "pc-alert");
     halo.append(ico(I_BELL, "pc-bell"));
