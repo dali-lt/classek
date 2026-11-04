@@ -3,8 +3,8 @@
    The profile card ("My account") reuses the teacher app's modal look (style.css)
    and saves to users/{uid}/meta/profile. */
 
-import { Chapters } from "./chapters.js?v=103";
-import * as Cy from "./cycle.js?v=69";
+import { Chapters } from "./chapters.js?v=102";
+import * as Cy from "./cycle.js?v=68";
 import {
   MAX_SHOWN,
   parseDevice,
@@ -168,6 +168,11 @@ var STR = {
     bNote: "Un exercice terminé = un jour compté. Au 7ᵉ jour, ton bilan arrive.",
     bNoteReady: "Une dizaine de questions. Il t’attend : ton compteur ne bouge pas tant que tu ne l’as pas passé.",
     bCardTitle: "Ton niveau et tes bilans",
+    bTrendStart: "Test",
+    bTrendLabel: "Évolution de ton niveau",
+    bTrendFirst: "Point de départ",
+    bTrendSame: "Stable",
+    bTrendGoal: "Objectif : 7/10",
     bCardLast: "Dernier bilan : {c}/{t}{d}",
     bCardReady: "Ton bilan est prêt à passer",
     bPlacement: "Test de niveau",
@@ -350,6 +355,11 @@ var STR = {
     bNote: "تمرين كامل = يوم محسوب. في اليوم السابع يطلعلك التقييم.",
     bNoteReady: "نحو 10 أسئلة. التقييم ينتظر فيك، والعداد ما يتحركش حتى تعدّيه.",
     bCardTitle: "مستواك وتقييماتك",
+    bTrendStart: "الاختبار",
+    bTrendLabel: "تطور مستواك",
+    bTrendFirst: "نقطة البداية",
+    bTrendSame: "مستقر",
+    bTrendGoal: "الهدف: 7/10",
     bCardLast: "آخر تقييم: {c}/{t}{d}",
     bCardReady: "تقييمك جاهز",
     bPlacement: "اختبار المستوى",
@@ -1544,6 +1554,67 @@ function levelGauge(res) {
   return wrap;
 }
 
+// Mini bar chart of the level over time: the placement test, then each weekly bilan (last 6 at most).
+// Mouse users can't swipe: let them drag the row sideways (touch keeps its native swipe).
+function enableDragScroll(row) {
+  var down = null;
+  row.addEventListener("pointerdown", function (e) {
+    if (e.pointerType !== "mouse" || e.button !== 0) return;
+    down = { x: e.clientX, left: row.scrollLeft, moved: false };
+  });
+  window.addEventListener("pointermove", function (e) {
+    if (!down || !document.body.contains(row)) return;
+    var dx = e.clientX - down.x;
+    if (!down.moved && Math.abs(dx) < 5) return;
+    down.moved = true;
+    row.classList.add("is-drag");
+    row.scrollLeft = down.left - dx;
+  });
+  window.addEventListener("pointerup", function () {
+    down = null;
+    row.classList.remove("is-drag");
+  });
+}
+function levelTrend() {
+  var pts = [];
+  if (placement && placement.status === "done" && placement.total) pts.push({ c: placement.correct, t: placement.total, n: t("bTrendStart") });
+  bilans.items.forEach(function (b) {
+    if (b && b.total) pts.push({ c: b.correct, t: b.total, n: "B" + (b.no || pts.length) });
+  });
+  pts = pts.slice(-6);
+  if (pts.length < 1) return null;
+  var box = el("div", "lt-box");
+  box.setAttribute("role", "img");
+  var summary = pts
+    .map(function (x) {
+      return x.n + " " + x.c + "/" + x.t;
+    })
+    .join(", ");
+  box.setAttribute("aria-label", t("bTrendLabel") + ": " + summary);
+  var bars = el("div", "lt-bars");
+  pts.forEach(function (x, i) {
+    var p = x.c / x.t;
+    var col = el("div", "lt-col is-" + levelKey(p) + (i === pts.length - 1 ? " is-last" : ""));
+    var bar = el("span", "lt-bar");
+    bar.style.setProperty("--p", String(Math.max(0.08, p)));
+    bar.style.setProperty("--i", String(i));
+    bar.append(el("em", "lt-val", x.c + "/" + x.t));
+    col.append(bar, el("small", "lt-name", x.n));
+    bars.append(col);
+  });
+  bars.append(el("i", "lt-goal"));
+  box.append(bars);
+  var last = pts[pts.length - 1];
+  var side = el("div", "lt-side");
+  side.append(levelBadge(last.c / last.t, ""));
+  var d = pts.length > 1 ? Math.round((last.c / last.t - pts[pts.length - 2].c / pts[pts.length - 2].t) * 100) : null;
+  var hint = el("span", "lt-hint", d === null ? t("bTrendFirst") : d === 0 ? t("bTrendSame") : (d > 0 ? "▲ +" : "▼ −") + Math.abs(d) + "%");
+  if (d) hint.classList.add(d > 0 ? "is-up" : "is-down");
+  side.append(hint, el("small", "lt-goal-note", t("bTrendGoal")));
+  box.append(side);
+  return box;
+}
+
 function renderPlacementCard() {
   var host = $("sPlacement");
   host.textContent = "";
@@ -1563,6 +1634,8 @@ function renderPlacementCard() {
     ht.append(el("h3", "", cycleOk ? t("bCardTitle") : t("pCardDoneTitle")), el("p", "", cardSub));
     head.append(ht);
     text.append(head);
+    var trend = levelTrend();
+    if (trend) text.append(trend);
     var view = pBtn("", "is-ghost is-mini", function () {
       if (lastB) viewBilan(lastB);
       else viewResults();
@@ -2184,6 +2257,7 @@ function renderResultCard(body) {
     }, 350 + idx * 120);
   });
   body.append(tiles);
+  if (!tiles.classList.contains("is-one")) enableDragScroll(tiles);
 
   var keys = Object.keys(r.domains);
   var pcts = keys.map(function (k) {
