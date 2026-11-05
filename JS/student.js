@@ -1609,7 +1609,8 @@ function levelTrend() {
     var veil = el("span", "lt-veil");
     veil.append(ico(I_EYE, "lt-eye"));
     bar.append(veil);
-    col.append(bar, el("small", "lt-name", x.n), el("em", "lt-val", x.c + "/" + x.t));
+    bar.append(el("em", "lt-val", x.c + "/" + x.t));
+    col.append(bar, el("small", "lt-name", x.n));
     bars.append(col);
   });
   box.append(bars);

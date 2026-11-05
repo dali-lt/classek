@@ -2041,3 +2041,35 @@ html[dir="rtl"] .lv-mid .lv-overall {
 .lt-col.is-high .lt-val { color: var(--color-text); }
 .lt-col.is-last .lt-val { font-size: 11.5px; }
 .lt-goal { display: none; }
+
+/* score lives in a bubble that pops above the bar on hover / focus / tap (not printed under the bars) */
+.lt-bars { height: calc(var(--plot) + 20px + 34px); padding-top: 34px; box-sizing: border-box; }
+.lt-bar { overflow: visible; }
+.lt-veil { border-radius: 999px; }
+.lt-val {
+  --tip: #4aa52f;
+  position: absolute;
+  top: auto;
+  bottom: calc(100% + 9px);
+  inset-inline-start: 50%;
+  translate: -50% 4px;
+  min-width: 34px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: var(--tip);
+  color: #fff !important;
+  font-size: 12.5px;
+  font-weight: 800;
+  line-height: 1.1;
+  text-align: center;
+  white-space: nowrap;
+  opacity: 0 !important;
+  pointer-events: none;
+  transition: opacity 0.16s ease, translate 0.16s ease;
+  z-index: 3;
+}
+.lt-val::after { content: ""; position: absolute; top: 100%; inset-inline-start: 50%; translate: -50% -1px; border: 5px solid transparent; border-top-color: var(--tip); }
+.lt-col.is-mid .lt-val { --tip: #0464de; }
+.lt-col.is-low .lt-val { --tip: #e0473e; }
+.lt-col.is-high .lt-val { --tip: #3e8a28; color: #fff !important; }
+.lt-col:hover .lt-val, .lt-col:focus-visible .lt-val, .lt-col:active .lt-val { opacity: 1 !important; translate: -50% 0; }
