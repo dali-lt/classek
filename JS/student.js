@@ -2507,8 +2507,12 @@ function renderBilanExtras(body, r) {
     head.append(el("b", "", domainLabel(k)), el("span", "bl-val" + dir, (dir === " is-up" ? "▲ " : dir === " is-down" ? "▼ " : "") + Math.round(p * 100) + "%"));
     var bar = el("div", "bl-bar");
     var fill = el("i", dir.trim());
-    fill.style.width = Math.round(p * 100) + "%";
     bar.append(fill);
+    if (p < 1) bar.append(el("b", "bl-rest")); // the empty part is its own pill, with a gap after the filled one
+    setTimeout(function () {
+      fill.style.width = p > 0 ? "calc(" + Math.round(p * 100) + "% - " + (p < 1 ? 2 : 0) + "px)" : "0";
+      if (p > 0 && p < 1) bar.classList.add("has-fill");
+    }, 250);
     if (pv !== null) {
       var mark = el("b", "bl-mark");
       mark.style.insetInlineStart = Math.round(pv * 100) + "%";

@@ -2073,3 +2073,12 @@ html[dir="rtl"] .lv-mid .lv-overall {
 .lt-col.is-low .lt-val { --tip: #e0473e; }
 .lt-col.is-high .lt-val { --tip: #3e8a28; color: #fff !important; }
 .lt-col:hover .lt-val, .lt-col:focus-visible .lt-val, .lt-col:active .lt-val { opacity: 1 !important; translate: -50% 0; }
+
+/* "Ton évolution par chapitre": same bars as the rest of the site, the filled and the empty part are two pills that meet in rounded ends */
+.bl-bar { display: flex; gap: 0; height: 8px; border: 0; border-radius: 0; background: none; }
+.bl-bar i { position: static; flex: none; width: 0; min-width: 0; height: 8px; border-radius: 999px; background: linear-gradient(90deg, #0464de, #032c7b); transition: width 0.9s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.bl-bar i.is-down { background: var(--color-danger); }
+.bl-rest { flex: 1; min-width: 8px; height: 8px; border-radius: 999px; background: color-mix(in srgb, #0464de 20%, var(--color-surface)); }
+.bl-bar.has-fill .bl-rest { margin-inline-start: 4px; }
+@media (prefers-reduced-motion: reduce) { .bl-bar i { transition: none; } }
+.bl-bar { position: relative; }

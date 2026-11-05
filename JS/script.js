@@ -2646,12 +2646,19 @@
       plan = cleanPlan(null);
     }
   }
-  function savePlan() {
+  function savePlan(silent) {
     try {
       localStorage.setItem(PLAN_KEY, JSON.stringify(plan));
     } catch (e) {
       showToast(t("saveError"), true);
     }
+    if (!silent) emitPlanChanged();
+  }
+  // tells the cloud-sync module that the plan (split %, entries, labels) changed on this device
+  function emitPlanChanged() {
+    try {
+      window.dispatchEvent(new CustomEvent("classledger:plan-changed"));
+    } catch (e) {}
   }
   // Debts & needs are typed by hand (what it is for, like "Internet", + an amount). An entry belongs to the plan month its
   // date falls in, so it keeps following the right month even if the students' due days change.
@@ -2710,13 +2717,52 @@
       planLabels = [];
     }
   }
-  function savePlanExtras() {
+  function savePlanExtras(silent) {
     try {
       localStorage.setItem(PLAN_ITEMS_KEY, JSON.stringify(planItems));
       localStorage.setItem(PLAN_LABELS_KEY, JSON.stringify(planLabels));
     } catch (e) {
       showToast(t("saveError"), true);
     }
+    if (!silent) emitPlanChanged();
+  }
+  // the whole plan as one object, for the cloud copy (users/{uid}/meta/plan)
+  function getPlanData() {
+    return { plan: Object.assign({}, plan), items: planItems.slice(), labels: planLabels.slice() };
+  }
+  // opts.silent: the change came from the cloud, don't send it back. opts.merge: keep this device's own
+  // entries and labels too (first sign-in on a device that already has some).
+  function setPlanData(data, opts) {
+    opts = opts || {};
+    data = data && typeof data === "object" ? data : {};
+    var items = cleanPlanItems(data.items);
+    var labels = cleanPlanLabels(data.labels);
+    if (opts.merge) {
+      var ids = {};
+      items.forEach(function (it) {
+        ids[it.id] = true;
+      });
+      planItems.forEach(function (it) {
+        if (!ids[it.id]) items.push(it);
+      });
+      labels = cleanPlanLabels(labels.concat(planLabels));
+    }
+    plan = cleanPlan(opts.merge && !data.plan ? plan : data.plan);
+    planItems = items;
+    planLabels = labels;
+    savePlan(true);
+    savePlanExtras(true);
+    if (opts.silent !== true) emitPlanChanged();
+    if (currentPage === "payments") renderPaymentsPage();
+    else renderPlanBox();
+  }
+  function resetPlanData() {
+    plan = cleanPlan(null);
+    planItems = [];
+    planLabels = [];
+    savePlan(true);
+    savePlanExtras(true);
+    renderPlanBox();
   }
   // the list of the dropdown: the built-in labels first, then the ones the teacher added (those can be removed)
   function planKnownLabels() {
@@ -5521,6 +5567,9 @@
     getProfile: function () {
       return Object.assign({}, profile);
     },
+    getPlan: getPlanData,
+    setPlan: setPlanData,
+    resetPlan: resetPlanData,
     normalizeProfile: cleanProfile,
     setProfile: setProfile,
     openProfile: openProfileModal,

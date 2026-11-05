@@ -385,6 +385,7 @@ async function main() {
         .concat([
           sdk.doc(db, "users", uid, "meta", "groups"),
           sdk.doc(db, "users", uid, "meta", "profile"),
+          sdk.doc(db, "users", uid, "meta", "plan"),
           sdk.doc(db, "users", uid, "meta", "account"),
         ]);
       for (var i = 0; i < refs.length; i += 400) {
@@ -409,6 +410,7 @@ async function main() {
     } catch (e) {}
     if (eraseLocal) {
       app.applyRemote({ replaceAll: true });
+      if (app.resetPlan) app.resetPlan(); // the other account's monthly plan stays out too
       app.setProfile({}, { silent: true, forget: true });
     }
     acctUi.open = false;
@@ -497,6 +499,9 @@ async function main() {
       studentsCol: sdk.collection(db, "users", u.uid, "students"),
       groupsRef: sdk.doc(db, "users", u.uid, "meta", "groups"),
       profileRef: sdk.doc(db, "users", u.uid, "meta", "profile"),
+      planRef: sdk.doc(db, "users", u.uid, "meta", "plan"),
+      lastPlan: null, // stable string of the monthly plan last known in the cloud
+      planReconciled: false, // the server has answered for the plan
       lastProfile: null, // stable string of the profile last known in the cloud
       profileReconciled: false, // the server has answered for the profile
       lastSynced: new Map(), // student id -> stable string last known in the cloud
@@ -517,6 +522,7 @@ async function main() {
       sdk.onSnapshot(current.studentsCol, { includeMetadataChanges: true }, onStudents, onSyncError),
       sdk.onSnapshot(current.groupsRef, { includeMetadataChanges: true }, onGroups, onSyncError),
       sdk.onSnapshot(current.profileRef, { includeMetadataChanges: true }, onProfile, onSyncError),
+      sdk.onSnapshot(current.planRef, { includeMetadataChanges: true }, onPlan, onSyncError),
     );
   }
 
@@ -646,6 +652,67 @@ async function main() {
       });
   }
 
+  /* ---------------- monthly plan (split %, debts & needs entries, labels) ---------------- */
+  function planKeyOf(uid) {
+    return "classledger:plan-synced:" + uid;
+  }
+  function planString(d) {
+    d = d || {};
+    return stableStringify({ plan: d.plan || {}, items: d.items || [], labels: d.labels || [] });
+  }
+  function planHasContent(d) {
+    return !!(d && ((d.items && d.items.length) || (d.labels && d.labels.length) || (d.plan && (d.plan.savings !== 20 || d.plan.needs !== 50 || d.plan.basis !== "collected"))));
+  }
+  function onPlan(snap) {
+    if (!sync || !app.setPlan) return;
+    if (!snap.metadata.fromCache) sync.planReconciled = true;
+    if (snap.exists()) {
+      var data = snap.data();
+      var str = planString(data);
+      if (str !== sync.lastPlan) {
+        sync.lastPlan = str; // also stops our own write from echoing back
+        var firstTime = false;
+        try {
+          firstTime = !window.localStorage.getItem(planKeyOf(sync.uid));
+        } catch (e) {}
+        // first time on this device: keep what was typed here too, then send the union up
+        app.setPlan(data, { silent: true, merge: firstTime && planHasContent(app.getPlan()) });
+        if (firstTime) {
+          try {
+            window.localStorage.setItem(planKeyOf(sync.uid), "1");
+          } catch (e) {}
+          if (planString(app.getPlan()) !== str) {
+            sync.lastPlan = null;
+            pushPlan();
+          }
+        }
+      }
+    } else if (!snap.metadata.fromCache) {
+      pushPlan(); // nothing in the cloud yet: upload what is already on this device
+      try {
+        window.localStorage.setItem(planKeyOf(sync.uid), "1");
+      } catch (e) {}
+    }
+  }
+  function pushPlan() {
+    var current = sync;
+    if (!current || !app.getPlan) return;
+    var local = app.getPlan();
+    var str = planString(local);
+    if (str === current.lastPlan) return;
+    if (current.lastPlan === null && !planHasContent(local)) return;
+    // online: never write before the cloud's copy has been read (a stale copy must not replace it)
+    if (window.navigator.onLine && !current.planReconciled) return;
+    current.lastPlan = str;
+    sdk
+      .setDoc(current.planRef, Object.assign({}, clone(local), { updatedAt: sdk.serverTimestamp() }))
+      .catch(function (err) {
+        if (sync !== current) return;
+        current.lastPlan = null;
+        onSyncError(err);
+      });
+  }
+
   function onSyncError(err) {
     if (!sync) return;
     sync.error = err;
@@ -744,7 +811,9 @@ async function main() {
     render();
   });
   window.addEventListener("classledger:profile-applied", render);
+  window.addEventListener("classledger:plan-changed", pushPlan);
   window.addEventListener("online", function () {
+    pushPlan();
     render();
     schedulePush(0);
   });
