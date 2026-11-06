@@ -22,6 +22,68 @@ var STR = {
     emptyText: "Reviens bientôt : de nouveaux exercices sont ajoutés.",
     back: "Retour à {name}",
     allSubjects: "Toutes les matières",
+    tabChapters: "Chapitres",
+    tabSeries: "Séries",
+    tabDevoirs: "Devoirs",
+    ladderTitle: "Ton échelle de difficulté",
+    ladderHint: "Finis 70 % d’un niveau pour ouvrir le suivant. Pas de piège : tu montes marche par marche.",
+    lvl1: "Facile",
+    lvl2: "Moyen",
+    lvl3: "Difficile",
+    lvl4: "Très difficile",
+    lvlSub1: "Les bases, une idée à la fois",
+    lvlSub2: "Combiner plusieurs notions",
+    lvlSub3: "Raisonner sans guide",
+    lvlSub4: "Le niveau des sujets de Bac",
+    tagLocked: "Verrouillé",
+    tagHere: "Tu es ici",
+    tagDone: "Réussi",
+    tagOpen: "Ouvert",
+    tagSoon: "Bientôt",
+    lockNeed: "Termine 70 % de « {level} » pour ouvrir",
+    serieN: "Série {n}",
+    svDone: "Terminée",
+    stProg: "En cours",
+    stNew: "À faire",
+    stLocked: "Verrouillée",
+    btnStart: "Commencer →",
+    btnCont: "Continuer →",
+    btnReview: "Revoir",
+    btnLocked: "Ouvre le niveau précédent",
+    serieMeta: "{n} exercices · {m} min",
+    serieMetaNoMin: "{n} exercices",
+    seriesEmptyTitle: "Les séries arrivent bientôt",
+    seriesEmptyText: "Reviens bientôt : des séries par niveau sont ajoutées.",
+    devoirsEmptyTitle: "Les devoirs arrivent bientôt",
+    devoirsEmptyText: "Reviens bientôt : des sujets de Bac avec correction sont ajoutés.",
+    dvResume: "Reprendre où tu t’es arrêté",
+    dvResumeLine: "Exercice {i} sur {n}",
+    dvHowTitle: "Une correction qui se dévoile petit à petit",
+    dvHowHint: "Tu cherches d’abord. Chaque étape s’ouvre seulement quand tu es prêt.",
+    dvStep1: "Ta réponse",
+    dvStep1t: "Écris d’abord ce que tu sais, même incomplet.",
+    dvStep2: "Indice",
+    dvStep2t: "Une piste pour te lancer, sans la solution.",
+    dvStep3: "Méthode",
+    dvStep3t: "Les grandes étapes, sans les détails.",
+    dvStep4: "Correction",
+    dvStep4t: "La solution, après ton temps de réflexion.",
+    dvAll: "Tous",
+    dvMain: "Bac principale",
+    dvControl: "Bac contrôle",
+    dvOther: "Autres devoirs",
+    dvSessMain: "Session principale",
+    dvSessControl: "Session de contrôle",
+    dvMeta: "{h} h",
+    dvExCount: "{n} exercices",
+    dvPoints: "{n} points",
+    dvProgress: "Exercices",
+    dvStDone: "Terminé",
+    dvStProg: "En cours",
+    dvStNew: "À faire",
+    dvBtnStart: "Commencer →",
+    dvBtnCont: "Continuer →",
+    dvBtnReview: "Revoir mon devoir",
     subjects: "Matières",
     exercises: "Exercices",
     exercisesCount: "{n} exercices",
@@ -164,6 +226,68 @@ var STR = {
     emptyText: "ارجع قريب: تمارين جديدة تتزاد.",
     back: "رجوع إلى {name}",
     allSubjects: "كل المواد",
+    tabChapters: "الدروس",
+    tabSeries: "السلاسل",
+    tabDevoirs: "الفروض",
+    ladderTitle: "سلّم الصعوبة متاعك",
+    ladderHint: "كمّل 70 % من مستوى باش يتفتح اللي بعدو. ما فما حتى فخ: تطلع درجة درجة.",
+    lvl1: "سهل",
+    lvl2: "متوسط",
+    lvl3: "صعب",
+    lvl4: "صعب برشا",
+    lvlSub1: "الأساسيات، فكرة في كل مرة",
+    lvlSub2: "نجمّع أكثر من مفهوم",
+    lvlSub3: "نفكّر بلا مساعدة",
+    lvlSub4: "مستوى مواضيع الباك",
+    tagLocked: "مقفول",
+    tagHere: "إنت هنا",
+    tagDone: "نجحت",
+    tagOpen: "مفتوح",
+    tagSoon: "قريب",
+    lockNeed: "كمّل 70 % من « {level} » باش يتفتح",
+    serieN: "سلسلة {n}",
+    svDone: "كملت",
+    stProg: "جارية",
+    stNew: "باش تعملها",
+    stLocked: "مقفولة",
+    btnStart: "ابدا ←",
+    btnCont: "كمّل ←",
+    btnReview: "راجع",
+    btnLocked: "حلّ المستوى اللي قبل",
+    serieMeta: "{n} تمارين · {m} د",
+    serieMetaNoMin: "{n} تمارين",
+    seriesEmptyTitle: "السلاسل جاية قريب",
+    seriesEmptyText: "ارجع قريب: تتزاد سلاسل حسب المستوى.",
+    devoirsEmptyTitle: "الفروض جاية قريب",
+    devoirsEmptyText: "ارجع قريب: تتزاد مواضيع باك مع التصحيح.",
+    dvResume: "كمّل وين وقفت",
+    dvResumeLine: "التمرين {i} من {n}",
+    dvHowTitle: "تصحيح يتكشّف شوية شوية",
+    dvHowHint: "تقلّب بروحك لول. كل مرحلة تتفتح كي تكون حاضر.",
+    dvStep1: "جوابك",
+    dvStep1t: "اكتب لول اللي تعرفو، ولو ناقص.",
+    dvStep2: "تلميح",
+    dvStep2t: "فكرة باش تبدا، من غير الحل.",
+    dvStep3: "الطريقة",
+    dvStep3t: "الخطوات الكبيرة، من غير التفاصيل.",
+    dvStep4: "التصحيح",
+    dvStep4t: "الحل، بعد وقت التفكير.",
+    dvAll: "الكل",
+    dvMain: "باك دورة رئيسية",
+    dvControl: "باك دورة المراقبة",
+    dvOther: "فروض أخرى",
+    dvSessMain: "الدورة الرئيسية",
+    dvSessControl: "دورة المراقبة",
+    dvMeta: "{h} س",
+    dvExCount: "{n} تمارين",
+    dvPoints: "{n} نقطة",
+    dvProgress: "التمارين",
+    dvStDone: "كمل",
+    dvStProg: "جاري",
+    dvStNew: "باش تعملو",
+    dvBtnStart: "ابدا ←",
+    dvBtnCont: "كمّل ←",
+    dvBtnReview: "راجع فرضي",
     subjects: "المواد",
     exercises: "التمارين",
     exercisesCount: "{n} تمارين",
@@ -372,6 +496,7 @@ var S = {
   notes: [], // all of the student's notes, newest first
   notesOk: true,
   subject: null,
+  extra: [], // series and devoirs (they live in the chapters collection with kind: "serie" | "devoir"; kept out of the chapter totals)
   cur: null, // { id, exercises, loading, failed } for the open chapter
 };
 var drafts = {}; // "chapterId/exId#box" -> typed answer (survives re-renders; box "0" = the only box, "1".."n" = one per question)
@@ -1757,13 +1882,20 @@ async function load() {
     var q = sdk.query.apply(null, [sdk.collection(ctx.db, "chapters")].concat(cons));
     var snap = await sdk.getDocs(q);
     if (S.loadedKey !== key) return; // the level changed while loading
-    S.chapters = snap.docs
+    var all = snap.docs
       .map(function (d) {
         return Object.assign({ id: d.id }, d.data());
       })
       .sort(function (a, b) {
         return (a.order || 0) - (b.order || 0);
       });
+    // séries and devoirs are chapter-like documents, but they don't count in the chapters, the bilan or the home totals
+    S.chapters = all.filter(function (c) {
+      return c.kind !== "serie" && c.kind !== "devoir";
+    });
+    S.extra = all.filter(function (c) {
+      return c.kind === "serie" || c.kind === "devoir";
+    });
     var pr = await sdk.getDocs(sdk.collection(ctx.db, "users", ctx.uid, "progress"));
     S.status = {};
     pr.docs.forEach(function (d) {
@@ -2037,7 +2169,8 @@ function readRoute() {
   var h = window.location.hash || "";
   var c = /(?:^|[#&])c=([^&]+)/.exec(h);
   var sub = /(?:^|[#&])s=([^&]+)/.exec(h);
-  return { c: c ? decodeURIComponent(c[1]) : "", s: sub ? decodeURIComponent(sub[1]) : "" };
+  var v = /(?:^|[#&])v=([^&]+)/.exec(h);
+  return { c: c ? decodeURIComponent(c[1]) : "", s: sub ? decodeURIComponent(sub[1]) : "", v: v ? decodeURIComponent(v[1]) : "" };
 }
 function go(hash) {
   window.location.hash = hash; // fires hashchange, which re-renders
@@ -2045,8 +2178,23 @@ function go(hash) {
 function openChapter(id) {
   go("c=" + encodeURIComponent(id));
 }
-function openSubject(sub) {
-  go("s=" + encodeURIComponent(sub));
+function openSubject(sub, view) {
+  go("s=" + encodeURIComponent(sub) + (view ? "&v=" + encodeURIComponent(view) : ""));
+}
+/* which tab of its subject a chapter-like page belongs to: "" chapters, "series", "devoirs" */
+function viewOf(ch) {
+  return ch && ch.kind === "serie" ? "series" : ch && ch.kind === "devoir" ? "devoirs" : "";
+}
+function findChapter(id) {
+  return (
+    S.chapters.filter(function (c) {
+      return c.id === id;
+    })[0] ||
+    S.extra.filter(function (c) {
+      return c.id === id;
+    })[0] ||
+    null
+  );
 }
 function closeToHome() {
   if (window.history && window.history.replaceState) {
@@ -2265,9 +2413,320 @@ function message(host, titleKey, textKey, retry) {
   host.append(box);
 }
 
+/* ---------------- séries and devoirs (tabs inside a subject) ---------------- */
+var UNLOCK_AT = 70; // % of a level's exercises to finish before the next level opens
+
+function extrasOf(sub, kind) {
+  return S.extra.filter(function (c) {
+    return c.subject === sub && c.kind === kind;
+  });
+}
+function exTotal(ch) {
+  return Number(ch.exerciseCount) || 0;
+}
+function titleOf(ch) {
+  return ctx.getLang() === "ar" && ch.title_ar ? ch.title_ar : ch.title || "";
+}
+
+/* the three tabs above a subject's content */
+function svTabs(sub, view) {
+  var row = el("div", "sv-tabs");
+  row.setAttribute("role", "tablist");
+  [
+    ["", "tabChapters", S.chapters.filter(function (c) { return c.subject === sub; }).length],
+    ["series", "tabSeries", extrasOf(sub, "serie").length],
+    ["devoirs", "tabDevoirs", extrasOf(sub, "devoir").length],
+  ].forEach(function (x) {
+    var on = x[0] === view;
+    var b = el("button", "sv-tab" + (on ? " is-on" : ""));
+    b.type = "button";
+    b.setAttribute("role", "tab");
+    b.setAttribute("aria-selected", on ? "true" : "false");
+    b.append(el("span", "", t(x[1])), el("span", "sv-count", String(x[2])));
+    b.addEventListener("click", function () {
+      if (!on) openSubject(sub, x[0]);
+    });
+    row.append(b);
+  });
+  return row;
+}
+
+/* four little bars that grow with the level (Facile = 1 … Très difficile = 4) */
+function levelBars(n, cls) {
+  var box = el("span", "lv-bars " + (cls || ""));
+  box.setAttribute("aria-hidden", "true");
+  for (var i = 1; i <= 4; i++) box.append(el("i", i <= n ? "on" : ""));
+  return box;
+}
+
+function levelOf(ch) {
+  var n = Math.round(Number(ch.serieLevel));
+  return n >= 1 && n <= 4 ? n : 1;
+}
+
+/* where the student stands on the ladder: per level the series, the done / total exercises and whether it is open */
+function ladderState(list) {
+  var lv = [null, null, null, null, null];
+  for (var n = 1; n <= 4; n++) lv[n] = { n: n, list: [], done: 0, total: 0, pct: 0, open: true, here: false };
+  list.forEach(function (c) {
+    var L = lv[levelOf(c)];
+    L.list.push(c);
+    L.total += exTotal(c);
+    L.done += doneCount(c);
+  });
+  var blocked = false;
+  var here = 0;
+  for (var m = 1; m <= 4; m++) {
+    var L2 = lv[m];
+    L2.pct = L2.total ? (L2.done / L2.total) * 100 : 0;
+    L2.open = !blocked;
+    if (L2.list.length && L2.open && !here && L2.pct < UNLOCK_AT) here = m;
+    if (L2.list.length && L2.pct < UNLOCK_AT) blocked = true; // a level with series that is not at 70 % keeps the next ones closed
+  }
+  if (!here) {
+    for (var k = 4; k >= 1; k--) {
+      if (lv[k].list.length) {
+        here = k;
+        break;
+      }
+    }
+  }
+  if (here) lv[here].here = true;
+  return lv;
+}
+
+function serieCard(ch, no, L, locked) {
+  var total = exTotal(ch);
+  var done = doneCount(ch);
+  var p = total ? (done / total) * 100 : 0;
+  var st = locked ? "locked" : total && done >= total ? "done" : done > 0 ? "prog" : "new";
+  var card = el("article", "sv-card lv-" + L.n + " st-" + st);
+  var top = el("div", "sv-card-top");
+  top.append(
+    el("span", "sv-kicker", tf("serieN", { n: no })),
+    el("span", "sv-status", t({ locked: "stLocked", done: "svDone", prog: "stProg", new: "stNew" }[st]))
+  );
+  var h = el("h3", "sv-title", titleOf(ch));
+  h.setAttribute("dir", "auto");
+  card.append(top, h);
+  var topics = Array.isArray(ch.topics) ? ch.topics : ch.topic ? [ch.topic] : [];
+  if (topics.length) {
+    var chips = el("div", "sv-chips");
+    topics.slice(0, 3).forEach(function (x) {
+      chips.append(el("span", "sv-chip", String(x)));
+    });
+    card.append(chips);
+  }
+  var foot = el("div", "sv-foot");
+  var meta = el("div", "sv-meta");
+  meta.append(
+    el("span", "", ch.minutes ? tf("serieMeta", { n: total, m: ch.minutes }) : tf("serieMetaNoMin", { n: total })),
+    el("span", "", locked ? "—" : done + " / " + total)
+  );
+  var bar = el("span", "domain-bar sv-bar");
+  segBar(bar, locked ? 0 : p);
+  foot.append(meta, bar);
+  card.append(foot);
+  var btn = el("button", "sv-btn");
+  btn.type = "button";
+  btn.textContent = t(locked ? "btnLocked" : st === "done" ? "btnReview" : st === "prog" ? "btnCont" : "btnStart");
+  btn.disabled = locked;
+  if (!locked) {
+    btn.addEventListener("click", function () {
+      openChapter(ch.id);
+    });
+  }
+  card.append(btn);
+  return card;
+}
+
+function renderSeries(host, sub) {
+  var list = extrasOf(sub, "serie");
+  if (!list.length) {
+    message(host, "seriesEmptyTitle", "seriesEmptyText", false);
+    return;
+  }
+  var lv = ladderState(list);
+  var numbers = {};
+  list.forEach(function (c, i) {
+    numbers[c.id] = i + 1;
+  });
+
+  // the ladder: four steps joined by a line
+  var ladder = el("section", "sv-ladder");
+  var lhead = el("div", "sv-ladder-head");
+  lhead.append(el("h3", "", t("ladderTitle")), el("p", "", t("ladderHint")));
+  var steps = el("div", "sv-steps");
+  for (var n = 1; n <= 4; n++) {
+    var L = lv[n];
+    var empty = !L.list.length;
+    var locked = !L.open && !empty;
+    var tag = empty ? "tagSoon" : locked ? "tagLocked" : L.here ? "tagHere" : L.pct >= UNLOCK_AT ? "tagDone" : "tagOpen";
+    var step = el("div", "sv-step lv-" + n + (locked || empty ? " is-locked" : "") + (L.here ? " is-here" : ""));
+    var line = el("div", "sv-line");
+    line.append(el("i", "sv-l a" + (n === 1 ? " is-end" : (L.open && !empty) || L.here ? " is-on" : "")));
+    var node = el("span", "sv-node");
+    node.append(levelBars(n));
+    line.append(node, el("i", "sv-l b" + (n === 4 ? " is-end" : lv[n + 1].open && lv[n + 1].list.length ? " is-on" : "")));
+    step.append(line, el("b", "sv-step-name", t("lvl" + n)), el("small", "sv-step-count", tf("doneOf", { d: L.done, n: L.total })), el("span", "sv-step-tag", t(tag)));
+    steps.append(step);
+  }
+  ladder.append(lhead, steps);
+  host.append(ladder);
+
+  // one block per level that has series
+  for (var m = 1; m <= 4; m++) {
+    var Lm = lv[m];
+    if (!Lm.list.length) continue;
+    var lockedLevel = !Lm.open;
+    var sec = el("section", "sv-level lv-" + m);
+    var head = el("div", "sv-level-head");
+    var chip = el("span", "sv-level-chip");
+    chip.append(levelBars(m), el("span", "", t("lvl" + m)));
+    head.append(chip, el("span", "sv-level-sub", t("lvlSub" + m)));
+    if (lockedLevel) {
+      var prev = m - 1;
+      while (prev > 1 && !lv[prev].list.length) prev--;
+      head.append(el("span", "sv-lock", tf("lockNeed", { level: t("lvl" + prev) })));
+    }
+    sec.append(head);
+    var grid = el("div", "sv-grid");
+    Lm.list.forEach(function (c) {
+      grid.append(serieCard(c, numbers[c.id], Lm, lockedLevel));
+    });
+    sec.append(grid);
+    host.append(sec);
+  }
+}
+
+function devoirStatus(ch) {
+  var total = exTotal(ch);
+  var done = doneCount(ch);
+  return total && done >= total ? "done" : done > 0 ? "prog" : "new";
+}
+
+function devoirCard(ch) {
+  var total = exTotal(ch);
+  var done = doneCount(ch);
+  var st = devoirStatus(ch);
+  var card = el("article", "dv-card st-" + st);
+  var top = el("div", "sv-card-top");
+  var sess = ch.session === "principale" ? "dvSessMain" : ch.session === "controle" ? "dvSessControl" : "";
+  top.append(
+    el("span", "dv-session" + (ch.session === "principale" ? " is-main" : ""), sess ? t(sess) : ch.session || ""),
+    el("span", "sv-status", t({ done: "dvStDone", prog: "dvStProg", new: "dvStNew" }[st]))
+  );
+  var h = el("h3", "dv-title", titleOf(ch));
+  h.setAttribute("dir", "auto");
+  var meta = el("div", "dv-meta");
+  if (ch.hours) meta.append(el("span", "", tf("dvMeta", { h: ch.hours })));
+  meta.append(el("span", "", tf("dvExCount", { n: total })));
+  if (ch.points) meta.append(el("span", "", tf("dvPoints", { n: ch.points })));
+  var foot = el("div", "sv-foot");
+  var line = el("div", "sv-meta");
+  line.append(el("span", "", t("dvProgress")), el("span", "", done + " / " + total));
+  var bar = el("span", "domain-bar sv-bar");
+  segBar(bar, total ? (done / total) * 100 : 0);
+  foot.append(line, bar);
+  var btn = el("button", "sv-btn");
+  btn.type = "button";
+  btn.textContent = t(st === "done" ? "dvBtnReview" : st === "prog" ? "dvBtnCont" : "dvBtnStart");
+  btn.addEventListener("click", function () {
+    openChapter(ch.id);
+  });
+  card.append(top, h, meta, foot, btn);
+  return card;
+}
+
+var devoirFilter = "all"; // "all" | "principale" | "controle" | "other"
+
+function renderDevoirs(host, sub) {
+  var list = extrasOf(sub, "devoir");
+  if (!list.length) {
+    message(host, "devoirsEmptyTitle", "devoirsEmptyText", false);
+    return;
+  }
+  // "resume" card: the first devoir the student started and has not finished
+  var started = list.filter(function (c) {
+    return devoirStatus(c) === "prog";
+  })[0];
+  if (started) {
+    var hero = el("section", "dv-hero");
+    var left = el("div", "dv-hero-text");
+    left.append(el("span", "dv-hero-cap", t("dvResume")), el("h3", "", titleOf(started)));
+    var chips = el("div", "sv-chips");
+    var total = exTotal(started);
+    var done = doneCount(started);
+    chips.append(el("span", "dv-hero-chip", tf("dvResumeLine", { i: Math.min(done + 1, total), n: total })));
+    left.append(chips);
+    var go1 = el("button", "dv-hero-btn", t("dvBtnCont"));
+    go1.type = "button";
+    go1.addEventListener("click", function () {
+      openChapter(started.id);
+    });
+    hero.append(left, go1);
+    host.append(hero);
+  }
+
+  // how the correction works
+  var how = el("section", "sv-ladder dv-how");
+  var hh = el("div", "sv-ladder-head");
+  hh.append(el("h3", "", t("dvHowTitle")), el("p", "", t("dvHowHint")));
+  var row = el("div", "dv-steps");
+  for (var i = 1; i <= 4; i++) {
+    var it = el("div", "dv-step");
+    var info = el("div", "");
+    info.append(el("b", "", t("dvStep" + i)), el("span", "", t("dvStep" + i + "t")));
+    it.append(el("span", "dv-num n" + i, String(i)), info);
+    row.append(it);
+  }
+  how.append(hh, row);
+  host.append(how);
+
+  // filters (only the kinds that exist)
+  var kindOf = function (c) {
+    return c.session === "principale" ? "principale" : c.session === "controle" ? "controle" : "other";
+  };
+  var kinds = ["principale", "controle", "other"].filter(function (k) {
+    return list.some(function (c) {
+      return kindOf(c) === k;
+    });
+  });
+  if (devoirFilter !== "all" && kinds.indexOf(devoirFilter) < 0) devoirFilter = "all";
+  if (kinds.length > 1) {
+    var fl = el("div", "dv-filters");
+    [["all", "dvAll"]]
+      .concat(
+        kinds.map(function (k) {
+          return [k, { principale: "dvMain", controle: "dvControl", other: "dvOther" }[k]];
+        })
+      )
+      .forEach(function (f) {
+        var b = el("button", "dv-filter" + (devoirFilter === f[0] ? " is-on" : ""), t(f[1]));
+        b.type = "button";
+        b.addEventListener("click", function () {
+          devoirFilter = f[0];
+          render();
+        });
+        fl.append(b);
+      });
+    host.append(fl);
+  }
+
+  var grid = el("div", "sv-grid");
+  list
+    .filter(function (c) {
+      return devoirFilter === "all" || kindOf(c) === devoirFilter;
+    })
+    .forEach(function (c) {
+      grid.append(devoirCard(c));
+    });
+  host.append(grid);
+}
+
 function renderList(host, route) {
   host.textContent = "";
-  host.classList.remove("is-subjects");
+  host.classList.remove("is-subjects", "is-sv");
   var title = $("sChaptersTitle");
   if (S.loading || !ctx.ready()) {
     setBackRow(host, false);
@@ -2297,6 +2756,17 @@ function renderList(host, route) {
   // inside a subject: its chapters
   setBackRow(host, !single);
   if (title) title.textContent = t("s_" + sub);
+  var view = route.v === "series" || route.v === "devoirs" ? route.v : "";
+  host.classList.toggle("is-sv", !!view);
+  host.append(svTabs(sub, view));
+  if (view === "series") {
+    renderSeries(host, sub);
+    return;
+  }
+  if (view === "devoirs") {
+    renderDevoirs(host, sub);
+    return;
+  }
   var shown = S.chapters.filter(function (c) {
     return c.subject === sub;
   });
@@ -3824,11 +4294,7 @@ function syncRail(ch, where) {
 function currentChapter() {
   var id = readRoute().c;
   if (!id) return null;
-  return (
-    S.chapters.filter(function (c) {
-      return c.id === id;
-    })[0] || null
-  );
+  return findChapter(id);
 }
 function pickTab(tab) {
   var ch = currentChapter();
@@ -3883,7 +4349,7 @@ function renderView(view, ch) {
   back.append(el("span", "", tf("back", { name: t("s_" + ch.subject) })));
   back.setAttribute("aria-label", tf("back", { name: t("s_" + ch.subject) }));
   back.addEventListener("click", function () {
-    openSubject(ch.subject);
+    openSubject(ch.subject, viewOf(ch));
   });
 
   var hero = el("section", "student-hero");
@@ -3899,7 +4365,7 @@ function renderView(view, ch) {
   backTargets.view = {
     label: tf("back", { name: t("s_" + ch.subject) }),
     fn: function () {
-      openSubject(ch.subject);
+      openSubject(ch.subject, viewOf(ch));
     },
   };
   var slot = el("div", "ch-back-slot");
@@ -4184,11 +4650,7 @@ function render() {
 
   var route = readRoute();
   var id = route.c;
-  var ch = id
-    ? S.chapters.filter(function (c) {
-        return c.id === id;
-      })[0]
-    : null;
+  var ch = id ? findChapter(id) : null;
   var opening = !!id && (ch || S.loading || !ctx.ready());
 
   // greeting, calendar and level card belong to the home page only (not inside a subject, not inside a chapter)

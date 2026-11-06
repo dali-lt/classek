@@ -215,6 +215,8 @@
         if (d.level !== type.level || (type.subject && d.subject !== type.subject)) {
           return "file is " + d.level + " / " + d.subject + ", not " + type.label;
         }
+        if (d.kind !== undefined && ["chapter", "serie", "devoir"].indexOf(d.kind) < 0) return "kind must be chapter, serie or devoir";
+        if (d.kind === "serie" && !(Number(d.serieLevel) >= 1 && Number(d.serieLevel) <= 4)) return "a serie needs serieLevel 1 to 4 (1 Facile, 2 Moyen, 3 Difficile, 4 Très difficile)";
         if (d.quiz !== undefined) {
           if (!Array.isArray(d.quiz)) return "quiz must be a list of questions";
           var badQz = d.quiz.filter(function (q) {
@@ -380,6 +382,14 @@
           part_title: data.part_title || "",
           part_title_ar: data.part_title_ar || "",
           weight: data.weight || "",
+          // série / devoir: shown in their own tab of the subject, not in the chapter list
+          kind: data.kind === "serie" || data.kind === "devoir" ? data.kind : "chapter",
+          serieLevel: data.kind === "serie" ? Math.round(Number(data.serieLevel)) : 0,
+          topics: Array.isArray(data.topics) ? data.topics.filter(function (x) { return typeof x === "string" && x.trim(); }).slice(0, 3) : [],
+          minutes: Number(data.minutes) > 0 ? Math.round(Number(data.minutes)) : 0,
+          session: data.session === "principale" || data.session === "controle" ? data.session : "",
+          hours: Number(data.hours) > 0 ? Number(data.hours) : 0,
+          points: Number(data.points) > 0 ? Number(data.points) : 0,
           published: visible(data),
           rappel: data.rappel || "",
           quiz: Array.isArray(data.quiz) ? data.quiz : [],

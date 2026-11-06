@@ -58,3 +58,22 @@ How the bilan works:
 <!-- Paste here the content of EXEMPLE-viz.md (fence examples) -->
 
 <!-- Paste here the content of exemple-a-retenir.md (the "à retenir" example) -->
+
+## 5. Séries (by difficulty) and Devoirs (Bac papers)
+
+A série or a devoir is a normal chapter file with a few extra fields. It is uploaded the same way (`admin-upload.html`, same type: "Bac · Programming" …), lives in the same `chapters` collection, and uses the same exercise page (answer box, hints, solution, "J'ai compris"). It does **not** appear in the Chapitres tab, and it does not count in the chapter totals or the weekly bilan: it appears in the **Séries** or **Devoirs** tab of its subject.
+
+| Field | Used by | Meaning |
+|---|---|---|
+| `kind` | both | `"serie"` or `"devoir"` (missing = normal chapter) |
+| `serieLevel` | série | `1` Facile · `2` Moyen · `3` Difficile · `4` Très difficile (required) |
+| `topics` | série | up to 3 short labels shown as chips (or the single `topic`) |
+| `minutes` | série | estimated time, shown on the card |
+| `session` | devoir | `"principale"` or `"controle"` (other = "Autres devoirs") |
+| `hours`, `points` | devoir | shown on the card (3 h, 20 points) |
+
+How the levels open: a level opens when **70 %** of the exercises of the levels before it (that have series) are finished. Level 1 is always open. A level with no series yet is shown as "Bientôt" and does not block the next one.
+
+How a devoir's correction is revealed gradually (no new code, it is the exercise page): the student first types an answer, then opens the hints one by one (`hints[0]` = **Indice**, `hints[1]` = **Méthode**), and the **Correction** (`solution`) unlocks after the thinking time (`think`, in seconds; default 360 s for `"difficulty": "bac"`).
+
+Examples: `docs/exemple-serie.json`, `docs/exemple-devoir.json`.
