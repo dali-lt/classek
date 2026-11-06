@@ -1,0 +1,27 @@
+{
+  "chapterId": "devoir-bac-2024-principale",
+  "level": "bac",
+  "subject": "prog",
+  "kind": "devoir",
+  "session": "principale",
+  "hours": 3,
+  "points": 20,
+  "title": "Bac 2024",
+  "title_ar": "باك 2024",
+  "order": 201,
+  "published": true,
+  "exercises": [
+    {
+      "id": "ex2",
+      "order": 2,
+      "difficulty": "bac",
+      "statement": "On veut supprimer les doublons d'un tableau T de n entiers (5 ≤ n ≤ 30). Écrire un algorithme qui construit un tableau R contenant chaque valeur de T une seule fois, dans l'ordre de première apparition, puis affiche R.\n\nExemple : T = [4, 7, 4, 1, 7, 9] donne R = [4, 7, 1, 9].",
+      "hints": [
+        "Compare chaque élément de T à ceux qui le précèdent : qu'est-ce qui te dit qu'une valeur est déjà « passée » ?",
+        "1. Parcourir T. 2. Pour chaque valeur, chercher si elle est déjà dans R. 3. Sinon, l'ajouter à la fin de R et compter un élément de plus."
+      ],
+      "think": 360,
+      "solution": "```algo\nk ← 0\nPour i de 1 à n Faire\n  trouve ← faux\n  Pour j de 1 à k Faire\n    Si R[j] = T[i] Alors trouve ← vrai\n  Fin Pour\n  Si trouve = faux Alors\n    k ← k + 1\n    R[k] ← T[i]\n  Fin Si\nFin Pour\nPour j de 1 à k Faire Écrire(R[j])\n```"
+    }
+  ]
+}
