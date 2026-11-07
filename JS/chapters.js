@@ -1870,6 +1870,46 @@ function doneCount(ch) {
   }).length;
 }
 
+/* séries and devoirs shipped with the site (docs/exemples/*): shown when they are not in Firestore yet, so the tabs are never empty */
+var LOCAL = {};
+async function addLocalExtras(levelId) {
+  try {
+    var r = await fetch("docs/exemples/index.json", { cache: "no-cache" });
+    if (!r.ok) return;
+    var files = await r.json();
+    var have = {};
+    S.extra.forEach(function (c) {
+      have[c.id] = true;
+    });
+    var docs = await Promise.all(
+      files.map(function (f) {
+        return fetch("docs/exemples/" + f, { cache: "no-cache" })
+          .then(function (x) {
+            return x.ok ? x.json() : null;
+          })
+          .catch(function () {
+            return null;
+          });
+      }),
+    );
+    docs.forEach(function (d) {
+      if (!d || !d.chapterId || have[d.chapterId] || d.published === false) return;
+      if (d.kind !== "serie" && d.kind !== "devoir") return;
+      if (levelId && d.level !== levelId) return;
+      var ex = (d.exercises || []).map(function (e, i) {
+        return Object.assign({ order: i + 1 }, e);
+      });
+      LOCAL[d.chapterId] = ex;
+      var meta = Object.assign({}, d, { id: d.chapterId, exerciseCount: ex.length });
+      delete meta.exercises;
+      S.extra.push(meta);
+    });
+    S.extra.sort(function (a, b) {
+      return (a.order || 0) - (b.order || 0);
+    });
+  } catch (e) {} // no local examples: nothing to add
+}
+
 async function load() {
   var sdk = ctx.sdk;
   var key = ctx.getLevel();
@@ -1898,6 +1938,8 @@ async function load() {
     S.extra = all.filter(function (c) {
       return c.kind === "serie" || c.kind === "devoir";
     });
+    await addLocalExtras(levelId);
+    if (S.loadedKey !== key) return;
     var pr = await sdk.getDocs(sdk.collection(ctx.db, "users", ctx.uid, "progress"));
     S.status = {};
     pr.docs.forEach(function (d) {
@@ -2029,6 +2071,13 @@ async function loadExercises(chId) {
   var sdk = ctx.sdk;
   S.cur = { id: chId, exercises: null, loading: true, failed: false };
   try {
+    if (LOCAL[chId]) {
+      S.cur.exercises = LOCAL[chId].map(function (e) {
+        var c = Object.assign({}, e);
+        delete c.solution;
+        return c;
+      });
+    } else {
     var snap = await sdk.getDocs(sdk.collection(ctx.db, "chapters", chId, "exercises"));
     if (!S.cur || S.cur.id !== chId) return;
     S.cur.exercises = snap.docs
@@ -2038,6 +2087,7 @@ async function loadExercises(chId) {
       .sort(function (a, b) {
         return (a.order || 0) - (b.order || 0);
       });
+    }
   } catch (e) {
     console.warn("Couldn’t load the exercises:", e);
     if (S.cur && S.cur.id === chId) S.cur.failed = true;
@@ -2134,6 +2184,13 @@ window.addEventListener("pagehide", function () {
 
 async function loadSolution(chId, exId) {
   var key = chId + "/" + exId;
+  if (LOCAL[chId]) {
+    var le = LOCAL[chId].filter(function (e) {
+      return e.id === exId;
+    })[0];
+    solutions[key] = le ? String(le.solution || "") : "";
+    return;
+  }
   var snap = await ctx.sdk.getDoc(
     ctx.sdk.doc(ctx.db, "chapters", chId, "exercises", exId, "private", "solution"),
   );
