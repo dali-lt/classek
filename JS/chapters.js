@@ -4421,33 +4421,36 @@ function renderView(view, ch) {
   syncRail(ch, "chapter");
 
   var main = el("div", "ch-main");
-  var back = el("button", "ch-back");
-  back.type = "button";
-  back.append(icon(ICON_BACK, "ch-back-ico"));
-  back.append(el("span", "", tf("back", { name: t("s_" + ch.subject) })));
-  back.setAttribute("aria-label", tf("back", { name: t("s_" + ch.subject) }));
-  back.addEventListener("click", function () {
+  // top of the chapter: breadcrumb "Matières › Programmation › Chapitre", then the big title and the progress line (same look as a subject)
+  var goSub = function () {
     openSubject(ch.subject, viewOf(ch));
-  });
-
-  var hero = el("section", "student-hero");
-  var mark = el("img", "hero-watermark");
-  mark.src = "Images/logo-icon.svg";
-  mark.alt = "";
-  mark.setAttribute("aria-hidden", "true");
+  };
+  var crumb = el("nav", "sv-crumb");
+  crumb.setAttribute("aria-label", t("allSubjects"));
+  var home = el("button", "sv-crumb-link", t("subjects"));
+  home.type = "button";
+  home.addEventListener("click", closeToHome);
+  var subLink = el("button", "sv-crumb-link", t("s_" + ch.subject));
+  subLink.type = "button";
+  subLink.setAttribute("aria-label", tf("back", { name: t("s_" + ch.subject) }));
+  subLink.addEventListener("click", goSub);
+  var sep = ctx.getLang() === "ar" ? "‹" : "›";
   var title = ctx.getLang() === "ar" && ch.title_ar ? ch.title_ar : ch.title;
+  crumb.append(home, el("span", "sv-crumb-sep", sep), subLink, el("span", "sv-crumb-sep", sep), el("b", "", title || ""));
+
+  var hero = el("header", "sv-head ch-head");
+  var htext = el("div", "sv-head-text");
   var total = Number(ch.exerciseCount) || 0;
-  hero.append(mark, el("h1", "", title || ""));
-  hero.append(el("p", "", total ? tf("progress", { done: doneCount(ch), total: total }) : ""));
+  htext.append(el("h1", "sv-head-title", title || ""));
+  if (total) htext.append(el("p", "sv-head-intro", tf("progress", { done: doneCount(ch), total: total })));
+  hero.append(htext);
 
   backTargets.view = {
     label: tf("back", { name: t("s_" + ch.subject) }),
-    fn: function () {
-      openSubject(ch.subject, viewOf(ch));
-    },
+    fn: goSub,
   };
   var slot = el("div", "ch-back-slot");
-  slot.append(back);
+  slot.append(crumb);
   if (ch.subject === "prog") slot.append(algoButton());
   main.append(slot, hero);
 

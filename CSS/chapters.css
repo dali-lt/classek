@@ -4217,3 +4217,11 @@ body:has(.av-modal) .ch-back.ch-back-float {
   .sv-head .sv-tabs { align-self: stretch; }
   .sv-head .sv-tab { flex: 1 1 auto; justify-content: center; }
 }
+
+/* v57: top of a chapter = breadcrumb + big title, like a subject */
+.ch-back-slot:has(.sv-crumb) { align-items: center; justify-content: space-between; gap: 12px; width: auto; }
+@media (min-width: 801px) {
+  .ch-back-slot:has(.sv-crumb) { position: static; pointer-events: auto; }
+}
+.ch-head { margin: 8px 0 18px; }
+.ch-head .sv-head-title { overflow-wrap: anywhere; }
