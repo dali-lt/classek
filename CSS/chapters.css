@@ -416,7 +416,7 @@ html[dir="rtl"] .fd-back {
 .ch-back.ch-back-float {
   position: fixed;
   top: calc(10px + env(safe-area-inset-top, 0px));
-  inset-inline-start: max(14px, calc((100vw - 1040px) / 2 - 62px)); /* in the margin beside the page when the screen is wide */
+  inset-inline-start: max(14px, calc((100vw - 1040px) / 2 - 80px)); /* in the margin beside the page when the screen is wide */
   z-index: 1000;
   width: 46px;
   height: 46px;
@@ -1441,9 +1441,6 @@ input.note-input {
   .ch-tabs .ch-back {
     pointer-events: auto;
     box-shadow: 0 4px 14px rgba(1, 9, 45, 0.08);
-  }
-  .ch-back.ch-back-float {
-    display: none;
   }
 }
 
@@ -3095,11 +3092,6 @@ html[dir="rtl"] .note-band {
 .ch-back.ch-back-float.ch-algo-float {
   top: calc(66px + env(safe-area-inset-top, 0px));
 }
-@media (min-width: 801px) {
-  .ch-back.ch-algo-float {
-    display: none;
-  }
-}
 
 /* v65: subjects page: back on the left, visualiser on the right, same height; icon only when the row is narrow */
 .ch-tabs {
@@ -4226,41 +4218,12 @@ body:has(.av-modal) .ch-back.ch-back-float {
 .ch-head { margin: 8px 0 18px; }
 .ch-head .sv-head-title { overflow-wrap: anywhere; }
 
-/* ---------------- devoir shown as a Bac paper ---------------- */
-.pp { display: grid; gap: 22px; }
-.pp-sheet {
-  background: #fff;
-  color: #111827;
-  border-radius: 6px;
-  padding: clamp(18px, 5vw, 56px) clamp(16px, 6vw, 64px);
-  box-shadow: 0 2px 4px rgba(1, 9, 45, .08), 0 14px 36px rgba(1, 9, 45, .16);
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 15.5px;
-  line-height: 1.6;
-  max-width: 860px;
-  width: 100%;
-  margin-inline: auto;
-  box-sizing: border-box;
-  overflow-wrap: anywhere;
+/* v58: the pinned round buttons (back, visualiser) also on wide screens; under any open box (bilan, results...); phone menu button goes under boxes too */
+body:has(.modal-overlay.open) .ch-back.ch-back-float {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
 }
-.pp-head { border-bottom: 3px double #032c7b; padding-bottom: 14px; margin-bottom: 18px; text-align: center; }
-.pp-row { display: flex; justify-content: space-between; font: 700 12px/1 system-ui, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #032c7b; }
-.pp-title { margin: 14px 0 8px; font-size: clamp(19px, 4.6vw, 26px); line-height: 1.25; color: #01092d; }
-.pp-meta { display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; font: 600 13px system-ui, sans-serif; color: #374151; }
-.pp-body h2 { font-size: 17px; margin: 22px 0 8px; color: #032c7b; border-bottom: 1px solid #cbd5e1; padding-bottom: 3px; }
-.pp-body h3 { font-size: 15.5px; margin: 16px 0 6px; color: #01092d; }
-.pp-body p, .pp-body li { color: #111827; }
-.pp-body code { background: #eef2ff; color: #032c7b; padding: 1px 5px; border-radius: 4px; font-size: .9em; }
-.pp-body pre { background: #f6f8fa; color: #111827; border: 1px solid #d0d7de; border-radius: 6px; padding: 10px 12px; overflow-x: auto; }
-.pp-body pre code { background: none; padding: 0; color: inherit; }
-.pp-table-wrap { overflow-x: auto; margin: 10px 0; }
-.pp-table { border-collapse: collapse; margin: 0 auto; font-size: 14px; }
-.pp-table th, .pp-table td { border: 1px solid #111827; padding: 5px 12px; text-align: left; }
-.pp-table th { background: #f1f5f9; }
-.pp-end { text-align: center; color: #6b7280; font: 600 12px system-ui, sans-serif; margin: 26px 0 0; letter-spacing: .1em; }
-.pp-corr { max-width: 860px; width: 100%; margin-inline: auto; display: grid; gap: 14px; box-sizing: border-box; }
-.pp-gate { display: grid; gap: 10px; }
-.pp-try { margin: 0; opacity: .85; }
-.pp-part { border: 1px solid var(--color-border, rgba(127,127,127,.3)); border-radius: 14px; padding: 14px 16px; display: grid; gap: 10px; }
-.pp-part.is-done { border-color: #aee37b; }
-.pp-part-title { margin: 0; font-size: 15px; color: var(--color-primary); }
+html:has(.modal-overlay.open) .s-menu-btn {
+  z-index: 40;
+}
