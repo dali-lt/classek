@@ -23,6 +23,7 @@ var STR = {
     back: "Retour à {name}",
     allSubjects: "Toutes les matières",
     tabChapters: "Chapitres",
+    svIntro: "Entraîne-toi par niveau, puis passe aux sujets de Bac.",
     tabSeries: "Séries",
     tabDevoirs: "Devoirs",
     ladderTitle: "Ton échelle de difficulté",
@@ -227,6 +228,7 @@ var STR = {
     back: "رجوع إلى {name}",
     allSubjects: "كل المواد",
     tabChapters: "الدروس",
+    svIntro: "تمرّن حسب المستوى، وبعدها اعمل مواضيع الباك.",
     tabSeries: "السلاسل",
     tabDevoirs: "الفروض",
     ladderTitle: "سلّم الصعوبة متاعك",
@@ -2389,13 +2391,17 @@ function setBackRow(host, show) {
   row.textContent = "";
   row.hidden = !show;
   if (!show) return;
-  var back = el("button", "ch-back");
-  back.type = "button";
-  back.append(icon(ICON_BACK, "ch-back-ico"), el("span", "", t("allSubjects")));
-  back.setAttribute("aria-label", t("allSubjects"));
-  back.addEventListener("click", closeToHome);
-  row.append(back);
-  if (readRoute().s === "prog") row.append(algoButton());
+  // breadcrumb: "Matières › Programmation" ("Matières" takes the student back to the subjects)
+  var sub = readRoute().s;
+  var crumb = el("nav", "sv-crumb");
+  crumb.setAttribute("aria-label", t("allSubjects"));
+  var home = el("button", "sv-crumb-link", t("subjects"));
+  home.type = "button";
+  home.setAttribute("aria-label", t("allSubjects"));
+  home.addEventListener("click", closeToHome);
+  crumb.append(home, el("span", "sv-crumb-sep", ctx.getLang() === "ar" ? "‹" : "›"), el("b", "", sub ? t("s_" + sub) : ""));
+  row.append(crumb);
+  if (sub === "prog") row.append(algoButton());
   backTargets.list = { label: t("allSubjects"), fn: closeToHome };
   syncBackButton();
 }
@@ -2426,6 +2432,16 @@ function exTotal(ch) {
 }
 function titleOf(ch) {
   return ctx.getLang() === "ar" && ch.title_ar ? ch.title_ar : ch.title || "";
+}
+
+/* the fixed top of a subject: big title and short intro on the left, the three tabs on the right (same on every tab) */
+function svHead(sub, view) {
+  var head = el("header", "sv-head");
+  var text = el("div", "sv-head-text");
+  var h = el("h1", "sv-head-title", t("s_" + sub));
+  text.append(h, el("p", "sv-head-intro", t("svIntro")));
+  head.append(text, svTabs(sub, view));
+  return head;
 }
 
 /* the three tabs above a subject's content */
@@ -2728,6 +2744,7 @@ function renderList(host, route) {
   host.textContent = "";
   host.classList.remove("is-subjects", "is-sv");
   var title = $("sChaptersTitle");
+  if (title) title.hidden = false;
   if (S.loading || !ctx.ready()) {
     setBackRow(host, false);
     host.append(el("div", "student-empty", t("loading")));
@@ -2745,7 +2762,10 @@ function renderList(host, route) {
   if (!sub) {
     // home: the subjects of the level
     setBackRow(host, false);
-    if (title) title.textContent = t("subjects");
+    if (title) {
+      title.hidden = false;
+      title.textContent = t("subjects");
+    }
     host.classList.add("is-subjects");
     list.forEach(function (x) {
       host.append(subjectCard(x));
@@ -2758,7 +2778,8 @@ function renderList(host, route) {
   if (title) title.textContent = t("s_" + sub);
   var view = route.v === "series" || route.v === "devoirs" ? route.v : "";
   host.classList.toggle("is-sv", !!view);
-  host.append(svTabs(sub, view));
+  if (title) title.hidden = true; // the subject has its own big title just below
+  host.append(svHead(sub, view));
   if (view === "series") {
     renderSeries(host, sub);
     return;
