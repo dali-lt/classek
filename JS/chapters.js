@@ -2544,6 +2544,46 @@ function levelOf(ch) {
 }
 
 /* where the student stands on the ladder: per level the series, the done / total exercises and whether it is open */
+/* the winding line between the level circles (same spirit as the path between exercises); redrawn when the ladder is resized */
+function drawLadderPath(steps, on) {
+  var NS = "http://www.w3.org/2000/svg";
+  var draw = function () {
+    if (!steps.isConnected) return;
+    var old = steps.querySelector("svg.sv-path");
+    if (old) old.remove();
+    var box = steps.getBoundingClientRect();
+    if (!box.width) return;
+    var svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("class", "sv-path");
+    svg.setAttribute("aria-hidden", "true");
+    svg.setAttribute("viewBox", "0 0 " + box.width + " " + box.height);
+    var nodes = steps.querySelectorAll(".sv-node");
+    var amp = box.width < 560 ? 22 : 34;
+    for (var i = 0; i < nodes.length - 1; i++) {
+      var a = nodes[i].getBoundingClientRect();
+      var b = nodes[i + 1].getBoundingClientRect();
+      var x1 = a.right - box.left - 2;
+      var y1 = a.top - box.top + a.height / 2;
+      var x2 = b.left - box.left + 2;
+      var y2 = b.top - box.top + b.height / 2;
+      var dir = y2 > y1 ? 1 : -1;
+      var path = document.createElementNS(NS, "path");
+      path.setAttribute(
+        "d",
+        "M" + x1 + " " + y1 + " C " + (x1 + (x2 - x1) * 0.9) + " " + (y1 - dir * amp) + ", " + (x1 + (x2 - x1) * 0.1) + " " + (y2 + dir * amp) + ", " + x2 + " " + y2,
+      );
+      path.setAttribute("class", "sv-path-seg" + (on[i] ? " is-on" : ""));
+      svg.append(path);
+    }
+    steps.append(svg);
+  };
+  requestAnimationFrame(draw);
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(draw);
+    ro.observe(steps);
+  }
+}
+
 function ladderState(list) {
   var lv = [null, null, null, null, null];
   for (var n = 1; n <= 4; n++) lv[n] = { n: n, list: [], done: 0, total: 0, pct: 0, open: true, here: false };
@@ -2652,6 +2692,9 @@ function renderSeries(host, sub) {
   }
   ladder.append(lhead, steps);
   host.append(ladder);
+  drawLadderPath(steps, [1, 2, 3].map(function (k) {
+    return !!(lv[k + 1].open && lv[k + 1].list.length);
+  }));
 
   // one block per level that has series
   for (var m = 1; m <= 4; m++) {
