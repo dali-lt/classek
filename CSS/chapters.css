@@ -4252,3 +4252,16 @@ html:has(.modal-overlay.open) .s-menu-btn {
   }
   .ch-back.ch-algo > span:not(.ch-back-ico) { display: none; }
 }
+
+/* v60: tabs with an icon instead of a count */
+.sv-tab-ico { display: inline-flex; flex: none; }
+.sv-tab-ico svg { width: 20px; height: 20px; }
+.sv-tab.is-on .sv-tab-ico { color: var(--color-accent); }
+@media (max-width: 800px) {
+  .sv-tab { gap: 6px; }
+  .sv-tab-ico svg { width: 18px; height: 18px; }
+}
+@media (max-width: 800px) {
+  .sv-tabs { width: 100%; }
+  .sv-tab { flex: 1 1 0; justify-content: center; padding: 0 8px; font-size: 15px; min-width: 0; }
+}
