@@ -72,9 +72,16 @@ var STR = {
     dvAll: "Tous",
     dvMain: "Bac principale",
     dvControl: "Bac contrôle",
+    dvPratique: "Pratique",
     dvOther: "Autres devoirs",
     dvSessMain: "Session principale",
     dvSessControl: "Session de contrôle",
+    dvSessPratique: "Épreuve pratique",
+    ppTry: "Lis le sujet comme à l’examen : travaille sur ta machine ou sur papier, puis compare avec la correction.",
+    ppCorr: "Correction",
+    ppPart: "Partie {n}",
+    ppEnd: "Fin du sujet",
+    ppCorrWait: "La correction s’ouvre après ton temps de réflexion.",
     dvMeta: "{h} h",
     dvExCount: "{n} exercices",
     dvPoints: "{n} points",
@@ -277,9 +284,16 @@ var STR = {
     dvAll: "الكل",
     dvMain: "باك دورة رئيسية",
     dvControl: "باك دورة المراقبة",
+    dvPratique: "التطبيقي",
     dvOther: "فروض أخرى",
     dvSessMain: "الدورة الرئيسية",
     dvSessControl: "دورة المراقبة",
+    dvSessPratique: "الامتحان التطبيقي",
+    ppTry: "اقرا الموضوع كيما في الامتحان: اخدم على الكمبيوتر ولا على الورقة، وبعدها قارن مع التصحيح.",
+    ppCorr: "التصحيح",
+    ppPart: "الجزء {n}",
+    ppEnd: "نهاية الموضوع",
+    ppCorrWait: "التصحيح يتحل بعد وقت التفكير.",
     dvMeta: "{h} س",
     dvExCount: "{n} تمارين",
     dvPoints: "{n} نقطة",
@@ -2684,7 +2698,7 @@ function devoirCard(ch) {
   var st = devoirStatus(ch);
   var card = el("article", "dv-card st-" + st);
   var top = el("div", "sv-card-top");
-  var sess = ch.session === "principale" ? "dvSessMain" : ch.session === "controle" ? "dvSessControl" : "";
+  var sess = ch.session === "principale" ? "dvSessMain" : ch.session === "controle" ? "dvSessControl" : ch.session === "pratique" ? "dvSessPratique" : "";
   top.append(
     el("span", "dv-session" + (ch.session === "principale" ? " is-main" : ""), sess ? t(sess) : ch.session || ""),
     el("span", "sv-status", t({ done: "dvStDone", prog: "dvStProg", new: "dvStNew" }[st]))
@@ -2711,7 +2725,7 @@ function devoirCard(ch) {
   return card;
 }
 
-var devoirFilter = "all"; // "all" | "principale" | "controle" | "other"
+var devoirFilter = "all"; // "all" | "principale" | "controle" | "pratique" | "other"
 
 function renderDevoirs(host, sub) {
   var list = extrasOf(sub, "devoir");
@@ -2758,9 +2772,9 @@ function renderDevoirs(host, sub) {
 
   // filters (only the kinds that exist)
   var kindOf = function (c) {
-    return c.session === "principale" ? "principale" : c.session === "controle" ? "controle" : "other";
+    return c.session === "principale" ? "principale" : c.session === "controle" ? "controle" : c.session === "pratique" ? "pratique" : "other";
   };
-  var kinds = ["principale", "controle", "other"].filter(function (k) {
+  var kinds = ["principale", "controle", "pratique", "other"].filter(function (k) {
     return list.some(function (c) {
       return kindOf(c) === k;
     });
@@ -2771,7 +2785,7 @@ function renderDevoirs(host, sub) {
     [["all", "dvAll"]]
       .concat(
         kinds.map(function (k) {
-          return [k, { principale: "dvMain", controle: "dvControl", other: "dvOther" }[k]];
+          return [k, { principale: "dvMain", controle: "dvControl", pratique: "dvPratique", other: "dvOther" }[k]];
         })
       )
       .forEach(function (f) {
@@ -4413,6 +4427,230 @@ function exercisesPart(ch) {
   return box;
 }
 
+/* ---------------- a devoir shown as a Bac paper ----------------
+   A devoir with a "paper" field (the whole énoncé in markdown; tables written | a | b |) opens like the printed sheet:
+   white page, the subject from top to bottom. The correction comes after it, behind the usual thinking time.
+   The exercises of the file are the parts of the correction (label + solution) and carry the student's own evaluation. */
+function inlineInto(node, text) {
+  var m = md(text);
+  var p = m.firstElementChild;
+  if (p && p.tagName === "P") {
+    while (p.firstChild) node.append(p.firstChild);
+  } else {
+    node.append(m);
+  }
+}
+function paperTable(rows) {
+  var cells = function (r) {
+    return r.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map(function (c) {
+      return c.trim();
+    });
+  };
+  var wrap = el("div", "pp-table-wrap");
+  var tb = el("table", "pp-table");
+  var thead = el("thead");
+  var htr = el("tr");
+  cells(rows[0]).forEach(function (c) {
+    var th = el("th");
+    inlineInto(th, c);
+    htr.append(th);
+  });
+  thead.append(htr);
+  var tbody = el("tbody");
+  rows.slice(2).forEach(function (r) {
+    var tr = el("tr");
+    cells(r).forEach(function (c) {
+      var td = el("td");
+      inlineInto(td, c);
+      tr.append(td);
+    });
+    tbody.append(tr);
+  });
+  tb.append(thead, tbody);
+  wrap.append(tb);
+  return wrap;
+}
+function paperBody(text) {
+  var box = el("div", "pp-body");
+  var lines = String(text || "").split("\n");
+  var buf = [];
+  var fenced = false;
+  var flush = function () {
+    if (buf.join("").trim()) box.append(md(buf.join("\n")));
+    buf = [];
+  };
+  var i = 0;
+  while (i < lines.length) {
+    var ln = lines[i];
+    if (/^\s*```/.test(ln)) fenced = !fenced;
+    if (!fenced && /^\s*\|/.test(ln) && i + 1 < lines.length && /^\s*\|[\s:|-]+\|\s*$/.test(lines[i + 1])) {
+      flush();
+      var rows = [];
+      while (i < lines.length && /^\s*\|/.test(lines[i])) {
+        rows.push(lines[i]);
+        i++;
+      }
+      box.append(paperTable(rows));
+      continue;
+    }
+    if (!fenced && /^###\s+/.test(ln)) {
+      flush();
+      box.append(el("h3", "", ln.replace(/^###\s+/, "")));
+      i++;
+      continue;
+    }
+    // a list right under a sentence still has to be a list
+    if (!fenced && /^\s*-\s/.test(ln) && buf.length && buf[buf.length - 1].trim() && !/^\s*-\s/.test(buf[buf.length - 1])) buf.push("");
+    buf.push(ln);
+    i++;
+  }
+  flush();
+  return box;
+}
+
+function paperPart(ch) {
+  var box = el("div", "pp");
+  var sheet = el("article", "pp-sheet");
+  var head = el("header", "pp-head");
+  var sess = ch.session === "principale" ? "dvSessMain" : ch.session === "controle" ? "dvSessControl" : ch.session === "pratique" ? "dvSessPratique" : "";
+  var row = el("div", "pp-row");
+  row.append(el("span", "", "Classek"), el("span", "", sess ? t(sess) : ""));
+  var title = el("h2", "pp-title", titleOf(ch));
+  title.setAttribute("dir", "auto");
+  var meta = el("div", "pp-meta");
+  if (ch.hours) meta.append(el("span", "", tf("dvMeta", { h: ch.hours })));
+  if (ch.points) meta.append(el("span", "", tf("dvPoints", { n: ch.points })));
+  head.append(row, title, meta);
+  sheet.append(head, paperBody(ch.paper), el("p", "pp-end", "— " + t("ppEnd") + " —"));
+  box.append(sheet);
+
+  var corr = el("section", "pp-corr");
+  corr.append(el("h2", "ch-section-title", t("ppCorr")));
+  var cur = S.cur;
+  if (!cur || cur.loading) {
+    corr.append(el("div", "student-empty", t("loading")));
+    box.append(corr);
+    return box;
+  }
+  if (cur.failed) {
+    var fail = el("div", "student-empty");
+    fail.append(el("b", "", t("loadFail")));
+    var retry = el("button", "pc-btn", t("retry"));
+    retry.type = "button";
+    retry.addEventListener("click", function () {
+      loadExercises(ch.id).then(null, function () {});
+      render();
+    });
+    fail.append(retry);
+    corr.append(fail);
+    box.append(corr);
+    return box;
+  }
+  var exs = cur.exercises;
+  var key = ch.id + "/paper";
+  var allMarked = exs.length > 0 && exs.every(function (ex) {
+    return !!statusOf(ch.id)[ex.id];
+  });
+  if (revealed[key]) {
+    exs.forEach(function (ex, i) {
+      var k = ch.id + "/" + ex.id;
+      var st = statusOf(ch.id)[ex.id];
+      var part = el("article", "pp-part" + (st ? " is-" + st : ""));
+      part.append(el("h3", "pp-part-title", ex.label || tf("ppPart", { n: i + 1 })));
+      part.append(md(solutions[k] || "", { noRun: true }));
+      var mark = el("div", "ex-actions");
+      if (st) {
+        var mine = el("div", "ex-eval is-" + st);
+        mine.append(el("span", "ex-eval-k", t("evalMine")), el("b", "ex-eval-v", t(st)));
+        part.append(mine);
+      } else {
+        mark.classList.add("ex-eval-choices");
+        mark.append(el("p", "ex-eval-ask", t("evalAsk")));
+        [["done", "evalOk"], ["mid", "evalMid"], ["review", "evalBad"]].forEach(function (c) {
+          var b = el("button", "pc-btn ev-" + c[0], t(c[1]));
+          b.type = "button";
+          b.addEventListener("click", async function () {
+            b.disabled = true;
+            await setStatus(ch.id, ex.id, c[0]);
+            render();
+          });
+          mark.append(b);
+        });
+        part.append(mark);
+      }
+      corr.append(part);
+    });
+    box.append(corr);
+    return box;
+  }
+  // the gate: same thinking time as an exercise (field "think" of the devoir, in seconds; default 15 min)
+  var needT = allMarked ? 0 : ch.think != null && isFinite(Number(ch.think)) && Number(ch.think) >= 0 ? Math.min(7200, Math.round(Number(ch.think))) : 900;
+  var gate = el("div", "pp-gate");
+  gate.append(el("p", "pp-try", t("ppTry")));
+  var show = el("button", "pc-btn", t("showSolution"));
+  show.type = "button";
+  var started = function () {
+    return thinkSpent[key] !== undefined;
+  };
+  var timeLeft = function () {
+    return Math.max(0, needT - (thinkSpent[key] || 0));
+  };
+  var unlocked = function () {
+    return needT <= 0 || (started() && timeLeft() <= 0);
+  };
+  var stopBtn = el("button", "pc-stop");
+  stopBtn.type = "button";
+  stopBtn.hidden = true;
+  stopBtn.title = t("thinkStop");
+  stopBtn.setAttribute("aria-label", t("thinkStop"));
+  stopBtn.innerHTML = ICON_RESET; // static, trusted SVG
+  stopBtn.addEventListener("click", function () {
+    delete thinkSpent[key];
+    saveThink();
+    paint();
+  });
+  var paint = function () {
+    var l = timeLeft();
+    var waiting = needT > 0 && started() && l > 0;
+    var notYet = needT > 0 && !started();
+    stopBtn.hidden = !waiting;
+    show.disabled = !unlocked() && !notYet;
+    show.textContent = notYet ? tf("thinkStart", { t: mmss(needT) }) : waiting ? tf("thinkWait", { t: mmss(l) }) : t("showSolution");
+    show.classList.toggle("is-timing", waiting);
+    show.classList.toggle("is-start", notYet);
+    show.style.setProperty("--tp", needT ? Math.min(100, ((needT - l) / needT) * 100) + "%" : "100%");
+  };
+  paint();
+  if (needT > 0) thinkTimers[key] = { card: gate, update: paint };
+  show.addEventListener("click", async function () {
+    if (needT > 0 && !started()) {
+      thinkSpent[key] = 0;
+      saveThink();
+      paint();
+      return;
+    }
+    show.disabled = true;
+    try {
+      for (var i = 0; i < exs.length; i++) {
+        var k = ch.id + "/" + exs[i].id;
+        if (solutions[k] === undefined) await loadSolution(ch.id, exs[i].id);
+      }
+      revealed[key] = true;
+    } catch (e) {
+      console.warn("Couldn’t load the correction:", e);
+      show.disabled = false;
+      return;
+    }
+    render();
+  });
+  var actions = el("div", "ex-actions");
+  actions.append(show, stopBtn);
+  gate.append(actions);
+  corr.append(gate);
+  box.append(corr);
+  return box;
+}
+
 function renderView(view, ch) {
   view.textContent = "";
   var side = notesWide.matches;
@@ -4458,7 +4696,7 @@ function renderView(view, ch) {
     main.append(lessonBlock(ch, true));
   }
   else if (tab === "notes") main.append(notesSection(ch, false));
-  else main.append(exercisesPart(ch));
+  else main.append(ch.kind === "devoir" && ch.paper ? paperPart(ch) : exercisesPart(ch));
   view.append(main);
 
   if (side) {

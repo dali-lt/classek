@@ -4225,3 +4225,42 @@ body:has(.av-modal) .ch-back.ch-back-float {
 }
 .ch-head { margin: 8px 0 18px; }
 .ch-head .sv-head-title { overflow-wrap: anywhere; }
+
+/* ---------------- devoir shown as a Bac paper ---------------- */
+.pp { display: grid; gap: 22px; }
+.pp-sheet {
+  background: #fff;
+  color: #111827;
+  border-radius: 6px;
+  padding: clamp(18px, 5vw, 56px) clamp(16px, 6vw, 64px);
+  box-shadow: 0 2px 4px rgba(1, 9, 45, .08), 0 14px 36px rgba(1, 9, 45, .16);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 15.5px;
+  line-height: 1.6;
+  max-width: 860px;
+  width: 100%;
+  margin-inline: auto;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+}
+.pp-head { border-bottom: 3px double #032c7b; padding-bottom: 14px; margin-bottom: 18px; text-align: center; }
+.pp-row { display: flex; justify-content: space-between; font: 700 12px/1 system-ui, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #032c7b; }
+.pp-title { margin: 14px 0 8px; font-size: clamp(19px, 4.6vw, 26px); line-height: 1.25; color: #01092d; }
+.pp-meta { display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; font: 600 13px system-ui, sans-serif; color: #374151; }
+.pp-body h2 { font-size: 17px; margin: 22px 0 8px; color: #032c7b; border-bottom: 1px solid #cbd5e1; padding-bottom: 3px; }
+.pp-body h3 { font-size: 15.5px; margin: 16px 0 6px; color: #01092d; }
+.pp-body p, .pp-body li { color: #111827; }
+.pp-body code { background: #eef2ff; color: #032c7b; padding: 1px 5px; border-radius: 4px; font-size: .9em; }
+.pp-body pre { background: #f6f8fa; color: #111827; border: 1px solid #d0d7de; border-radius: 6px; padding: 10px 12px; overflow-x: auto; }
+.pp-body pre code { background: none; padding: 0; color: inherit; }
+.pp-table-wrap { overflow-x: auto; margin: 10px 0; }
+.pp-table { border-collapse: collapse; margin: 0 auto; font-size: 14px; }
+.pp-table th, .pp-table td { border: 1px solid #111827; padding: 5px 12px; text-align: left; }
+.pp-table th { background: #f1f5f9; }
+.pp-end { text-align: center; color: #6b7280; font: 600 12px system-ui, sans-serif; margin: 26px 0 0; letter-spacing: .1em; }
+.pp-corr { max-width: 860px; width: 100%; margin-inline: auto; display: grid; gap: 14px; box-sizing: border-box; }
+.pp-gate { display: grid; gap: 10px; }
+.pp-try { margin: 0; opacity: .85; }
+.pp-part { border: 1px solid var(--color-border, rgba(127,127,127,.3)); border-radius: 14px; padding: 14px 16px; display: grid; gap: 10px; }
+.pp-part.is-done { border-color: #aee37b; }
+.pp-part-title { margin: 0; font-size: 15px; color: var(--color-primary); }

@@ -69,7 +69,7 @@ A série or a devoir is a normal chapter file with a few extra fields. It is upl
 | `serieLevel` | série | `1` Facile · `2` Moyen · `3` Difficile · `4` Très difficile (required) |
 | `topics` | série | up to 3 short labels shown as chips (or the single `topic`) |
 | `minutes` | série | estimated time, shown on the card |
-| `session` | devoir | `"principale"` or `"controle"` (other = "Autres devoirs") |
+| `session` | devoir | `"principale"`, `"controle"` or `"pratique"` (other = "Autres devoirs") |
 | `hours`, `points` | devoir | shown on the card (3 h, 20 points) |
 
 How the levels open: a level opens when **70 %** of the exercises of the levels before it (that have series) are finished. Level 1 is always open. A level with no series yet is shown as "Bientôt" and does not block the next one.
@@ -77,3 +77,8 @@ How the levels open: a level opens when **70 %** of the exercises of the levels 
 How a devoir's correction is revealed gradually (no new code, it is the exercise page): the student first types an answer, then opens the hints one by one (`hints[0]` = **Indice**, `hints[1]` = **Méthode**), and the **Correction** (`solution`) unlocks after the thinking time (`think`, in seconds; default 360 s for `"difficulty": "bac"`).
 
 Examples: `docs/exemple-serie.json`, `docs/exemple-devoir.json`.
+
+
+### Devoir affiché comme une feuille d'examen
+
+Un devoir peut avoir un champ `paper` (texte markdown : tout l'énoncé, tableaux écrits `| a | b |`) : il s'affiche sur une feuille blanche, d'un seul tenant. Les `exercises` du fichier deviennent la correction (`label` + `solution`), qui s'ouvre après le temps de réflexion `think` (secondes, 900 par défaut).
