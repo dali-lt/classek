@@ -1,0 +1,58 @@
+{
+  "chapterId": "serie-prog-03-chaines-premiers-pas",
+  "level": "bac",
+  "subject": "prog",
+  "kind": "serie",
+  "serieLevel": 1,
+  "title": "Chaînes : premiers pas",
+  "title_ar": "السلاسل: البداية",
+  "topics": [
+    "Chaînes"
+  ],
+  "minutes": 25,
+  "order": 103,
+  "published": true,
+  "exercises": [
+    {
+      "id": "e01",
+      "order": 1,
+      "difficulty": "easy",
+      "statement": "Écrire une fonction `occurrences (ch : Chaîne, c : Caractère) : Entier` qui retourne combien de fois le caractère c apparaît dans ch.",
+      "hints": [
+        "`long (ch)` donne la longueur et `ch[i]` le i-ème caractère (à partir de 1)."
+      ],
+      "solution": "```algo\nFonction occurrences (ch : Chaîne, c : Caractère) : Entier\nDEBUT\n   nb ← 0\n   Pour i de 1 à long (ch) Faire\n      Si ch[i] = c Alors\n         nb ← nb + 1\n      FinSi\n   FinPour\n   Retourner nb\nFIN\n```"
+    },
+    {
+      "id": "e02",
+      "order": 2,
+      "difficulty": "easy",
+      "statement": "Écrire une fonction `nb_voyelles (ch : Chaîne) : Entier` qui compte les voyelles (a, e, i, o, u, y) d'une chaîne écrite en minuscules.",
+      "hints": [
+        "Pour un caractère, teste s'il est égal à a, ou e, ou i… avec OU."
+      ],
+      "solution": "```algo\nFonction nb_voyelles (ch : Chaîne) : Entier\nDEBUT\n   nb ← 0\n   Pour i de 1 à long (ch) Faire\n      Si (ch[i] = \"a\") OU (ch[i] = \"e\") OU (ch[i] = \"i\") OU (ch[i] = \"o\") OU (ch[i] = \"u\") OU (ch[i] = \"y\") Alors\n         nb ← nb + 1\n      FinSi\n   FinPour\n   Retourner nb\nFIN\n```"
+    },
+    {
+      "id": "e03",
+      "order": 3,
+      "difficulty": "easy",
+      "statement": "Écrire une fonction `inverser (ch : Chaîne) : Chaîne` qui retourne la chaîne écrite à l'envers.",
+      "hints": [
+        "Pars d'une chaîne vide et ajoute les caractères en commençant par le dernier."
+      ],
+      "solution": "```algo\nFonction inverser (ch : Chaîne) : Chaîne\nDEBUT\n   r ← \"\"\n   Pour i de long (ch) à 1 Faire\n      r ← r + ch[i]\n   FinPour\n   Retourner r\nFIN\n```"
+    },
+    {
+      "id": "e04",
+      "order": 4,
+      "difficulty": "medium",
+      "statement": "Écrire une fonction `palindrome (ch : Chaîne) : Booléen` qui indique si ch se lit pareil dans les deux sens (ex. « radar »).",
+      "hints": [
+        "Compare le premier avec le dernier, le deuxième avec l'avant-dernier… et arrête-toi au milieu.",
+        "Utilise deux indices i et j qui se rapprochent."
+      ],
+      "solution": "```algo\nFonction palindrome (ch : Chaîne) : Booléen\nDEBUT\n   i ← 1\n   j ← long (ch)\n   Tant que (i < j) ET (ch[i] = ch[j]) Faire\n      i ← i + 1\n      j ← j - 1\n   FinTantQue\n   Retourner i >= j\nFIN\n```"
+    }
+  ]
+}

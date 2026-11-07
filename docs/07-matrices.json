@@ -1,0 +1,61 @@
+{
+  "chapterId": "serie-prog-07-matrices",
+  "level": "bac",
+  "subject": "prog",
+  "kind": "serie",
+  "serieLevel": 3,
+  "title": "Matrices",
+  "title_ar": "المصفوفات",
+  "topics": [
+    "Matrices"
+  ],
+  "minutes": 55,
+  "order": 107,
+  "published": true,
+  "exercises": [
+    {
+      "id": "e01",
+      "order": 1,
+      "difficulty": "medium",
+      "statement": "Écrire une procédure `afficher_mat (M : Mat, l, c : Entier)` qui affiche une matrice de l lignes et c colonnes, une ligne par ligne d'écran.",
+      "hints": [
+        "Deux boucles imbriquées : les lignes à l'extérieur, les colonnes à l'intérieur.",
+        "Passe à la ligne après chaque ligne de la matrice."
+      ],
+      "solution": "```algo\nProcédure afficher_mat (M : Mat, l, c : Entier)\nDEBUT\n   Pour i de 1 à l Faire\n      Pour j de 1 à c Faire\n         Écrire (M[i, j], \" \")\n      FinPour\n      Écrire (\"\")      { retour à la ligne }\n   FinPour\nFIN\n```"
+    },
+    {
+      "id": "e02",
+      "order": 2,
+      "difficulty": "medium",
+      "statement": "M est une matrice carrée n × n. Écrire une fonction `somme_diag (M : Mat, n : Entier) : Entier` qui retourne la somme de la diagonale principale.",
+      "hints": [
+        "Les éléments de la diagonale principale sont ceux dont l'indice de ligne est égal à l'indice de colonne.",
+        "Une seule boucle suffit."
+      ],
+      "solution": "```algo\nFonction somme_diag (M : Mat, n : Entier) : Entier\nDEBUT\n   s ← 0\n   Pour i de 1 à n Faire\n      s ← s + M[i, i]\n   FinPour\n   Retourner s\nFIN\n```"
+    },
+    {
+      "id": "e03",
+      "order": 3,
+      "difficulty": "bac",
+      "statement": "Écrire une procédure `somme_lignes (M : Mat, l, c : Entier, @V : Tab)` qui range dans V[i] la somme de la ligne i de M.",
+      "hints": [
+        "Remets la somme à 0 au début de chaque ligne.",
+        "Une fois la ligne parcourue, range la somme dans V[i]."
+      ],
+      "solution": "```algo\nProcédure somme_lignes (M : Mat, l, c : Entier, @V : Tab)\nDEBUT\n   Pour i de 1 à l Faire\n      s ← 0\n      Pour j de 1 à c Faire\n         s ← s + M[i, j]\n      FinPour\n      V[i] ← s\n   FinPour\nFIN\n```"
+    },
+    {
+      "id": "e04",
+      "order": 4,
+      "difficulty": "bac",
+      "statement": "M est carrée n × n. Écrire une procédure `transposer (M : Mat, n : Entier, @R : Mat)` qui construit dans R la transposée de M (R[j, i] = M[i, j]).",
+      "hints": [
+        "La transposée échange les indices de ligne et de colonne.",
+        "Tu remplis R, tu ne modifies pas M."
+      ],
+      "solution": "```algo\nProcédure transposer (M : Mat, n : Entier, @R : Mat)\nDEBUT\n   Pour i de 1 à n Faire\n      Pour j de 1 à n Faire\n         R[j, i] ← M[i, j]\n      FinPour\n   FinPour\nFIN\n```"
+    }
+  ]
+}

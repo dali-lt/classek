@@ -1,0 +1,51 @@
+{
+  "chapterId": "devoir-bac-blanc-2",
+  "level": "bac",
+  "subject": "prog",
+  "kind": "devoir",
+  "session": "controle",
+  "hours": 3,
+  "points": 20,
+  "title": "Bac blanc 2",
+  "title_ar": "باك تجريبي 2",
+  "order": 202,
+  "published": true,
+  "exercises": [
+    {
+      "id": "e01",
+      "order": 1,
+      "difficulty": "bac",
+      "statement": "**Exercice 1 (6 points)** — Une suite.\n\nOn définit la suite (U) par U0 = 1 et, pour tout n ≥ 1, Un = 2 × U(n-1) + n.\n\n1. Écrire une fonction `terme (n : Entier) : Entier` qui retourne Un.\n2. Écrire une fonction `premier_rang (limite : Entier) : Entier` qui retourne le plus petit rang n tel que Un > limite.",
+      "hints": [
+        "Calcule les termes un par un : chaque terme se déduit du précédent, inutile de stocker toute la suite.",
+        "2) Avance de rang en rang avec Tant que, tant que le terme courant n'a pas dépassé la limite."
+      ],
+      "solution": "```algo\nFonction terme (n : Entier) : Entier\nDEBUT\n   u ← 1\n   Pour i de 1 à n Faire\n      u ← 2 * u + i\n   FinPour\n   Retourner u\nFIN\n\nFonction premier_rang (limite : Entier) : Entier\nDEBUT\n   n ← 0\n   u ← 1\n   Tant que u <= limite Faire\n      n ← n + 1\n      u ← 2 * u + n\n   FinTantQue\n   Retourner n\nFIN\n```",
+      "think": 360
+    },
+    {
+      "id": "e02",
+      "order": 2,
+      "difficulty": "bac",
+      "statement": "**Exercice 2 (8 points)** — Matrice carrée.\n\nSoit M une matrice carrée n × n d'entiers.\n\n1. Écrire une fonction `symetrique (M : Mat, n : Entier) : Booléen` qui indique si M est symétrique (M[i, j] = M[j, i] pour tous i et j).\n2. Écrire une fonction `somme_diagonales (M : Mat, n : Entier) : Entier` qui retourne la somme des éléments des deux diagonales (l'élément central, si n est impair, n'est compté qu'une fois).",
+      "hints": [
+        "1) Il suffit de comparer sous la diagonale (j < i) avec l'élément symétrique.",
+        "2) La diagonale secondaire contient M[i, n - i + 1]. Si n est impair, le centre est compté deux fois : retire-le une fois."
+      ],
+      "solution": "```algo\nFonction symetrique (M : Mat, n : Entier) : Booléen\nDEBUT\n   ok ← Vrai\n   i ← 1\n   Tant que (i <= n) ET (ok = Vrai) Faire\n      j ← 1\n      Tant que (j < i) ET (M[i, j] = M[j, i]) Faire\n         j ← j + 1\n      FinTantQue\n      Si j < i Alors\n         ok ← Faux\n      FinSi\n      i ← i + 1\n   FinTantQue\n   Retourner ok\nFIN\n\nFonction somme_diagonales (M : Mat, n : Entier) : Entier\nDEBUT\n   s ← 0\n   Pour i de 1 à n Faire\n      s ← s + M[i, i] + M[i, n - i + 1]\n   FinPour\n   Si n mod 2 = 1 Alors\n      s ← s - M[(n + 1) div 2, (n + 1) div 2]\n   FinSi\n   Retourner s\nFIN\n```",
+      "think": 360
+    },
+    {
+      "id": "e03",
+      "order": 3,
+      "difficulty": "bac",
+      "statement": "**Exercice 3 (6 points)** — Deuxième maximum.\n\nT est un tableau de n entiers strictement positifs contenant au moins deux valeurs différentes.\n\nÉcrire une fonction `deuxieme_max (T : Tab, n : Entier) : Entier` qui retourne la plus grande valeur de T strictement inférieure au maximum de T.\n\nExemple : T = [8, 3, 8, 5, 1] donne 5.",
+      "hints": [
+        "Trouve d'abord le maximum de T.",
+        "Puis cherche le plus grand élément parmi ceux qui sont différents du maximum."
+      ],
+      "solution": "```algo\nFonction deuxieme_max (T : Tab, n : Entier) : Entier\nDEBUT\n   m1 ← T[1]\n   Pour i de 2 à n Faire\n      Si T[i] > m1 Alors\n         m1 ← T[i]\n      FinSi\n   FinPour\n   m2 ← 0\n   Pour i de 1 à n Faire\n      Si (T[i] <> m1) ET (T[i] > m2) Alors\n         m2 ← T[i]\n      FinSi\n   FinPour\n   Retourner m2\nFIN\n```",
+      "think": 360
+    }
+  ]
+}

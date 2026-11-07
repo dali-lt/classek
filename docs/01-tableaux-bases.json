@@ -1,0 +1,59 @@
+{
+  "chapterId": "serie-prog-01-tableaux-bases",
+  "level": "bac",
+  "subject": "prog",
+  "kind": "serie",
+  "serieLevel": 1,
+  "title": "Tableaux : les bases",
+  "title_ar": "الجداول: الأساسيات",
+  "topics": [
+    "Tableaux",
+    "Saisie"
+  ],
+  "minutes": 25,
+  "order": 101,
+  "published": true,
+  "exercises": [
+    {
+      "id": "e01",
+      "order": 1,
+      "difficulty": "easy",
+      "statement": "Écrire une procédure `remplir (@T : Tab, n : Entier)` qui saisit les n éléments d'un tableau T.",
+      "hints": [
+        "Une boucle Pour de 1 à n suffit : à chaque tour, lis une valeur dans T[i]."
+      ],
+      "solution": "```algo\nProcédure remplir (@T : Tab, n : Entier)\nDEBUT\n   Pour i de 1 à n Faire\n      Lire (T[i])\n   FinPour\nFIN\n```"
+    },
+    {
+      "id": "e02",
+      "order": 2,
+      "difficulty": "easy",
+      "statement": "Écrire une fonction `somme (T : Tab, n : Entier) : Entier` qui retourne la somme des n éléments de T.",
+      "hints": [
+        "Prépare une variable s à 0 avant la boucle, puis ajoute chaque élément."
+      ],
+      "solution": "```algo\nFonction somme (T : Tab, n : Entier) : Entier\nDEBUT\n   s ← 0\n   Pour i de 1 à n Faire\n      s ← s + T[i]\n   FinPour\n   Retourner s\nFIN\n```"
+    },
+    {
+      "id": "e03",
+      "order": 3,
+      "difficulty": "easy",
+      "statement": "Écrire une procédure `afficher_inverse (T : Tab, n : Entier)` qui affiche les éléments de T du dernier au premier.",
+      "hints": [
+        "Tu peux aussi calculer l'indice : pour le tour i, affiche T[n - i + 1]."
+      ],
+      "solution": "```algo\nProcédure afficher_inverse (T : Tab, n : Entier)\nDEBUT\n   Pour i de 1 à n Faire\n      Écrire (T[n - i + 1])\n   FinPour\nFIN\n```"
+    },
+    {
+      "id": "e04",
+      "order": 4,
+      "difficulty": "easy",
+      "statement": "Écrire une fonction `nb_pairs (T : Tab, n : Entier) : Entier` qui retourne le nombre d'éléments pairs de T.",
+      "hints": [
+        "Un entier est pair quand le reste de sa division par 2 est 0 (mod).",
+        "Utilise un compteur augmenté seulement quand la condition est vraie."
+      ],
+      "solution": "```algo\nFonction nb_pairs (T : Tab, n : Entier) : Entier\nDEBUT\n   c ← 0\n   Pour i de 1 à n Faire\n      Si T[i] mod 2 = 0 Alors\n         c ← c + 1\n      FinSi\n   FinPour\n   Retourner c\nFIN\n```"
+    }
+  ]
+}

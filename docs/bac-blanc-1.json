@@ -1,0 +1,51 @@
+{
+  "chapterId": "devoir-bac-blanc-1",
+  "level": "bac",
+  "subject": "prog",
+  "kind": "devoir",
+  "session": "principale",
+  "hours": 3,
+  "points": 20,
+  "title": "Bac blanc 1",
+  "title_ar": "باك تجريبي 1",
+  "order": 201,
+  "published": true,
+  "exercises": [
+    {
+      "id": "e01",
+      "order": 1,
+      "difficulty": "bac",
+      "statement": "**Exercice 1 (6 points)** — Nombres parfaits.\n\nUn entier n > 1 est dit parfait s'il est égal à la somme de ses diviseurs propres (les diviseurs de n autres que n lui-même). Exemple : 6 = 1 + 2 + 3.\n\n1. Écrire une fonction `parfait (n : Entier) : Booléen` qui indique si n est parfait.\n2. En utilisant cette fonction, écrire une procédure `afficher_parfaits (N : Entier)` qui affiche tous les nombres parfaits compris entre 2 et N.",
+      "hints": [
+        "Les diviseurs propres de n sont au plus n div 2 : cherche-les avec mod.",
+        "1) Accumule la somme des diviseurs dans s, puis compare s à n. 2) Parcours de 2 à N et appelle `parfait`."
+      ],
+      "solution": "```algo\nFonction parfait (n : Entier) : Booléen\nDEBUT\n   s ← 0\n   Pour d de 1 à n div 2 Faire\n      Si n mod d = 0 Alors\n         s ← s + d\n      FinSi\n   FinPour\n   Retourner (s = n) ET (n > 1)\nFIN\n\nProcédure afficher_parfaits (N : Entier)\nDEBUT\n   Pour i de 2 à N Faire\n      Si parfait (i) Alors\n         Écrire (i)\n      FinSi\n   FinPour\nFIN\n```",
+      "think": 360
+    },
+    {
+      "id": "e02",
+      "order": 2,
+      "difficulty": "bac",
+      "statement": "**Exercice 2 (8 points)** — Notes d'une classe.\n\nÉcrire un algorithme qui lit un entier n (1 ≤ n ≤ 30, à saisir jusqu'à ce qu'il soit valide), puis n notes dans un tableau T, et qui affiche la moyenne des notes ainsi que le nombre de notes strictement supérieures à cette moyenne.",
+      "hints": [
+        "Il y a deux parcours : le premier pour lire et additionner, le second pour compter, une fois la moyenne connue.",
+        "Contrôle la saisie de n avec Répéter … Jusqu'à. La moyenne vaut s / n."
+      ],
+      "solution": "```algo\nAlgorithme notes\nDEBUT\n   Répéter\n      Écrire (\"n = \")\n      Lire (n)\n   Jusqu'à (n >= 1) ET (n <= 30)\n   s ← 0\n   Pour i de 1 à n Faire\n      Lire (T[i])\n      s ← s + T[i]\n   FinPour\n   moy ← s / n\n   nb ← 0\n   Pour i de 1 à n Faire\n      Si T[i] > moy Alors\n         nb ← nb + 1\n      FinSi\n   FinPour\n   Écrire (\"Moyenne = \", moy)\n   Écrire (\"Notes au-dessus de la moyenne : \", nb)\nFIN\n```",
+      "think": 360
+    },
+    {
+      "id": "e03",
+      "order": 3,
+      "difficulty": "bac",
+      "statement": "**Exercice 3 (6 points)** — Mots d'une phrase.\n\nUne phrase est une chaîne de caractères où les mots sont séparés par un ou plusieurs espaces.\n\n1. Écrire une fonction `nb_mots (ch : Chaîne) : Entier` qui retourne le nombre de mots de ch.\n2. Écrire une fonction `plus_long_mot (ch : Chaîne) : Entier` qui retourne la longueur du plus long mot de ch.",
+      "hints": [
+        "Un mot commence sur un caractère qui n'est pas un espace et dont le précédent est un espace (ou qui est le tout premier).",
+        "Pour la longueur : compte les caractères consécutifs non vides et remets le compteur à 0 sur un espace."
+      ],
+      "solution": "```algo\nFonction nb_mots (ch : Chaîne) : Entier\nDEBUT\n   nb ← 0\n   Pour i de 1 à long (ch) Faire\n      Si ch[i] <> \" \" Alors\n         Si i = 1 Alors\n            nb ← nb + 1\n         Sinon\n            Si ch[i - 1] = \" \" Alors\n               nb ← nb + 1\n            FinSi\n         FinSi\n      FinSi\n   FinPour\n   Retourner nb\nFIN\n\nFonction plus_long_mot (ch : Chaîne) : Entier\nDEBUT\n   lmax ← 0\n   l ← 0\n   Pour i de 1 à long (ch) Faire\n      Si ch[i] <> \" \" Alors\n         l ← l + 1\n         Si l > lmax Alors\n            lmax ← l\n         FinSi\n      Sinon\n         l ← 0\n      FinSi\n   FinPour\n   Retourner lmax\nFIN\n```",
+      "think": 360
+    }
+  ]
+}

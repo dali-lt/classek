@@ -1,0 +1,62 @@
+{
+  "chapterId": "serie-prog-06-tris-dichotomie",
+  "level": "bac",
+  "subject": "prog",
+  "kind": "serie",
+  "serieLevel": 3,
+  "title": "Tris et recherche dichotomique",
+  "title_ar": "الترتيب والبحث التنصيفي",
+  "topics": [
+    "Tri",
+    "Dichotomie"
+  ],
+  "minutes": 50,
+  "order": 106,
+  "published": true,
+  "exercises": [
+    {
+      "id": "e01",
+      "order": 1,
+      "difficulty": "medium",
+      "statement": "Écrire une procédure `tri_selection (@T : Tab, n : Entier)` qui trie T dans l'ordre croissant par sélection du minimum.",
+      "hints": [
+        "À chaque étape i, cherche la position du plus petit élément de T[i..n].",
+        "Puis échange-le avec T[i]."
+      ],
+      "solution": "```algo\nProcédure tri_selection (@T : Tab, n : Entier)\nDEBUT\n   Pour i de 1 à n - 1 Faire\n      pm ← i\n      Pour j de i + 1 à n Faire\n         Si T[j] < T[pm] Alors\n            pm ← j\n         FinSi\n      FinPour\n      Si pm <> i Alors\n         aux ← T[i]\n         T[i] ← T[pm]\n         T[pm] ← aux\n      FinSi\n   FinPour\nFIN\n```"
+    },
+    {
+      "id": "e02",
+      "order": 2,
+      "difficulty": "bac",
+      "statement": "Écrire une procédure `tri_bulles (@T : Tab, n : Entier)` qui trie T dans l'ordre croissant et s'arrête dès qu'un passage complet n'a fait aucun échange.",
+      "hints": [
+        "Utilise un booléen `echange` remis à Faux au début de chaque passage.",
+        "Après un passage, le plus grand élément est à sa place : tu peux réduire la zone parcourue."
+      ],
+      "solution": "```algo\nProcédure tri_bulles (@T : Tab, n : Entier)\nDEBUT\n   m ← n\n   Répéter\n      echange ← Faux\n      Pour j de 1 à m - 1 Faire\n         Si T[j] > T[j + 1] Alors\n            aux ← T[j]\n            T[j] ← T[j + 1]\n            T[j + 1] ← aux\n            echange ← Vrai\n         FinSi\n      FinPour\n      m ← m - 1\n   Jusqu'à (echange = Faux) OU (m = 1)\nFIN\n```"
+    },
+    {
+      "id": "e03",
+      "order": 3,
+      "difficulty": "bac",
+      "statement": "T est trié dans l'ordre croissant. Écrire une fonction `recherche_dicho (T : Tab, n, x : Entier) : Booléen` qui cherche x par dichotomie.",
+      "hints": [
+        "Compare x à l'élément du milieu : tu peux éliminer la moitié du tableau à chaque tour.",
+        "Garde deux bornes g et d, et arrête-toi quand g > d."
+      ],
+      "solution": "```algo\nFonction recherche_dicho (T : Tab, n, x : Entier) : Booléen\nDEBUT\n   g ← 1\n   d ← n\n   trouve ← Faux\n   Tant que (g <= d) ET (trouve = Faux) Faire\n      m ← (g + d) div 2\n      Si T[m] = x Alors\n         trouve ← Vrai\n      Sinon\n         Si T[m] < x Alors\n            g ← m + 1\n         Sinon\n            d ← m - 1\n         FinSi\n      FinSi\n   FinTantQue\n   Retourner trouve\nFIN\n```"
+    },
+    {
+      "id": "e04",
+      "order": 4,
+      "difficulty": "bac",
+      "statement": "T est trié (n éléments, place disponible pour n + 1). Écrire une procédure `inserer (@T : Tab, @n : Entier, x : Entier)` qui insère x à sa place pour que T reste trié, et met n à jour.",
+      "hints": [
+        "Décale vers la droite tous les éléments plus grands que x, en partant de la fin.",
+        "Quand tu t'arrêtes, la bonne place est juste après i."
+      ],
+      "solution": "```algo\nProcédure inserer (@T : Tab, @n : Entier, x : Entier)\nDEBUT\n   i ← n\n   Tant que (i >= 1) ET (T[i] > x) Faire\n      T[i + 1] ← T[i]\n      i ← i - 1\n   FinTantQue\n   T[i + 1] ← x\n   n ← n + 1\nFIN\n```"
+    }
+  ]
+}

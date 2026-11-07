@@ -1,0 +1,58 @@
+{
+  "chapterId": "serie-prog-02-parcourir-afficher",
+  "level": "bac",
+  "subject": "prog",
+  "kind": "serie",
+  "serieLevel": 1,
+  "title": "Parcourir et afficher",
+  "title_ar": "التنقّل والعرض",
+  "topics": [
+    "Boucle Pour",
+    "Affichage"
+  ],
+  "minutes": 20,
+  "order": 102,
+  "published": true,
+  "exercises": [
+    {
+      "id": "e01",
+      "order": 1,
+      "difficulty": "easy",
+      "statement": "Écrire une procédure `multiples3 (n : Entier)` qui affiche les multiples de 3 compris entre 1 et n.",
+      "hints": [
+        "Teste chaque entier de 1 à n avec mod 3, ou avance directement de 3 en 3."
+      ],
+      "solution": "```algo\nProcédure multiples3 (n : Entier)\nDEBUT\n   Pour i de 1 à n Faire\n      Si i mod 3 = 0 Alors\n         Écrire (i)\n      FinSi\n   FinPour\nFIN\n```"
+    },
+    {
+      "id": "e02",
+      "order": 2,
+      "difficulty": "easy",
+      "statement": "Écrire une fonction `fact (n : Entier) : Entier` qui retourne n! = 1 × 2 × … × n (avec 0! = 1).",
+      "hints": [
+        "Le produit commence à 1, pas à 0."
+      ],
+      "solution": "```algo\nFonction fact (n : Entier) : Entier\nDEBUT\n   p ← 1\n   Pour i de 2 à n Faire\n      p ← p * i\n   FinPour\n   Retourner p\nFIN\n```"
+    },
+    {
+      "id": "e03",
+      "order": 3,
+      "difficulty": "easy",
+      "statement": "Écrire une procédure `table (n : Entier)` qui affiche la table de multiplication de n, de n × 1 à n × 10.",
+      "hints": [
+        "Une boucle de 1 à 10, et à chaque tour tu affiches n * i."
+      ],
+      "solution": "```algo\nProcédure table (n : Entier)\nDEBUT\n   Pour i de 1 à 10 Faire\n      Écrire (n, \" x \", i, \" = \", n * i)\n   FinPour\nFIN\n```"
+    },
+    {
+      "id": "e04",
+      "order": 4,
+      "difficulty": "easy",
+      "statement": "Écrire une fonction `nb_chiffres (n : Entier) : Entier` qui retourne le nombre de chiffres d'un entier n ≥ 1.",
+      "hints": [
+        "Chaque division entière par 10 (div) retire un chiffre. Combien de fois peut-on diviser avant d'arriver à 0 ?"
+      ],
+      "solution": "```algo\nFonction nb_chiffres (n : Entier) : Entier\nDEBUT\n   c ← 0\n   Tant que n > 0 Faire\n      c ← c + 1\n      n ← n div 10\n   FinTantQue\n   Retourner c\nFIN\n```"
+    }
+  ]
+}

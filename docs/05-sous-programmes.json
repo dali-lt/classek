@@ -1,0 +1,61 @@
+{
+  "chapterId": "serie-prog-05-sous-programmes",
+  "level": "bac",
+  "subject": "prog",
+  "kind": "serie",
+  "serieLevel": 2,
+  "title": "Sous-programmes",
+  "title_ar": "البرامج الفرعية",
+  "topics": [
+    "Fonctions",
+    "Procédures"
+  ],
+  "minutes": 45,
+  "order": 105,
+  "published": true,
+  "exercises": [
+    {
+      "id": "e01",
+      "order": 1,
+      "difficulty": "medium",
+      "statement": "Écrire une fonction `premier (n : Entier) : Booléen` qui indique si n est un nombre premier.",
+      "hints": [
+        "Un nombre n < 2 n'est pas premier.",
+        "Il suffit de tester les diviseurs d tels que d × d ≤ n."
+      ],
+      "solution": "```algo\nFonction premier (n : Entier) : Booléen\nDEBUT\n   Si n < 2 Alors\n      Retourner Faux\n   FinSi\n   d ← 2\n   Tant que (d * d <= n) ET (n mod d <> 0) Faire\n      d ← d + 1\n   FinTantQue\n   Retourner d * d > n\nFIN\n```"
+    },
+    {
+      "id": "e02",
+      "order": 2,
+      "difficulty": "medium",
+      "statement": "En utilisant la fonction `premier` de l'exercice précédent, écrire une procédure `afficher_premiers (n : Entier)` qui affiche tous les nombres premiers inférieurs ou égaux à n.",
+      "hints": [
+        "Ne réécris pas le test : appelle simplement `premier (i)` dans une condition."
+      ],
+      "solution": "```algo\nProcédure afficher_premiers (n : Entier)\nDEBUT\n   Pour i de 2 à n Faire\n      Si premier (i) Alors\n         Écrire (i)\n      FinSi\n   FinPour\nFIN\n```"
+    },
+    {
+      "id": "e03",
+      "order": 3,
+      "difficulty": "medium",
+      "statement": "Écrire une fonction `pgcd (a, b : Entier) : Entier` qui retourne le plus grand commun diviseur de a et b avec l'algorithme d'Euclide.",
+      "hints": [
+        "On remplace (a, b) par (b, a mod b) tant que b n'est pas nul.",
+        "N'oublie pas de garder le reste dans une variable avant de modifier a et b."
+      ],
+      "solution": "```algo\nFonction pgcd (a, b : Entier) : Entier\nDEBUT\n   Tant que b <> 0 Faire\n      r ← a mod b\n      a ← b\n      b ← r\n   FinTantQue\n   Retourner a\nFIN\n```"
+    },
+    {
+      "id": "e04",
+      "order": 4,
+      "difficulty": "medium",
+      "statement": "Écrire une procédure `inverser (@T : Tab, n : Entier)` qui inverse l'ordre des éléments de T directement dans T (sans second tableau).",
+      "hints": [
+        "Échange le premier avec le dernier, le deuxième avec l'avant-dernier… Combien d'échanges faut-il ?",
+        "Il y a n div 2 échanges."
+      ],
+      "solution": "```algo\nProcédure inverser (@T : Tab, n : Entier)\nDEBUT\n   Pour i de 1 à n div 2 Faire\n      aux ← T[i]\n      T[i] ← T[n - i + 1]\n      T[n - i + 1] ← aux\n   FinPour\nFIN\n```"
+    }
+  ]
+}

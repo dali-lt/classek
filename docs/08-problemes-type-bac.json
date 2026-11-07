@@ -1,0 +1,61 @@
+{
+  "chapterId": "serie-prog-08-problemes-type-bac",
+  "level": "bac",
+  "subject": "prog",
+  "kind": "serie",
+  "serieLevel": 4,
+  "title": "Problèmes type Bac",
+  "title_ar": "مسائل على نمط الباك",
+  "topics": [
+    "Mélange"
+  ],
+  "minutes": 75,
+  "order": 108,
+  "published": true,
+  "exercises": [
+    {
+      "id": "e01",
+      "order": 1,
+      "difficulty": "bac",
+      "statement": "A (na éléments) et B (nb éléments) sont deux tableaux triés dans l'ordre croissant. Écrire une procédure `fusion` qui construit dans C (nc éléments) le tableau trié contenant tous les éléments de A et de B.",
+      "hints": [
+        "Garde deux indices, un dans A et un dans B : à chaque tour, copie le plus petit des deux éléments courants.",
+        "Quand l'un des tableaux est fini, recopie ce qui reste de l'autre."
+      ],
+      "solution": "```algo\nProcédure fusion (A : Tab, na : Entier, B : Tab, nb : Entier, @C : Tab, @nc : Entier)\nDEBUT\n   i ← 1\n   j ← 1\n   nc ← 0\n   Tant que (i <= na) ET (j <= nb) Faire\n      nc ← nc + 1\n      Si A[i] <= B[j] Alors\n         C[nc] ← A[i]\n         i ← i + 1\n      Sinon\n         C[nc] ← B[j]\n         j ← j + 1\n      FinSi\n   FinTantQue\n   Tant que i <= na Faire\n      nc ← nc + 1\n      C[nc] ← A[i]\n      i ← i + 1\n   FinTantQue\n   Tant que j <= nb Faire\n      nc ← nc + 1\n      C[nc] ← B[j]\n      j ← j + 1\n   FinTantQue\nFIN\n```"
+    },
+    {
+      "id": "e02",
+      "order": 2,
+      "difficulty": "bac",
+      "statement": "Écrire une procédure `sans_doublons (T : Tab, n : Entier, @R : Tab, @k : Entier)` qui construit dans R les valeurs de T sans doublon, dans l'ordre de première apparition.\n\nExemple : T = [4, 7, 4, 1, 7, 9] donne R = [4, 7, 1, 9] et k = 4.",
+      "hints": [
+        "Compare chaque élément de T à ceux déjà rangés dans R : qu'est-ce qui te dit qu'une valeur est déjà « passée » ?",
+        "Pour chaque T[i], cherche-le dans R[1..k] ; s'il n'y est pas, ajoute-le à la fin de R."
+      ],
+      "solution": "```algo\nProcédure sans_doublons (T : Tab, n : Entier, @R : Tab, @k : Entier)\nDEBUT\n   k ← 0\n   Pour i de 1 à n Faire\n      trouve ← Faux\n      Pour j de 1 à k Faire\n         Si R[j] = T[i] Alors\n            trouve ← Vrai\n         FinSi\n      FinPour\n      Si trouve = Faux Alors\n         k ← k + 1\n         R[k] ← T[i]\n      FinSi\n   FinPour\nFIN\n```"
+    },
+    {
+      "id": "e03",
+      "order": 3,
+      "difficulty": "bac",
+      "statement": "Écrire une fonction `plus_longue_suite (T : Tab, n : Entier) : Entier` qui retourne la longueur de la plus longue suite d'éléments consécutifs de T rangés dans l'ordre croissant (au sens large).\n\nExemple : T = [3, 5, 5, 2, 4, 6, 9, 1] donne 4 (2, 4, 6, 9).",
+      "hints": [
+        "Garde la longueur de la suite en cours (l) et la meilleure longueur trouvée (lmax).",
+        "Si T[i] >= T[i - 1], la suite continue ; sinon elle repart à 1."
+      ],
+      "solution": "```algo\nFonction plus_longue_suite (T : Tab, n : Entier) : Entier\nDEBUT\n   lmax ← 1\n   l ← 1\n   Pour i de 2 à n Faire\n      Si T[i] >= T[i - 1] Alors\n         l ← l + 1\n      Sinon\n         l ← 1\n      FinSi\n      Si l > lmax Alors\n         lmax ← l\n      FinSi\n   FinPour\n   Retourner lmax\nFIN\n```"
+    },
+    {
+      "id": "e04",
+      "order": 4,
+      "difficulty": "bac",
+      "statement": "Écrire une procédure `decaler_droite (@T : Tab, n, k : Entier)` qui décale circulairement les éléments de T de k positions vers la droite.\n\nExemple : T = [1, 2, 3, 4, 5] et k = 2 donne [4, 5, 1, 2, 3].",
+      "hints": [
+        "Décaler de k positions, c'est décaler d'une position, k fois.",
+        "Décaler de n positions ne change rien : tu peux réduire k avec mod n."
+      ],
+      "solution": "```algo\nProcédure decaler_droite (@T : Tab, n, k : Entier)\nDEBUT\n   Pour r de 1 à k mod n Faire\n      aux ← T[n]\n      i ← n\n      Tant que i > 1 Faire\n         T[i] ← T[i - 1]\n         i ← i - 1\n      FinTantQue\n      T[1] ← aux\n   FinPour\nFIN\n```"
+    }
+  ]
+}

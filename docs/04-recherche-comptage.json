@@ -1,0 +1,60 @@
+{
+  "chapterId": "serie-prog-04-recherche-comptage",
+  "level": "bac",
+  "subject": "prog",
+  "kind": "serie",
+  "serieLevel": 2,
+  "title": "Recherche et comptage",
+  "title_ar": "البحث والعدّ",
+  "topics": [
+    "Tableaux",
+    "Compteurs"
+  ],
+  "minutes": 40,
+  "order": 104,
+  "published": true,
+  "exercises": [
+    {
+      "id": "e01",
+      "order": 1,
+      "difficulty": "medium",
+      "statement": "Écrire une fonction `position_max (T : Tab, n : Entier) : Entier` qui retourne l'indice de la plus grande valeur de T.",
+      "hints": [
+        "Garde l'indice du meilleur candidat, pas sa valeur : tu pourras retrouver la valeur avec T[indice]."
+      ],
+      "solution": "```algo\nFonction position_max (T : Tab, n : Entier) : Entier\nDEBUT\n   pm ← 1\n   Pour i de 2 à n Faire\n      Si T[i] > T[pm] Alors\n         pm ← i\n      FinSi\n   FinPour\n   Retourner pm\nFIN\n```"
+    },
+    {
+      "id": "e02",
+      "order": 2,
+      "difficulty": "medium",
+      "statement": "Écrire une fonction `recherche (T : Tab, n, x : Entier) : Booléen` qui indique si x appartient à T. La boucle doit s'arrêter dès que x est trouvé.",
+      "hints": [
+        "Une boucle Tant que avec deux conditions : il reste des éléments ET l'élément courant n'est pas x.",
+        "À la sortie de la boucle, regarde où est i."
+      ],
+      "solution": "```algo\nFonction recherche (T : Tab, n, x : Entier) : Booléen\nDEBUT\n   i ← 1\n   Tant que (i <= n) ET (T[i] <> x) Faire\n      i ← i + 1\n   FinTantQue\n   Retourner i <= n\nFIN\n```"
+    },
+    {
+      "id": "e03",
+      "order": 3,
+      "difficulty": "medium",
+      "statement": "Écrire une fonction `est_trie (T : Tab, n : Entier) : Booléen` qui indique si T est trié dans l'ordre croissant (au sens large).",
+      "hints": [
+        "Cherche un couple d'éléments voisins qui n'est pas dans l'ordre : dès que tu en trouves un, la réponse est Faux."
+      ],
+      "solution": "```algo\nFonction est_trie (T : Tab, n : Entier) : Booléen\nDEBUT\n   i ← 1\n   Tant que (i < n) ET (T[i] <= T[i + 1]) Faire\n      i ← i + 1\n   FinTantQue\n   Retourner i = n\nFIN\n```"
+    },
+    {
+      "id": "e04",
+      "order": 4,
+      "difficulty": "medium",
+      "statement": "Écrire une fonction `nb_distincts (T : Tab, n : Entier) : Entier` qui retourne le nombre de valeurs différentes de T.\n\nExemple : T = [4, 7, 4, 1, 7, 9] donne 4.",
+      "hints": [
+        "Une valeur est « nouvelle » si elle n'apparaît pas parmi les éléments qui la précèdent.",
+        "Pour chaque i, cherche T[i] dans T[1..i-1] avec une boucle Tant que."
+      ],
+      "solution": "```algo\nFonction nb_distincts (T : Tab, n : Entier) : Entier\nDEBUT\n   c ← 0\n   Pour i de 1 à n Faire\n      j ← 1\n      Tant que (j < i) ET (T[j] <> T[i]) Faire\n         j ← j + 1\n      FinTantQue\n      Si j = i Alors\n         c ← c + 1\n      FinSi\n   FinPour\n   Retourner c\nFIN\n```"
+    }
+  ]
+}
