@@ -4284,3 +4284,78 @@ html:has(.modal-overlay.open) .s-menu-btn {
   .sv-step:nth-child(odd) { margin-top: 38px; }
   .sv-path-seg { stroke-width: 9; }
 }
+
+/* v62: "Ton parcours" box (circles on a winding line) + one exercise detail card below */
+.ex-parcours {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 18px;
+  padding: 22px 24px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 26px;
+  background: var(--color-surface);
+}
+.ex-parcours-top { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 10px 16px; }
+.ex-parcours-text h3 { margin: 0; font-size: 21px; font-weight: 800; }
+.ex-parcours-text p { margin: 4px 0 0; font-size: 14px; color: var(--color-text-muted); }
+.ex-parcours-legend { display: flex; flex-wrap: wrap; gap: 6px; }
+.ex-lg { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px; background: var(--color-sunken); color: var(--color-text); font-size: 12.5px; font-weight: 700; }
+.ex-lg i { width: 9px; height: 9px; border-radius: 50%; background: var(--c); }
+.ex-lg.d-easy, .ex-node.d-easy { --c: var(--color-accent); --ink: var(--brand-deep-navy, #01092d); }
+.ex-lg.d-medium, .ex-node.d-medium { --c: var(--color-primary); --ink: #fff; }
+.ex-lg.d-bac, .ex-node.d-bac { --c: #e64d6b; --ink: #fff; }
+.ex-map { position: relative; width: 100%; min-height: 120px; }
+.ex-map-line { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.ex-map-seg { fill: none; stroke-linecap: round; stroke-width: 11; stroke: color-mix(in srgb, var(--color-text) 12%, transparent); }
+.ex-map-seg.is-on { stroke: color-mix(in srgb, var(--color-accent) 60%, var(--color-surface)); }
+.ex-node {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-radius: 50%;
+  border: 3px solid var(--c);
+  background: var(--color-surface);
+  color: var(--c);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+.ex-node:hover:not(:disabled) { transform: translate(-50%, -50%) scale(1.06); }
+.ex-node:focus-visible { outline: 3px solid var(--color-primary); outline-offset: 3px; }
+.ex-node svg { width: 52%; height: 52%; }
+.ex-node.is-done { background: var(--c); border-color: var(--c); color: var(--ink); }
+.ex-node.is-mid { background: #f0a62b; border-color: #f0a62b; color: #01092d; }
+.ex-node.is-review { background: var(--color-surface); border-color: #e64d6b; color: #e64d6b; }
+.ex-node.is-locked { background: var(--color-sunken); border: 2px dashed color-mix(in srgb, var(--color-primary-dark) 40%, transparent); color: var(--color-text-muted); font-weight: 600; cursor: not-allowed; }
+.ex-node.is-sel { box-shadow: 0 0 0 6px color-mix(in srgb, var(--color-primary) 22%, transparent); }
+.ex-node.is-sel::after {
+  content: "";
+  position: absolute;
+  inset-inline-start: 50%;
+  bottom: -15px;
+  margin-inline-start: -6px;
+  border: 6px solid transparent;
+  border-bottom-color: var(--color-text);
+}
+.ex-node.is-cur:not(.is-sel) { border-color: var(--color-primary); color: var(--color-primary); }
+
+/* the detail card: a normal box, no coloured side stripe, no path pin, always open */
+.ex-detail { display: flex; flex-direction: column; }
+.ex-card.ex-solo {
+  width: 100%;
+  align-self: stretch;
+  transform: none;
+  border: 1px solid var(--color-border);
+}
+.ex-card.ex-solo::after, .ex-card.ex-solo .ex-pin { display: none; }
+.ex-card.ex-solo .ex-sum { display: none; }
+.ex-card.ex-solo .ex-panel > .ex-head { display: flex; }
+.ex-card.ex-solo:hover, .ex-card.ex-solo:focus-within { transform: none; }
+@media (max-width: 640px) {
+  .ex-parcours { padding: 16px 14px 10px; border-radius: 22px; }
+  .ex-map-seg { stroke-width: 9; }
+}

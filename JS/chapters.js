@@ -24,6 +24,10 @@ var STR = {
     allSubjects: "Toutes les matières",
     tabChapters: "Chapitres",
     svIntro: "Entraîne-toi par niveau, puis passe aux sujets de Bac.",
+    exPathTitle: "Ton parcours",
+    exPathLine: "{done} / {total} terminés · tu en es au n° {n}",
+    exPathAll: "{done} / {total} terminés · bravo, tout est fait !",
+    exPathOpen: "Exercice {n}",
     tabSeries: "Séries",
     tabDevoirs: "Devoirs",
     ladderTitle: "Ton échelle de difficulté",
@@ -229,6 +233,10 @@ var STR = {
     allSubjects: "كل المواد",
     tabChapters: "الدروس",
     svIntro: "تمرّن حسب المستوى، وبعدها اعمل مواضيع الباك.",
+    exPathTitle: "مسارك",
+    exPathLine: "{done} / {total} منتهية · وصلت للتمرين {n}",
+    exPathAll: "{done} / {total} منتهية · برافو، كمّلت كل شي !",
+    exPathOpen: "التمرين {n}",
     tabSeries: "السلاسل",
     tabDevoirs: "الفروض",
     ladderTitle: "سلّم الصعوبة متاعك",
@@ -2924,6 +2932,8 @@ function icon(svg, cls) {
   return span;
 }
 
+var ICON_X_PIN =
+  '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 7 10 10M17 7 7 17"/></svg>';
 var ICON_CHECK_PIN =
   '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
 var ICON_MID_PIN =
@@ -3759,14 +3769,14 @@ function exerciseCard(ch, ex, index) {
   // Wide screens: any number can be open. Phones: one at a time (null = the student closed them all)
   var reached = currentExerciseId(ch) === ex.id;
   // one exercise open at a time (wide screens too): opening another one closes the previous one
-  var isOpenCard = openEx[ch.id] !== undefined ? openEx[ch.id] === ex.id : reached;
+  var isOpenCard = true; // the page shows one exercise at a time (the one picked on the path), always open
   // exercises come one at a time: the ones after the one the student has reached stay locked until it is finished
   var reachedId = currentExerciseId(ch);
   var locked = !st && !!reachedId && !reached;
   if (locked) isOpenCard = false;
   var card = el(
     "article",
-    "ex-card d-" + diff + (index % 2 ? " is-b" : " is-a") + (st ? " is-" + st : "") + (isOpenCard ? "" : " is-collapsed") + (locked ? " is-locked" : "")
+    "ex-card ex-solo d-" + diff + (index % 2 ? " is-b" : " is-a") + (st ? " is-" + st : "") + (isOpenCard ? "" : " is-collapsed") + (locked ? " is-locked" : "")
   );
   card.id = "ex-" + ex.id;
   var pin = el("span", "ex-pin");
@@ -4007,7 +4017,7 @@ function exerciseCard(ch, ex, index) {
         var nextId = currentExerciseId(ch);
         if (nextId) {
           setTimeout(function () {
-            var nx = document.getElementById("ex-" + nextId);
+            var nx = document.querySelector(".ex-parcours");
             if (nx) nx.scrollIntoView({ behavior: "smooth", block: "start" });
           }, 0);
         }
@@ -4431,12 +4441,117 @@ function pickTab(tab) {
   if (tab === "ex") autoScrolled[ch.id] = false; // coming back to the exercises: jump to the current one again
   render();
   window.scrollTo(0, 0);
-  scrollToCurrentExercise(ch);
+}
+
+/* "Ton parcours": the exercises of the chapter as numbered circles on a winding line (same look as the series ladder) */
+var EX_LEVEL = { easy: "d_easy", medium: "d_medium", bac: "d_bac" };
+function exParcours(ch, exs, selIdx, curId) {
+  var st = statusOf(ch.id);
+  var total = exs.length;
+  var done = exs.filter(function (e) {
+    return st[e.id];
+  }).length;
+  var curIdx = exs.findIndex(function (e) {
+    return e.id === curId;
+  });
+  var card = el("section", "ex-parcours");
+  var top = el("div", "ex-parcours-top");
+  var txt = el("div", "ex-parcours-text");
+  txt.append(
+    el("h3", "", t("exPathTitle")),
+    el("p", "", curId ? tf("exPathLine", { done: done, total: total, n: curIdx + 1 }) : tf("exPathAll", { done: done, total: total })),
+  );
+  var leg = el("div", "ex-parcours-legend");
+  ["easy", "medium", "bac"].forEach(function (d) {
+    if (
+      !exs.some(function (e) {
+        return (e.difficulty === "bac" || e.difficulty === "medium" ? e.difficulty : "easy") === d;
+      })
+    )
+      return;
+    var chip = el("span", "ex-lg d-" + d);
+    chip.append(el("i", ""), el("span", "", t(EX_LEVEL[d])));
+    leg.append(chip);
+  });
+  top.append(txt, leg);
+  var map = el("div", "ex-map");
+  card.append(top, map);
+
+  var NS = "http://www.w3.org/2000/svg";
+  var lastW = 0;
+  var draw = function () {
+    if (!map.isConnected) return;
+    var W = map.clientWidth;
+    if (!W || W === lastW) return;
+    lastW = W;
+    var size = W < 560 ? 46 : 58;
+    var perRow = Math.min(total, Math.max(3, Math.floor(W / (size + 28)))); // few exercises: spread over the whole width
+    var dy = size * 0.85;
+    var rowH = size + dy + 22;
+    var rows = Math.ceil(total / perRow);
+    var step = W / perRow;
+    var pts = exs.map(function (e, k) {
+      var r = Math.floor(k / perRow);
+      var j = k % perRow;
+      var col = r % 2 ? perRow - 1 - j : j; // snake: the second row runs the other way
+      return { x: (col + 0.5) * step, y: size / 2 + 6 + r * rowH + (k % 2 ? dy : 0), r: r };
+    });
+    map.textContent = "";
+    map.style.height = rows * rowH + 8 + "px";
+    var svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("class", "ex-map-line");
+    svg.setAttribute("aria-hidden", "true");
+    svg.setAttribute("viewBox", "0 0 " + W + " " + (rows * rowH + 8));
+    for (var i = 0; i < pts.length - 1; i++) {
+      var a = pts[i];
+      var b = pts[i + 1];
+      var d;
+      if (b.r !== a.r) {
+        var out = (a.x > W / 2 ? 1 : -1) * Math.min(36, W * 0.1);
+        d = "M" + a.x + " " + a.y + " C " + (a.x + out * 1.6) + " " + (a.y + 10) + ", " + (b.x + out * 1.6) + " " + (b.y - 10) + ", " + b.x + " " + b.y;
+      } else {
+        var dir = b.y > a.y ? 1 : -1;
+        var amp = size * 0.55;
+        d = "M" + a.x + " " + a.y + " C " + (a.x + (b.x - a.x) * 0.9) + " " + (a.y - dir * amp) + ", " + (a.x + (b.x - a.x) * 0.1) + " " + (b.y + dir * amp) + ", " + b.x + " " + b.y;
+      }
+      var path = document.createElementNS(NS, "path");
+      path.setAttribute("d", d);
+      path.setAttribute("class", "ex-map-seg" + (st[exs[i].id] ? " is-on" : ""));
+      svg.append(path);
+    }
+    map.append(svg);
+    exs.forEach(function (e, k) {
+      var diff = e.difficulty === "bac" || e.difficulty === "medium" ? e.difficulty : "easy";
+      var s2 = st[e.id];
+      var lockedE = !s2 && !!curId && curId !== e.id;
+      var n = el("button", "ex-node d-" + diff + (s2 ? " is-" + s2 : "") + (lockedE ? " is-locked" : "") + (e.id === curId ? " is-cur" : "") + (k === selIdx ? " is-sel" : ""));
+      n.type = "button";
+      n.style.width = n.style.height = size + "px";
+      n.style.left = pts[k].x + "px";
+      n.style.top = pts[k].y + "px";
+      n.style.fontSize = Math.round(size * 0.34) + "px";
+      n.setAttribute("aria-label", tf("exPathOpen", { n: k + 1 }) + " · " + t(EX_LEVEL[diff]) + (s2 ? " · " + t(s2) : ""));
+      if (k === selIdx) n.setAttribute("aria-current", "true");
+      if (s2 === "done" || s2 === "mid") n.innerHTML = ICON_CHECK_PIN;
+      else if (s2 === "review") n.innerHTML = ICON_X_PIN;
+      else n.textContent = (k < 9 ? "0" : "") + (k + 1);
+      if (lockedE) n.disabled = true;
+      else
+        n.addEventListener("click", function () {
+          if (k === selIdx) return;
+          openEx[ch.id] = e.id;
+          render();
+        });
+      map.append(n);
+    });
+  };
+  window.requestAnimationFrame(draw);
+  if (window.ResizeObserver) new ResizeObserver(draw).observe(map);
+  return card;
 }
 
 function exercisesPart(ch) {
   var box = el("div", "ch-ex");
-  box.append(el("h2", "ch-section-title", t("exercises")));
   var cur = S.cur;
   if (!cur || cur.loading) {
     box.append(el("div", "student-empty", t("loading")));
@@ -4452,12 +4567,25 @@ function exercisesPart(ch) {
     fail.append(retry);
     box.append(fail);
   } else {
-    var list = el("div", "ex-list");
-    cur.exercises.forEach(function (ex, i) {
-      if (i) list.append(exPath(i, statusOf(ch.id)[cur.exercises[i - 1].id] === "done"));
-      list.append(exerciseCard(ch, ex, i));
+    var exs = cur.exercises;
+    var st0 = statusOf(ch.id);
+    var curId = currentExerciseId(ch);
+    var want = openEx[ch.id];
+    var selIdx = -1;
+    exs.forEach(function (e, i) {
+      var lockedE = !st0[e.id] && !!curId && curId !== e.id;
+      if (e.id === want && !lockedE) selIdx = i;
     });
-    box.append(list);
+    if (selIdx < 0) {
+      selIdx = exs.findIndex(function (e) {
+        return e.id === curId;
+      });
+      if (selIdx < 0) selIdx = exs.length - 1; // everything is done: show the last one
+    }
+    box.append(exParcours(ch, exs, selIdx, curId));
+    var det = el("div", "ex-detail");
+    det.append(exerciseCard(ch, exs[selIdx], selIdx));
+    box.append(det);
   }
   return box;
 }
@@ -4516,7 +4644,6 @@ function renderView(view, ch) {
     view.append(aside);
   }
   syncBackButton();
-  if (tab === "ex") scrollToCurrentExercise(ch);
 }
 
 /* Opening the exercises lands on the exercise the student has reached (not on the first one, already finished).
