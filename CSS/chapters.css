@@ -4227,3 +4227,28 @@ body:has(.modal-overlay.open) .ch-back.ch-back-float {
 html:has(.modal-overlay.open) .s-menu-btn {
   z-index: 40;
 }
+
+/* v59: breadcrumb takes ~3/4 of the row on ONE line (long chapter titles end with …); the visualiser is a round icon on phones */
+.ch-back-slot:has(.sv-crumb),
+.ch-tabs:has(.sv-crumb) { flex-wrap: nowrap; }
+.sv-crumb { flex: 1 1 0; max-width: 75%; white-space: nowrap; overflow: hidden; }
+.sv-crumb > * { flex: none; }
+.sv-crumb > b { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.sv-crumb-link { white-space: nowrap; }
+@media (max-width: 800px) {
+  .sv-crumb { font-size: 13px; gap: 6px; }
+  .ch-back-slot .ch-back.ch-algo,
+  .ch-tabs .ch-back.ch-algo {
+    flex: none;
+    width: 44px;
+    height: 44px;
+    min-height: 0;
+    padding: 0;
+    border-radius: 50%;
+    justify-content: center;
+    gap: 0;
+    align-self: center;
+    margin-inline-start: auto;
+  }
+  .ch-back.ch-algo > span:not(.ch-back-ico) { display: none; }
+}
