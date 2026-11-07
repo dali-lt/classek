@@ -4359,3 +4359,24 @@ html:has(.modal-overlay.open) .s-menu-btn {
   .ex-parcours { padding: 16px 14px 10px; border-radius: 22px; }
   .ex-map-seg { stroke-width: 9; }
 }
+
+/* v63: path circles: no border, no arrow. In progress = white circle, number in the level colour. Finished = level colour + icon (done ✓, medium —, wrong ✕). The shadow carries the level colour; the picked one has the strongest */
+.ex-node {
+  border: 0;
+  background: var(--color-surface);
+  color: var(--c);
+  box-shadow: 0 6px 14px -6px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.ex-node.is-done, .ex-node.is-mid, .ex-node.is-review { background: var(--c); border: 0; color: var(--ink); }
+.ex-node.is-locked { background: var(--color-sunken); border: 2px dashed color-mix(in srgb, var(--color-primary-dark) 40%, transparent); color: var(--color-text-muted); box-shadow: none; }
+.ex-node.is-sel { box-shadow: 0 10px 22px -4px color-mix(in srgb, var(--c) 80%, transparent); transform: translate(-50%, -50%) scale(1.08); }
+.ex-node.is-sel::after { display: none; }
+.ex-node.is-cur:not(.is-sel) { border: 0; color: var(--c); }
+
+/* v64: same halo as the level ladder ("you are here"): a soft ring, no drop shadow */
+.ex-node { box-shadow: none; }
+.ex-node.is-sel { box-shadow: 0 0 0 6px color-mix(in srgb, var(--c) 28%, transparent); transform: translate(-50%, -50%); }
+.ex-node:hover:not(:disabled) { transform: translate(-50%, -50%) scale(1.06); }
+.ex-node.is-locked { box-shadow: none; }
+.ex-node.is-cur { box-shadow: 0 3px 12px -2px rgba(1, 9, 45, 0.22); }
+.ex-node.is-cur.is-sel { box-shadow: 0 0 0 6px color-mix(in srgb, var(--c) 28%, transparent), 0 3px 12px -2px rgba(1, 9, 45, 0.22); }

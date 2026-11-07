@@ -2932,6 +2932,8 @@ function icon(svg, cls) {
   return span;
 }
 
+var ICON_WARN_PIN =
+  '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"><path d="M12 5.5v8"/><path d="M12 18.5h.01"/></svg>';
 var ICON_X_PIN =
   '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 7 10 10M17 7 7 17"/></svg>';
 var ICON_CHECK_PIN =
@@ -4532,7 +4534,8 @@ function exParcours(ch, exs, selIdx, curId) {
       n.style.fontSize = Math.round(size * 0.34) + "px";
       n.setAttribute("aria-label", tf("exPathOpen", { n: k + 1 }) + " · " + t(EX_LEVEL[diff]) + (s2 ? " · " + t(s2) : ""));
       if (k === selIdx) n.setAttribute("aria-current", "true");
-      if (s2 === "done" || s2 === "mid") n.innerHTML = ICON_CHECK_PIN;
+      if (s2 === "done") n.innerHTML = ICON_CHECK_PIN;
+      else if (s2 === "mid") n.innerHTML = ICON_WARN_PIN;
       else if (s2 === "review") n.innerHTML = ICON_X_PIN;
       else n.textContent = (k < 9 ? "0" : "") + (k + 1);
       if (lockedE) n.disabled = true;
