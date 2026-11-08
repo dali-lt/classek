@@ -27,6 +27,7 @@ var STR = {
     ppSheet: "Sujet",
     ppPage: "Page {n} / {total}",
     ppEditor: "Ouvrir l’éditeur",
+    ppOpenAns: "Ouvrir l’éditeur pour répondre",
     ppPrint: "Imprimer",
     ppZoomIn: "Agrandir",
     ppZoomOut: "Réduire",
@@ -252,6 +253,7 @@ var STR = {
     ppSheet: "الموضوع",
     ppPage: "صفحة {n} / {total}",
     ppEditor: "فتح المحرّر",
+    ppOpenAns: "افتح المحرّر باش تجاوب",
     ppPrint: "طباعة",
     ppZoomIn: "تكبير",
     ppZoomOut: "تصغير",
@@ -1598,7 +1600,7 @@ function openPlayground(opts) {
     task.append(views);
     if (opts.statement) {
       var tb = el("div", "pg-task-body");
-      tb.append(md(opts.statement, { noRun: true }));
+      tb.append(md(opts.statement, { noRun: true, rich: !!opts.rich }));
       task.append(tb);
     }
     if (expFrame) {
@@ -1866,10 +1868,82 @@ function md(text, opts) {
         }
       });
   }
+  // rich text (the printed subject of a devoir): ## and ### titles, bullet and numbered lists, tables
+  function richWords(v) {
+    var lines = v.replace(/\r/g, "").split("\n");
+    var i = 0;
+    var isRow = function (l) {
+      return /^\s*\|.*\|\s*$/.test(l || "");
+    };
+    var cells = function (l) {
+      return l.trim().replace(/^\||\|$/g, "").split("|").map(function (c) {
+        return c.trim();
+      });
+    };
+    while (i < lines.length) {
+      var l = lines[i];
+      if (!l.trim()) {
+        i++;
+        continue;
+      }
+      var m;
+      if ((m = /^(#{2,3}) (.*)$/.exec(l))) {
+        var h = el(m[1].length === 2 ? "h3" : "h4", m[1].length === 2 ? "ch-h" : "ch-h2");
+        inline(h, m[2]);
+        box.append(h);
+        i++;
+      } else if (isRow(l) && isRow(lines[i + 1]) && /^[\s|:-]+$/.test(lines[i + 1])) {
+        var tb = el("table", "ch-table");
+        var thead = el("thead");
+        var hr = el("tr");
+        cells(l).forEach(function (c) {
+          var th = el("th");
+          inline(th, c);
+          hr.append(th);
+        });
+        thead.append(hr);
+        var tbody = el("tbody");
+        i += 2;
+        while (i < lines.length && isRow(lines[i])) {
+          var tr = el("tr");
+          cells(lines[i]).forEach(function (c) {
+            var td = el("td");
+            inline(td, c);
+            tr.append(td);
+          });
+          tbody.append(tr);
+          i++;
+        }
+        tb.append(thead, tbody);
+        box.append(tb);
+      } else if (/^\s*(?:[-*]|\d+\.) /.test(l)) {
+        var ordered = /^\s*\d+\. /.test(l);
+        var list = el(ordered ? "ol" : "ul", "ch-list");
+        while (i < lines.length && /^\s*(?:[-*]|\d+\.) /.test(lines[i])) {
+          var li = el("li");
+          inline(li, lines[i].replace(/^\s*(?:[-*]|\d+\.) /, ""));
+          list.append(li);
+          i++;
+        }
+        box.append(list);
+      } else {
+        var p = el("p", "ch-p");
+        var first = true;
+        while (i < lines.length && lines[i].trim() && !/^#{2,3} /.test(lines[i]) && !(isRow(lines[i]) && isRow(lines[i + 1])) && !/^\s*(?:[-*]|\d+\.) /.test(lines[i])) {
+          if (!first) p.append(document.createElement("br"));
+          inline(p, lines[i]);
+          first = false;
+          i++;
+        }
+        box.append(p);
+      }
+    }
+  }
   for (var i = 0; i < segs.length; i++) {
     var s = segs[i];
     if (!s.code) {
-      words(s.v);
+      if (opts && opts.rich) richWords(s.v);
+      else words(s.v);
       continue;
     }
     if (s.lang === "viz") continue; // old lessons: the Run button on the code replaces the launcher card
@@ -2128,6 +2202,15 @@ async function loadExercises(chId) {
         return (a.order || 0) - (b.order || 0);
       });
     }
+    // a practical exam (STI): every part is answered in the code editor (files: html, css, js, php, sql)
+    var meta0 = S.extra.filter(function (c) {
+      return c.id === chId;
+    })[0];
+    if (meta0 && meta0.session === "pratique" && S.cur.exercises)
+      S.cur.exercises.forEach(function (e) {
+        if (!e.lang) e.lang = "html";
+        if (!e.starter) e.starter = "none";
+      });
   } catch (e) {
     console.warn("Couldn’t load the exercises:", e);
     if (S.cur && S.cur.id === chId) S.cur.failed = true;
@@ -3663,7 +3746,7 @@ function answerBox(ch, ex, boxId, placeholder, onInput, rows, asCode) {
     });
     var mopen = runButton();
     mopen.addEventListener("click", function () {
-      var em = /```htmlview\n?([\s\S]*?)```/.exec(ex.statement || "");
+      var em = /```htmlview\n?([\s\S]*?)```/.exec(ch.session === "pratique" && ch.paper ? ch.paper : ex.statement || "");
       openPlayground({
         files: files.map(function (f) {
           return { id: f.id, name: f.name, lang: f.lang, value: f.ta.value };
@@ -3674,7 +3757,8 @@ function answerBox(ch, ex, boxId, placeholder, onInput, rows, asCode) {
         },
         title: starterTitle(ch, ex),
         tone: ex.difficulty === "bac" || ex.difficulty === "medium" ? ex.difficulty : "easy",
-        statement: (ex.statement || "")
+        rich: ch.session === "pratique" && !!ch.paper,
+        statement: (ch.session === "pratique" && ch.paper ? ch.paper : ex.statement || "")
           .replace(/```htmlview\n?[\s\S]*?```/g, "")
           .replace(/\n[^\n]*:\s*$/, function (m) {
             return em ? "" : m; // "Résultat attendu :" introduced the expected page, which now has its own tab
@@ -3700,7 +3784,17 @@ function answerBox(ch, ex, boxId, placeholder, onInput, rows, asCode) {
     fsFx.mount(mw.win);
     mtools.el.classList.add("pg-tools");
     mw.win.append(mtools.el);
-    wrap.append(mw.win);
+    if (ch.session === "pratique") {
+      // a practical exam: the answer is written in the editor, which opens straight away (no small box on the page)
+      var big = el("button", "pp-open-ans");
+      big.type = "button";
+      big.innerHTML = ICON_PP_EDIT; // static, trusted SVG
+      big.append(el("span", "", t("ppOpenAns")));
+      big.addEventListener("click", function () {
+        mopen.click();
+      });
+      wrap.append(big);
+    } else wrap.append(mw.win);
     setTimeout(function () {
       mw.paint();
       autoGrow(ta);
@@ -4640,16 +4734,25 @@ function paperPart(ch, exs) {
     return r;
   };
   head.append(
-    row([[t("s_" + ch.subject).toUpperCase()], [(ch.session === "controle" ? "CONTRÔLE" : "EXAMEN") + (ch.year ? " " + ch.year : "")]]),
+    row([[t("s_" + ch.subject).toUpperCase()], [(ch.session === "pratique" ? "ÉPREUVE PRATIQUE" : ch.session === "controle" ? "DEVOIR DE CONTRÔLE" : "EXAMEN · SESSION PRINCIPALE") + (ch.year ? " " + ch.year : "")]]),
     row([[title || "", "pp-hwide"]]),
     row([[ch.points ? tf("ppPoints", { p: ch.points }) : ""], [ch.hours ? tf("ppHours", { h: ch.hours }) : ""]])
   );
   var blocks = [head];
-  exs.forEach(function (e) {
-    var b = md(e.statement);
-    b.classList.add("pp-ex");
-    blocks.push(b);
-  });
+  if (ch.paper) {
+    // the printed subject comes from the file (field "paper"): every title, list, table and code block is a block that flows on the sheets
+    Array.prototype.slice.call(md(ch.paper, { rich: true, noRun: true }).children).forEach(function (c) {
+      var w = el("div", "ch-content");
+      w.append(c);
+      blocks.push(w);
+    });
+  } else {
+    exs.forEach(function (e) {
+      var b = md(e.statement);
+      b.classList.add("pp-ex");
+      blocks.push(b);
+    });
+  }
   var total = 1;
   function sheet() {
     var sh = el("div", "pp-sheet");
@@ -4764,7 +4867,9 @@ function exercisesPart(ch) {
       exs.forEach(function (e, i) {
         var st1 = st0[e.id];
         var lk = !st1 && !!curId && curId !== e.id;
-        var b = el("button", "pp-ex-tab" + (i === selIdx ? " is-on" : "") + (st1 ? " is-" + st1 : ""), (i < 9 ? "0" : "") + (i + 1));
+        var short = (i < 9 ? "0" : "") + (i + 1);
+        var b = el("button", "pp-ex-tab" + (i === selIdx ? " is-on" : "") + (st1 ? " is-" + st1 : ""), short);
+        if (e.label) b.title = e.label;
         b.type = "button";
         b.disabled = lk;
         b.addEventListener("click", function () {
@@ -4774,6 +4879,7 @@ function exercisesPart(ch) {
         tabs.append(b);
       });
       det.append(tabs);
+      if (exs[selIdx] && exs[selIdx].label) det.append(el("h4", "pp-part", exs[selIdx].label));
     }
     det.append(exerciseCard(ch, exs[selIdx], selIdx));
     box.append(det);

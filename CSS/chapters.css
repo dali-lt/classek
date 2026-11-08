@@ -4427,11 +4427,11 @@ html:has(.modal-overlay.open) .s-menu-btn {
 .pp-tb:hover, .pp-edit:hover, .pp-tb:focus-visible, .pp-edit:focus-visible { background: rgba(255, 255, 255, 0.16); outline: none; }
 .pp-view { height: 560px; overflow: auto; background: #e4e9f1; padding: 24px 12px; }
 .pp-pages { display: flex; flex-direction: column; align-items: flex-start; gap: 22px; --pz: 1; }
-.pp-sheet { zoom: var(--pz); width: 595px; max-width: none; min-height: 842px; height: 842px; overflow: hidden; background: #fff; color: #111; box-shadow: 0 2px 4px rgba(1, 9, 45, 0.12), 0 10px 28px rgba(1, 9, 45, 0.14); padding: 36px 48px 44px; font-family: Georgia, "Times New Roman", serif; font-size: 14px; line-height: 1.55; flex: none; position: relative; text-align: left; margin: 0 auto; }
-.pp-sh { display: flex; justify-content: space-between; gap: 12px; font-family: inherit; font-family: "Space Grotesk", system-ui, sans-serif; font-size: 10px; color: #7b86a0; border-bottom: 1.5px solid #0464de; padding-bottom: 7px; margin-bottom: 16px; }
+.pp-sheet { zoom: var(--pz); width: 595px; max-width: none; min-height: 842px; height: 842px; overflow: hidden; background: #fff; color: #111; box-shadow: 0 2px 4px rgba(1, 9, 45, 0.12), 0 10px 28px rgba(1, 9, 45, 0.14); padding: 36px 48px 44px; font-family: inherit; font-size: 13px; line-height: 1.55; flex: none; position: relative; text-align: left; margin: 0 auto; }
+.pp-sh { display: flex; justify-content: space-between; gap: 12px; font-size: 10px; color: #7b86a0; border-bottom: 1.5px solid #0464de; padding-bottom: 7px; margin-bottom: 16px; }
 .pp-sh b { color: #0464de; }
-.pp-pn { position: absolute; bottom: 14px; left: 0; right: 0; text-align: center; font: 10px "Space Grotesk", system-ui, sans-serif; color: #99a3b8; }
-.pp-head { border: 1.5px solid #111; margin-bottom: 14px; font-family: Arial, sans-serif; font-size: 12px; text-align: center; }
+.pp-pn { position: absolute; bottom: 14px; left: 0; right: 0; text-align: center; font-size: 10px; color: #99a3b8; }
+.pp-head { border: 1.5px solid #111; margin-bottom: 14px; font-size: 12px; text-align: center; }
 .pp-hrow { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border-bottom: 1.5px solid #111; }
 .pp-hrow:last-child { border-bottom: 0; }
 .pp-hrow > span { padding: 5px; border-right: 1.5px solid #111; }
@@ -4463,3 +4463,17 @@ html:has(.modal-overlay.open) .s-menu-btn {
   body.pp-printing .pp-pages { position: absolute; left: 0; top: 0; gap: 0; display: block; }
   body.pp-printing .pp-sheet { zoom: 1; box-shadow: none; break-after: page; margin: 0; }
 }
+
+.pp-sheet .ch-h { font-size: 15px; margin: 6px 0 6px; color: #01092d; }
+.pp-sheet .ch-h2 { font-size: 13.5px; margin: 4px 0 4px; color: #032c7b; }
+.pp-sheet .ch-list { margin: 0 0 8px; padding-inline-start: 20px; }
+.pp-sheet .ch-list li { margin: 2px 0; }
+.pp-sheet .ch-table { border-collapse: collapse; width: 100%; font-size: 12px; margin: 4px 0 8px; }
+.pp-sheet .ch-table th, .pp-sheet .ch-table td { border: 1px solid #222; padding: 4px 7px; text-align: left; }
+.pp-sheet .ch-table th { background: #eef3fb; }
+.pp-sheet .code-one, .pp-sheet .code-web { font-size: 11px; }
+.pp-part { margin: 0 0 8px; font-size: 15px; }
+.pp-open-ans { display: inline-flex; align-items: center; gap: 10px; border: 0; cursor: pointer; font: inherit; font-weight: 700; background: #0464de; color: #fff; padding: 13px 22px; border-radius: 99px; }
+.pp-open-ans:hover { background: #032c7b; }
+.pp-open-ans { align-self: flex-start; }
+.pp-sheet .ch-table td code { white-space: nowrap; }
