@@ -4604,3 +4604,17 @@ html:has(.modal-overlay.open) .s-menu-btn {
   .pg-modal.has-timebar { padding-top: 112px; }
   .pg-modal.has-timebar .pg-modal-card { height: calc(100vh - 124px); }
 }
+
+/* ---------------- site logo on the sheets ---------------- */
+.pp-logo { height: 15px; width: auto; vertical-align: middle; display: inline-block; }
+
+/* ---------------- editor of a devoir on a phone: the editor, the subject and the result, one at a time ---------------- */
+.pg-m3 { display: none; }
+@media (max-width: 760px) {
+  .pg-modal-card.is-devoir { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+  .pg-m3 { display: flex; gap: 4px; padding: 3px; align-self: start; justify-self: start; border-radius: 999px; background: rgba(255, 255, 255, 0.9); }
+  .pg-m3 .pg-vw { padding: 4px 14px; font-size: 12.5px; }
+  .pg-modal-card.is-devoir[data-mview="editor"] > .pg-side { display: none; }
+  .pg-modal-card.is-devoir:not([data-mview="editor"]) > .ex-box { display: none; }
+  .pg-modal-card.is-devoir .pg-side.is-switch .pg-views3 { display: none; }
+}

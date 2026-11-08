@@ -32,6 +32,7 @@ var STR = {
     tmLeft: "Temps restant",
     tmOver: "Temps écoulé : la correction t’attend sur la page.",
     ppDevoir: "Devoir",
+    ppEditor: "Éditeur",
     ppResult: "Résultat",
     ppRunNote: "Pour faire ce devoir, ouvre l’éditeur et écris tes fichiers (HTML, CSS, JavaScript, PHP, SQL). Lance le chronomètre quand tu commences : à la fin du temps, la correction s’affiche ici.",
     ppStart: "Lancer le chronomètre · {t}",
@@ -270,6 +271,7 @@ var STR = {
     tmLeft: "الوقت المتبقّي",
     tmOver: "خلص الوقت: التصحيح ينتظرك في الصفحة.",
     ppDevoir: "الفرض",
+    ppEditor: "المحرر",
     ppResult: "النتيجة",
     ppRunNote: "باش تعمل الفرض هذا، افتح المحرّر واكتب ملفاتك (HTML وCSS وJavaScript وPHP وSQL). شغّل المؤقّت كي تبدا: وقت ما يخلص الوقت يظهر التصحيح هنا.",
     ppStart: "شغّل المؤقّت · {t}",
@@ -1602,6 +1604,7 @@ function openPlayground(opts) {
   x.setAttribute("aria-label", t("pgClose"));
   x.innerHTML = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg>';
   var side = live.wrap;
+  var devSetView = null;
   if (opts.statement || expFrame || opts.sheetsOf) {
     // right side: the exercise (and, as a second tab, the expected page) above, the student's own live result below
     card.classList.add("has-task");
@@ -1659,6 +1662,7 @@ function openPlayground(opts) {
     }
     side.append(views3, task, live.wrap);
     setView(list[0][0]);
+    devSetView = setView;
   }
   if (opts.timer) {
     // the exam timer: a red alert while it has not been started (no timer, no correction), then the time left
@@ -1760,6 +1764,30 @@ function openPlayground(opts) {
   });
   document.addEventListener("keydown", onKey);
   card.append(wrapL, side);
+  if (opts.sheetsOf && devSetView) {
+    // phones: one thing at a time (the editor first), and a bar to go from the editor to the subject and to the result
+    card.classList.add("is-devoir");
+    var m3 = el("div", "pg-m3");
+    var m3b = [];
+    var setM = function (v) {
+      card.setAttribute("data-mview", v);
+      if (v !== "editor") devSetView(v);
+      m3b.forEach(function (x) {
+        x.b.setAttribute("aria-pressed", x.v === v ? "true" : "false");
+      });
+    };
+    [["editor", t("ppEditor")], ["task", t("ppDevoir")], ["mine", t("ppResult")]].forEach(function (v) {
+      var b = el("button", "pg-vw", v[1]);
+      b.type = "button";
+      b.addEventListener("click", function () {
+        setM(v[0]);
+      });
+      m3b.push({ b: b, v: v[0] });
+      m3.append(b);
+    });
+    card.prepend(m3);
+    setM("editor");
+  }
   ov.append(card, x);
   document.body.append(ov);
   document.body.style.overflow = "hidden";
@@ -4872,6 +4900,15 @@ function examHeadBox(h) {
   w.append(left, right);
   return w;
 }
+// the name of the site on the sheets: its logo, not a word
+function siteLogo() {
+  var i = document.createElement("img");
+  i.className = "pp-logo";
+  i.src = "Images/logo-wordmark.svg";
+  i.alt = "Classek";
+  i.decoding = "async";
+  return i;
+}
 // the sheets of a devoir written page by page (field "sheets"), put in a container
 function fillSheets(ch, box, title) {
   box.textContent = "";
@@ -4880,7 +4917,7 @@ function fillSheets(ch, box, title) {
     var sh = el("div", "pp-sheet is-flow");
     var h = el("div", "pp-sh");
     var l = el("span", "");
-    l.append(el("b", "", "Classek"), document.createTextNode(" · " + t("s_" + ch.subject)));
+    l.append(siteLogo(), document.createTextNode(" · " + t("s_" + ch.subject)));
     h.append(l, el("span", "", ch.sheetHeader || title || ""));
     sh.append(h);
     if (k === 0 && ch.examHead) sh.append(examHeadBox(ch.examHead));
@@ -5126,7 +5163,7 @@ function paperPart(ch, exs) {
     var sh = el("div", "pp-sheet");
     var h = el("div", "pp-sh");
     var l = el("span", "");
-    l.append(el("b", "", "Classek"), document.createTextNode(" · " + t("s_" + ch.subject)));
+    l.append(siteLogo(), document.createTextNode(" · " + t("s_" + ch.subject)));
     h.append(l, el("span", "", ch.sheetHeader || (title || "") + (ch.hours ? " · " + ch.hours + " h" : "") + (ch.points ? " · " + ch.points + " pts" : "")));
     sh.append(h);
     pages.append(sh);
