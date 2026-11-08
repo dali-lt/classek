@@ -4574,3 +4574,33 @@ html:has(.modal-overlay.open) .s-menu-btn {
 .pg-side.is-switch[data-pview="mine"] > .pg-task, .pg-side.is-switch:not([data-pview="mine"]) > .live-frame { display: none; }
 .pg-task-body.pp-modal-pages { background: #e4e9f1; padding: 14px 8px; align-items: flex-start; gap: 16px; }
 .pg-task-body.pp-modal-pages .pp-sheet { box-shadow: 0 2px 8px rgba(1, 9, 45, 0.16); }
+
+/* ---------------- exam timer in the editor ---------------- */
+.pg-timebar { position: fixed; top: 12px; inset-inline-start: 16px; z-index: 6; display: flex; align-items: center; gap: 10px; max-width: calc(100vw - 96px); padding: 8px 10px 8px 12px; border-radius: 16px; font-weight: 700; font-size: 13.5px; line-height: 1.35; box-shadow: 0 6px 18px rgba(1, 9, 45, 0.25); }
+.pg-timebar.is-warn { background: #e64d6b; color: #fff; animation: pgWarn 2.4s ease-in-out infinite; }
+.pg-timebar.is-run { background: #01092d; color: #fff; padding: 9px 16px; border-radius: 99px; }
+.pg-timebar.is-over { background: #aee37b; color: #01092d; }
+.pg-timebar-ico { width: 24px; height: 24px; border-radius: 50%; background: #fff; color: #e64d6b; font-weight: 800; display: grid; place-items: center; flex: none; }
+.pg-timebar-v { font-size: 17px; font-variant-numeric: tabular-nums; color: #aee37b; }
+.pg-timebar-go { border: 0; cursor: pointer; font: inherit; font-weight: 800; font-size: 13px; background: #fff; color: #01092d; padding: 8px 14px; border-radius: 99px; white-space: nowrap; flex: none; }
+.pg-timebar-go:hover { background: #aee37b; }
+@keyframes pgWarn { 0%, 100% { box-shadow: 0 6px 18px rgba(230, 77, 107, 0.35); } 50% { box-shadow: 0 6px 26px rgba(230, 77, 107, 0.75); } }
+@media (prefers-reduced-motion: reduce) { .pg-timebar.is-warn { animation: none; } }
+@media (max-width: 760px) {
+  .pg-timebar { top: 8px; inset-inline-start: 8px; font-size: 12px; max-width: calc(100vw - 72px); }
+  .pg-timebar-go { padding: 6px 10px; font-size: 12px; }
+}
+
+/* the note under the paper: text, then the editor button alone on the right, with its icon and its words everywhere */
+.pp-run-note { flex-direction: column; align-items: stretch; gap: 10px; }
+.pp-run-text { display: flex; align-items: center; gap: 14px; }
+.pp-run-act { display: flex; justify-content: flex-end; }
+.pp-run-act .pg-run { width: auto; padding: 4px 14px 4px 11px; border-radius: 8px; min-height: 36px; }
+.pp-run-act .pg-run .pg-run-t { display: inline; }
+@media (max-width: 760px) {
+  .pg-timebar { flex-wrap: wrap; border-radius: 14px; }
+  .pg-timebar-t { flex: 1 1 150px; min-width: 0; }
+  .pg-timebar.is-run { flex-wrap: nowrap; }
+  .pg-modal.has-timebar { padding-top: 112px; }
+  .pg-modal.has-timebar .pg-modal-card { height: calc(100vh - 124px); }
+}

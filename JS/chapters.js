@@ -28,6 +28,9 @@ var STR = {
     ppPage: "Page {n} / {total}",
     ppPageOf: "Page {n} sur {total}",
     openEditor: "Ouvrir l’éditeur",
+    tmWarn: "Avant de commencer, lance le chronomètre : sans lui, tu n’auras pas la correction.",
+    tmLeft: "Temps restant",
+    tmOver: "Temps écoulé : la correction t’attend sur la page.",
     ppDevoir: "Devoir",
     ppResult: "Résultat",
     ppRunNote: "Pour faire ce devoir, ouvre l’éditeur et écris tes fichiers (HTML, CSS, JavaScript, PHP, SQL). Lance le chronomètre quand tu commences : à la fin du temps, la correction s’affiche ici.",
@@ -263,6 +266,9 @@ var STR = {
     ppPage: "صفحة {n} / {total}",
     ppPageOf: "صفحة {n} من {total}",
     openEditor: "فتح المحرّر",
+    tmWarn: "قبل ما تبدا، شغّل المؤقّت: بدونو ما تجيش التصحيح.",
+    tmLeft: "الوقت المتبقّي",
+    tmOver: "خلص الوقت: التصحيح ينتظرك في الصفحة.",
     ppDevoir: "الفرض",
     ppResult: "النتيجة",
     ppRunNote: "باش تعمل الفرض هذا، افتح المحرّر واكتب ملفاتك (HTML وCSS وJavaScript وPHP وSQL). شغّل المؤقّت كي تبدا: وقت ما يخلص الوقت يظهر التصحيح هنا.",
@@ -1653,6 +1659,39 @@ function openPlayground(opts) {
     }
     side.append(views3, task, live.wrap);
     setView(list[0][0]);
+  }
+  if (opts.timer) {
+    // the exam timer: a red alert while it has not been started (no timer, no correction), then the time left
+    var tmr = opts.timer;
+    ov.classList.add("has-timebar");
+    var bar = el("div", "pg-timebar");
+    var paintBar = function () {
+      bar.textContent = "";
+      var e = tmr.end();
+      var left = tmr.left();
+      if (!e) {
+        bar.className = "pg-timebar is-warn";
+        var go = el("button", "pg-timebar-go", tf("ppStart", { t: clock(tmr.total) }));
+        go.type = "button";
+        go.addEventListener("click", function () {
+          tmr.set(Date.now() + tmr.total * 1000);
+          paintBar();
+        });
+        bar.append(el("span", "pg-timebar-ico", "!"), el("span", "pg-timebar-t", t("tmWarn")), go);
+      } else if (left > 0) {
+        bar.className = "pg-timebar is-run";
+        bar.append(el("span", "pg-timebar-k", t("tmLeft")), el("b", "pg-timebar-v", clock(left)));
+      } else {
+        bar.className = "pg-timebar is-over";
+        bar.append(el("span", "pg-timebar-t", t("tmOver")));
+      }
+    };
+    paintBar();
+    var tick = window.setInterval(function () {
+      if (!document.body.contains(bar)) return window.clearInterval(tick);
+      if (tmr.end()) paintBar();
+    }, 1000);
+    ov.append(bar);
   }
   var prevOverflow = document.body.style.overflow;
   function shut() {
@@ -4875,6 +4914,7 @@ function openFreeEditor(ch, title) {
     title: title || "",
     tone: "bac",
     sheetsOf: ch.sheets ? ch : null,
+    timer: dvTimer(ch),
     rich: !!(ch.paper || ch.sheets),
     figures: ch.figures,
     statement: ch.sheets ? "" : ch.paper || "",
@@ -4893,26 +4933,50 @@ function clock(sec) {
   var x = sec % 60;
   return h + ":" + (m < 10 ? "0" : "") + m + ":" + (x < 10 ? "0" : "") + x;
 }
+// the timer of a devoir, kept in this browser (the page and the editor read the same one)
+function dvTimer(ch) {
+  var key = "cl.dvTimer." + ch.id;
+  var total = Math.round((ch.hours || 2) * 3600);
+  return {
+    total: total,
+    end: function () {
+      try {
+        var v = parseInt(window.localStorage.getItem(key), 10);
+        return v > 0 ? v : 0;
+      } catch (e) {
+        return 0;
+      }
+    },
+    set: function (v) {
+      try {
+        if (v) window.localStorage.setItem(key, String(v));
+        else window.localStorage.removeItem(key);
+      } catch (e) {}
+      window.dispatchEvent(new CustomEvent("cl-dvtimer", { detail: ch.id }));
+    },
+    left: function () {
+      var e = this.end();
+      return e ? Math.ceil((e - Date.now()) / 1000) : total;
+    },
+  };
+}
 // under the paper of a practical exam: how to work, the timer, and the correction once the time is over
 function practiceRun(ch, exs) {
   var title = ctx.getLang() === "ar" && ch.title_ar ? ch.title_ar : ch.title;
-  var total = Math.round((ch.hours || 2) * 3600);
-  var key = "cl.dvTimer." + ch.id;
+  var tm = dvTimer(ch);
+  var total = tm.total;
   var wrap = el("section", "pp-run");
   var read = function () {
-    try {
-      var v = parseInt(window.localStorage.getItem(key), 10);
-      return v > 0 ? v : 0;
-    } catch (e) {
-      return 0;
-    }
+    return tm.end();
   };
   var write = function (v) {
-    try {
-      if (v) window.localStorage.setItem(key, String(v));
-      else window.localStorage.removeItem(key);
-    } catch (e) {}
+    tm.set(v);
   };
+  var onEv = function (e) {
+    if (!document.body.contains(wrap)) return window.removeEventListener("cl-dvtimer", onEv);
+    if (e.detail === ch.id) paint();
+  };
+  window.addEventListener("cl-dvtimer", onEv);
   var timer = null;
   function stop() {
     if (timer) window.clearInterval(timer);
@@ -4924,12 +4988,15 @@ function practiceRun(ch, exs) {
     var end = read();
     var left = end ? Math.ceil((end - Date.now()) / 1000) : total;
     var note = el("div", "pp-run-note");
-    note.append(el("span", "pp-run-ico", "!"), el("p", "", t("ppRunNote")));
+    var noteRow = el("div", "pp-run-text");
+    noteRow.append(el("span", "pp-run-ico", "!"), el("p", "", t("ppRunNote")));
     var edBtn = editorButton();
     edBtn.addEventListener("click", function () {
       openFreeEditor(ch, title);
     });
-    note.append(edBtn);
+    var act = el("div", "pp-run-act");
+    act.append(edBtn);
+    note.append(noteRow, act);
     wrap.append(note);
     if (end && left <= 0) {
       wrap.append(correction());
