@@ -24,6 +24,16 @@ var STR = {
     allSubjects: "Toutes les matières",
     tabChapters: "Chapitres",
     svIntro: "Entraîne-toi par niveau, puis passe aux sujets de Bac.",
+    exPathTitle: "Ton parcours",
+    exPathLine: "{done} / {total} terminés · tu en es au n° {n}",
+    exPathAll: "{done} / {total} terminés · bravo, tout est fait !",
+    exPathOpen: "Exercice {n}",
+    exNoteDone: "Réussi",
+    exNoteMid: "À revoir",
+    exNoteReview: "Faux",
+    exNoteHere: "Tu es ici",
+    exNoteLocked: "Verrouillé",
+    exNoteNext: "À faire",
     tabSeries: "Séries",
     tabDevoirs: "Devoirs",
     ladderTitle: "Ton échelle de difficulté",
@@ -72,20 +82,9 @@ var STR = {
     dvAll: "Tous",
     dvMain: "Bac principale",
     dvControl: "Bac contrôle",
-    dvPratique: "Pratique",
     dvOther: "Autres devoirs",
     dvSessMain: "Session principale",
     dvSessControl: "Session de contrôle",
-    dvSessPratique: "Épreuve pratique",
-    ppTry: "Lis le sujet comme à l’examen : travaille sur ta machine ou sur papier, puis compare avec la correction.",
-    ppCorr: "Correction",
-    ppPart: "Partie {n}",
-    ppEnd: "Fin du sujet",
-    ppOpen: "Ouvrir l’éditeur",
-    ppSheet: "Sujet",
-    ppZoomIn: "Agrandir",
-    ppZoomOut: "Réduire",
-    ppCorrWait: "La correction s’ouvre après ton temps de réflexion.",
     dvMeta: "{h} h",
     dvExCount: "{n} exercices",
     dvPoints: "{n} points",
@@ -240,6 +239,16 @@ var STR = {
     allSubjects: "كل المواد",
     tabChapters: "الدروس",
     svIntro: "تمرّن حسب المستوى، وبعدها اعمل مواضيع الباك.",
+    exPathTitle: "مسارك",
+    exPathLine: "{done} / {total} منتهية · وصلت للتمرين {n}",
+    exPathAll: "{done} / {total} منتهية · برافو، كمّلت كل شي !",
+    exPathOpen: "التمرين {n}",
+    exNoteDone: "صحيح",
+    exNoteMid: "للمراجعة",
+    exNoteReview: "غلط",
+    exNoteHere: "أنت هنا",
+    exNoteLocked: "مقفل",
+    exNoteNext: "للإنجاز",
     tabSeries: "السلاسل",
     tabDevoirs: "الفروض",
     ladderTitle: "سلّم الصعوبة متاعك",
@@ -288,20 +297,9 @@ var STR = {
     dvAll: "الكل",
     dvMain: "باك دورة رئيسية",
     dvControl: "باك دورة المراقبة",
-    dvPratique: "التطبيقي",
     dvOther: "فروض أخرى",
     dvSessMain: "الدورة الرئيسية",
     dvSessControl: "دورة المراقبة",
-    dvSessPratique: "الامتحان التطبيقي",
-    ppTry: "اقرا الموضوع كيما في الامتحان: اخدم على الكمبيوتر ولا على الورقة، وبعدها قارن مع التصحيح.",
-    ppCorr: "التصحيح",
-    ppPart: "الجزء {n}",
-    ppEnd: "نهاية الموضوع",
-    ppOpen: "فتح المحرر",
-    ppSheet: "الموضوع",
-    ppZoomIn: "تكبير",
-    ppZoomOut: "تصغير",
-    ppCorrWait: "التصحيح يتحل بعد وقت التفكير.",
     dvMeta: "{h} س",
     dvExCount: "{n} تمارين",
     dvPoints: "{n} نقطة",
@@ -1580,7 +1578,7 @@ function openPlayground(opts) {
     task.append(views);
     if (opts.statement) {
       var tb = el("div", "pg-task-body");
-      tb.append(opts.statementFn ? opts.statementFn() : md(opts.statement, { noRun: true }));
+      tb.append(md(opts.statement, { noRun: true }));
       task.append(tb);
     }
     if (expFrame) {
@@ -2523,21 +2521,27 @@ function svHead(sub, view) {
   return head;
 }
 
+var TAB_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">';
+var TAB_ICON = {
+  ch: TAB_SVG + '<path d="M12 6.5C10.5 5 8 4.5 4 4.5v13c4 0 6.5.5 8 2 1.5-1.5 4-2 8-2v-13c-4 0-6.5.5-8 2z"/><path d="M12 6.5v13"/></svg>',
+  se: TAB_SVG + '<path d="M5 20v-4M10 20v-8M15 20V8M20 20V4"/></svg>',
+  de: TAB_SVG + '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="m9 15 2 2 4-4"/></svg>',
+};
 /* the three tabs above a subject's content */
 function svTabs(sub, view) {
   var row = el("div", "sv-tabs");
   row.setAttribute("role", "tablist");
   [
-    ["", "tabChapters", S.chapters.filter(function (c) { return c.subject === sub; }).length],
-    ["series", "tabSeries", extrasOf(sub, "serie").length],
-    ["devoirs", "tabDevoirs", extrasOf(sub, "devoir").length],
+    ["", "tabChapters", TAB_ICON.ch],
+    ["series", "tabSeries", TAB_ICON.se],
+    ["devoirs", "tabDevoirs", TAB_ICON.de],
   ].forEach(function (x) {
     var on = x[0] === view;
     var b = el("button", "sv-tab" + (on ? " is-on" : ""));
     b.type = "button";
     b.setAttribute("role", "tab");
     b.setAttribute("aria-selected", on ? "true" : "false");
-    b.append(el("span", "", t(x[1])), el("span", "sv-count", String(x[2])));
+    b.append(icon(x[2], "sv-tab-ico"), el("span", "", t(x[1])));
     b.addEventListener("click", function () {
       if (!on) openSubject(sub, x[0]);
     });
@@ -2560,6 +2564,46 @@ function levelOf(ch) {
 }
 
 /* where the student stands on the ladder: per level the series, the done / total exercises and whether it is open */
+/* the winding line between the level circles (same spirit as the path between exercises); redrawn when the ladder is resized */
+function drawLadderPath(steps, on) {
+  var NS = "http://www.w3.org/2000/svg";
+  var draw = function () {
+    if (!steps.isConnected) return;
+    var old = steps.querySelector("svg.sv-path");
+    if (old) old.remove();
+    var box = steps.getBoundingClientRect();
+    if (!box.width) return;
+    var svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("class", "sv-path");
+    svg.setAttribute("aria-hidden", "true");
+    svg.setAttribute("viewBox", "0 0 " + box.width + " " + box.height);
+    var nodes = steps.querySelectorAll(".sv-node");
+    var amp = box.width < 560 ? 22 : 34;
+    for (var i = 0; i < nodes.length - 1; i++) {
+      var a = nodes[i].getBoundingClientRect();
+      var b = nodes[i + 1].getBoundingClientRect();
+      var x1 = a.right - box.left - 2;
+      var y1 = a.top - box.top + a.height / 2;
+      var x2 = b.left - box.left + 2;
+      var y2 = b.top - box.top + b.height / 2;
+      var dir = y2 > y1 ? 1 : -1;
+      var path = document.createElementNS(NS, "path");
+      path.setAttribute(
+        "d",
+        "M" + x1 + " " + y1 + " C " + (x1 + (x2 - x1) * 0.9) + " " + (y1 - dir * amp) + ", " + (x1 + (x2 - x1) * 0.1) + " " + (y2 + dir * amp) + ", " + x2 + " " + y2,
+      );
+      path.setAttribute("class", "sv-path-seg" + (on[i] ? " is-on" : ""));
+      svg.append(path);
+    }
+    steps.append(svg);
+  };
+  requestAnimationFrame(draw);
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(draw);
+    ro.observe(steps);
+  }
+}
+
 function ladderState(list) {
   var lv = [null, null, null, null, null];
   for (var n = 1; n <= 4; n++) lv[n] = { n: n, list: [], done: 0, total: 0, pct: 0, open: true, here: false };
@@ -2668,6 +2712,9 @@ function renderSeries(host, sub) {
   }
   ladder.append(lhead, steps);
   host.append(ladder);
+  drawLadderPath(steps, [1, 2, 3].map(function (k) {
+    return !!(lv[k + 1].open && lv[k + 1].list.length);
+  }));
 
   // one block per level that has series
   for (var m = 1; m <= 4; m++) {
@@ -2706,7 +2753,7 @@ function devoirCard(ch) {
   var st = devoirStatus(ch);
   var card = el("article", "dv-card st-" + st);
   var top = el("div", "sv-card-top");
-  var sess = ch.session === "principale" ? "dvSessMain" : ch.session === "controle" ? "dvSessControl" : ch.session === "pratique" ? "dvSessPratique" : "";
+  var sess = ch.session === "principale" ? "dvSessMain" : ch.session === "controle" ? "dvSessControl" : "";
   top.append(
     el("span", "dv-session" + (ch.session === "principale" ? " is-main" : ""), sess ? t(sess) : ch.session || ""),
     el("span", "sv-status", t({ done: "dvStDone", prog: "dvStProg", new: "dvStNew" }[st]))
@@ -2733,7 +2780,7 @@ function devoirCard(ch) {
   return card;
 }
 
-var devoirFilter = "all"; // "all" | "principale" | "controle" | "pratique" | "other"
+var devoirFilter = "all"; // "all" | "principale" | "controle" | "other"
 
 function renderDevoirs(host, sub) {
   var list = extrasOf(sub, "devoir");
@@ -2780,9 +2827,9 @@ function renderDevoirs(host, sub) {
 
   // filters (only the kinds that exist)
   var kindOf = function (c) {
-    return c.session === "principale" ? "principale" : c.session === "controle" ? "controle" : c.session === "pratique" ? "pratique" : "other";
+    return c.session === "principale" ? "principale" : c.session === "controle" ? "controle" : "other";
   };
-  var kinds = ["principale", "controle", "pratique", "other"].filter(function (k) {
+  var kinds = ["principale", "controle", "other"].filter(function (k) {
     return list.some(function (c) {
       return kindOf(c) === k;
     });
@@ -2793,7 +2840,7 @@ function renderDevoirs(host, sub) {
     [["all", "dvAll"]]
       .concat(
         kinds.map(function (k) {
-          return [k, { principale: "dvMain", controle: "dvControl", pratique: "dvPratique", other: "dvOther" }[k]];
+          return [k, { principale: "dvMain", controle: "dvControl", other: "dvOther" }[k]];
         })
       )
       .forEach(function (f) {
@@ -2897,6 +2944,10 @@ function icon(svg, cls) {
   return span;
 }
 
+var ICON_WARN_PIN =
+  '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"><path d="M12 5.5v8"/><path d="M12 18.5h.01"/></svg>';
+var ICON_X_PIN =
+  '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 7 10 10M17 7 7 17"/></svg>';
 var ICON_CHECK_PIN =
   '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
 var ICON_MID_PIN =
@@ -3732,14 +3783,14 @@ function exerciseCard(ch, ex, index) {
   // Wide screens: any number can be open. Phones: one at a time (null = the student closed them all)
   var reached = currentExerciseId(ch) === ex.id;
   // one exercise open at a time (wide screens too): opening another one closes the previous one
-  var isOpenCard = openEx[ch.id] !== undefined ? openEx[ch.id] === ex.id : reached;
+  var isOpenCard = true; // the page shows one exercise at a time (the one picked on the path), always open
   // exercises come one at a time: the ones after the one the student has reached stay locked until it is finished
   var reachedId = currentExerciseId(ch);
   var locked = !st && !!reachedId && !reached;
   if (locked) isOpenCard = false;
   var card = el(
     "article",
-    "ex-card d-" + diff + (index % 2 ? " is-b" : " is-a") + (st ? " is-" + st : "") + (isOpenCard ? "" : " is-collapsed") + (locked ? " is-locked" : "")
+    "ex-card ex-solo d-" + diff + (index % 2 ? " is-b" : " is-a") + (st ? " is-" + st : "") + (isOpenCard ? "" : " is-collapsed") + (locked ? " is-locked" : "")
   );
   card.id = "ex-" + ex.id;
   var pin = el("span", "ex-pin");
@@ -3980,7 +4031,7 @@ function exerciseCard(ch, ex, index) {
         var nextId = currentExerciseId(ch);
         if (nextId) {
           setTimeout(function () {
-            var nx = document.getElementById("ex-" + nextId);
+            var nx = document.querySelector(".ex-parcours");
             if (nx) nx.scrollIntoView({ behavior: "smooth", block: "start" });
           }, 0);
         }
@@ -4335,7 +4386,7 @@ function syncBackButton() {
   }
   // wide screens: the back button stays at the top while scrolling and shrinks to its arrow
   var compact = window.scrollY > 24;
-  document.querySelectorAll(".ch-back:not(.ch-back-float)").forEach(function (b) {
+  document.querySelectorAll(".ch-back:not(.ch-back-float):not(.ch-algo)").forEach(function (b) {
     b.classList.toggle("is-compact", compact);
   });
 }
@@ -4404,12 +4455,124 @@ function pickTab(tab) {
   if (tab === "ex") autoScrolled[ch.id] = false; // coming back to the exercises: jump to the current one again
   render();
   window.scrollTo(0, 0);
-  scrollToCurrentExercise(ch);
+}
+
+/* "Ton parcours": the exercises of the chapter as numbered circles on a winding line (same look as the series ladder) */
+var EX_LEVEL = { easy: "d_easy", medium: "d_medium", bac: "d_bac" };
+function exParcours(ch, exs, selIdx, curId) {
+  var st = statusOf(ch.id);
+  var total = exs.length;
+  var done = exs.filter(function (e) {
+    return st[e.id];
+  }).length;
+  var curIdx = exs.findIndex(function (e) {
+    return e.id === curId;
+  });
+  var card = el("section", "ex-parcours");
+  var top = el("div", "ex-parcours-top");
+  var txt = el("div", "ex-parcours-text");
+  txt.append(
+    el("h3", "", t("exPathTitle")),
+    el("p", "", curId ? tf("exPathLine", { done: done, total: total, n: curIdx + 1 }) : tf("exPathAll", { done: done, total: total })),
+  );
+  var leg = el("div", "ex-parcours-legend");
+  ["easy", "medium", "bac"].forEach(function (d) {
+    if (
+      !exs.some(function (e) {
+        return (e.difficulty === "bac" || e.difficulty === "medium" ? e.difficulty : "easy") === d;
+      })
+    )
+      return;
+    var chip = el("span", "ex-lg d-" + d);
+    chip.append(el("i", ""), el("span", "", t(EX_LEVEL[d])));
+    leg.append(chip);
+  });
+  top.append(txt, leg);
+  var map = el("div", "ex-map");
+  card.append(top, map);
+
+  var NS = "http://www.w3.org/2000/svg";
+  var lastW = 0;
+  var draw = function () {
+    if (!map.isConnected) return;
+    var W = map.clientWidth;
+    if (!W || W === lastW) return;
+    lastW = W;
+    var size = W < 560 ? 46 : 58;
+    var perRow = Math.min(total, Math.max(3, Math.floor(W / (size + 28)))); // few exercises: spread over the whole width
+    var dy = size * 0.85;
+    var rowH = size + dy + 22 + (W < 560 ? 44 : 50); // room for the level name and the note under each circle
+    var rows = Math.ceil(total / perRow);
+    var step = W / perRow;
+    var pts = exs.map(function (e, k) {
+      var r = Math.floor(k / perRow);
+      var j = k % perRow;
+      var col = r % 2 ? perRow - 1 - j : j; // snake: the second row runs the other way
+      return { x: (col + 0.5) * step, y: size / 2 + 6 + r * rowH + (k % 2 ? dy : 0), r: r };
+    });
+    map.textContent = "";
+    map.style.height = rows * rowH + 8 + "px";
+    var svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("class", "ex-map-line");
+    svg.setAttribute("aria-hidden", "true");
+    svg.setAttribute("viewBox", "0 0 " + W + " " + (rows * rowH + 8));
+    for (var i = 0; i < pts.length - 1; i++) {
+      var a = pts[i];
+      var b = pts[i + 1];
+      var d;
+      if (b.r !== a.r) {
+        var out = (a.x > W / 2 ? 1 : -1) * Math.min(36, W * 0.1);
+        d = "M" + a.x + " " + a.y + " C " + (a.x + out * 1.6) + " " + (a.y + 10) + ", " + (b.x + out * 1.6) + " " + (b.y - 10) + ", " + b.x + " " + b.y;
+      } else {
+        var dir = b.y > a.y ? 1 : -1;
+        var amp = size * 0.55;
+        d = "M" + a.x + " " + a.y + " C " + (a.x + (b.x - a.x) * 0.9) + " " + (a.y - dir * amp) + ", " + (a.x + (b.x - a.x) * 0.1) + " " + (b.y + dir * amp) + ", " + b.x + " " + b.y;
+      }
+      var path = document.createElementNS(NS, "path");
+      path.setAttribute("d", d);
+      path.setAttribute("class", "ex-map-seg" + (st[exs[i].id] ? " is-on" : ""));
+      svg.append(path);
+    }
+    map.append(svg);
+    exs.forEach(function (e, k) {
+      var diff = e.difficulty === "bac" || e.difficulty === "medium" ? e.difficulty : "easy";
+      var s2 = st[e.id];
+      var lockedE = !s2 && !!curId && curId !== e.id;
+      var n = el("button", "ex-node d-" + diff + (s2 ? " is-" + s2 : "") + (lockedE ? " is-locked" : "") + (e.id === curId ? " is-cur" : "") + (k === selIdx ? " is-sel" : ""));
+      n.type = "button";
+      n.style.width = n.style.height = size + "px";
+      n.style.left = pts[k].x + "px";
+      n.style.top = pts[k].y + "px";
+      n.style.fontSize = Math.round(size * 0.34) + "px";
+      n.setAttribute("aria-label", tf("exPathOpen", { n: k + 1 }) + " · " + t(EX_LEVEL[diff]) + (s2 ? " · " + t(s2) : ""));
+      if (k === selIdx) n.setAttribute("aria-current", "true");
+      if (s2 === "done") n.innerHTML = ICON_CHECK_PIN;
+      else if (s2 === "mid") n.innerHTML = ICON_WARN_PIN;
+      else if (s2 === "review") n.innerHTML = ICON_X_PIN;
+      else n.textContent = (k < 9 ? "0" : "") + (k + 1);
+      if (lockedE) n.disabled = true;
+      else
+        n.addEventListener("click", function () {
+          if (k === selIdx) return;
+          openEx[ch.id] = e.id;
+          render();
+        });
+      map.append(n);
+      var lab = el("div", "ex-lab");
+      lab.style.left = pts[k].x + "px";
+      lab.style.top = pts[k].y + size / 2 + 7 + "px";
+      var note = lockedE ? "exNoteLocked" : s2 === "done" ? "exNoteDone" : s2 === "mid" ? "exNoteMid" : s2 === "review" ? "exNoteReview" : e.id === curId ? "exNoteHere" : "exNoteNext";
+      lab.append(el("b", "", t(EX_LEVEL[diff])), el("span", "ex-tag " + (lockedE ? "is-locked" : s2 ? "is-" + s2 : e.id === curId ? "is-here" : ""), t(note)));
+      map.append(lab);
+    });
+  };
+  window.requestAnimationFrame(draw);
+  if (window.ResizeObserver) new ResizeObserver(draw).observe(map);
+  return card;
 }
 
 function exercisesPart(ch) {
   var box = el("div", "ch-ex");
-  box.append(el("h2", "ch-section-title", t("exercises")));
   var cur = S.cur;
   if (!cur || cur.loading) {
     box.append(el("div", "student-empty", t("loading")));
@@ -4425,311 +4588,26 @@ function exercisesPart(ch) {
     fail.append(retry);
     box.append(fail);
   } else {
-    var list = el("div", "ex-list");
-    cur.exercises.forEach(function (ex, i) {
-      if (i) list.append(exPath(i, statusOf(ch.id)[cur.exercises[i - 1].id] === "done"));
-      list.append(exerciseCard(ch, ex, i));
+    var exs = cur.exercises;
+    var st0 = statusOf(ch.id);
+    var curId = currentExerciseId(ch);
+    var want = openEx[ch.id];
+    var selIdx = -1;
+    exs.forEach(function (e, i) {
+      var lockedE = !st0[e.id] && !!curId && curId !== e.id;
+      if (e.id === want && !lockedE) selIdx = i;
     });
-    box.append(list);
-  }
-  return box;
-}
-
-/* ---------------- a devoir shown as a Bac paper ----------------
-   A devoir with a "paper" field (the whole énoncé in markdown; tables written | a | b |) opens like the printed sheet:
-   white page, the subject from top to bottom. The correction comes after it, behind the usual thinking time.
-   The exercises of the file are the parts of the correction (label + solution) and carry the student's own evaluation. */
-function inlineInto(node, text) {
-  var m = md(text);
-  var p = m.firstElementChild;
-  if (p && p.tagName === "P") {
-    while (p.firstChild) node.append(p.firstChild);
-  } else {
-    node.append(m);
-  }
-}
-function paperTable(rows) {
-  var cells = function (r) {
-    return r.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map(function (c) {
-      return c.trim();
-    });
-  };
-  var wrap = el("div", "pp-table-wrap");
-  var tb = el("table", "pp-table");
-  var thead = el("thead");
-  var htr = el("tr");
-  cells(rows[0]).forEach(function (c) {
-    var th = el("th");
-    inlineInto(th, c);
-    htr.append(th);
-  });
-  thead.append(htr);
-  var tbody = el("tbody");
-  rows.slice(2).forEach(function (r) {
-    var tr = el("tr");
-    cells(r).forEach(function (c) {
-      var td = el("td");
-      inlineInto(td, c);
-      tr.append(td);
-    });
-    tbody.append(tr);
-  });
-  tb.append(thead, tbody);
-  wrap.append(tb);
-  return wrap;
-}
-function paperBody(text) {
-  var box = el("div", "pp-body");
-  var lines = String(text || "").split("\n");
-  var buf = [];
-  var fenced = false;
-  var flush = function () {
-    if (buf.join("").trim()) box.append(md(buf.join("\n")));
-    buf = [];
-  };
-  var i = 0;
-  while (i < lines.length) {
-    var ln = lines[i];
-    if (/^\s*```/.test(ln)) fenced = !fenced;
-    if (!fenced && /^\s*\|/.test(ln) && i + 1 < lines.length && /^\s*\|[\s:|-]+\|\s*$/.test(lines[i + 1])) {
-      flush();
-      var rows = [];
-      while (i < lines.length && /^\s*\|/.test(lines[i])) {
-        rows.push(lines[i]);
-        i++;
-      }
-      box.append(paperTable(rows));
-      continue;
-    }
-    if (!fenced && /^###\s+/.test(ln)) {
-      flush();
-      box.append(el("h3", "", ln.replace(/^###\s+/, "")));
-      i++;
-      continue;
-    }
-    // a list right under a sentence still has to be a list
-    if (!fenced && /^\s*-\s/.test(ln) && buf.length && buf[buf.length - 1].trim() && !/^\s*-\s/.test(buf[buf.length - 1])) buf.push("");
-    buf.push(ln);
-    i++;
-  }
-  flush();
-  return box;
-}
-
-// the student's files for a devoir, kept while the page is open (the playground only runs HTML, CSS and JS)
-var paperWork = {};
-function openPaperEditor(ch) {
-  var work =
-    paperWork[ch.id] ||
-    (paperWork[ch.id] = [
-      { id: "f1", name: "index.html", lang: "html", value: "" },
-      { id: "f2", name: "mesStyles.css", lang: "css", value: "" },
-      { id: "f3", name: "mesControles.js", lang: "js", value: "" },
-    ]);
-  openPlayground({
-    files: work.map(function (f) {
-      return { id: f.id, name: f.name, lang: f.lang, value: f.value };
-    }),
-    canEdit: function () {
-      return true;
-    },
-    title: titleOf(ch),
-    tone: "bac",
-    statement: ch.paper,
-    statementFn: function () {
-      return paperBody(ch.paper);
-    },
-    onChange: function (v, id) {
-      work.forEach(function (f) {
-        if (f.id === id) f.value = v;
+    if (selIdx < 0) {
+      selIdx = exs.findIndex(function (e) {
+        return e.id === curId;
       });
-    },
-  });
-}
-
-function paperPart(ch) {
-  var box = el("div", "pp");
-  var sheet = el("article", "pp-sheet");
-  var head = el("header", "pp-head");
-  var sess = ch.session === "principale" ? "dvSessMain" : ch.session === "controle" ? "dvSessControl" : ch.session === "pratique" ? "dvSessPratique" : "";
-  var row = el("div", "pp-row");
-  row.append(el("span", "", "Classek"), el("span", "", sess ? t(sess) : ""));
-  var title = el("h2", "pp-title", titleOf(ch));
-  title.setAttribute("dir", "auto");
-  var meta = el("div", "pp-meta");
-  if (ch.hours) meta.append(el("span", "", tf("dvMeta", { h: ch.hours })));
-  if (ch.points) meta.append(el("span", "", tf("dvPoints", { n: ch.points })));
-  head.append(row, title, meta);
-  sheet.append(head, paperBody(ch.paper), el("p", "pp-end", "— " + t("ppEnd") + " —"));
-
-  // the viewer: a header (title, details, the editor button), a thin toolbar, then the sheet in a scrolling frame
-  var viewer = el("section", "pp-viewer");
-  var vh = el("header", "pp-vhead");
-  var vt = el("div", "pp-vtitle");
-  var vh2 = el("h2", "", titleOf(ch));
-  vh2.setAttribute("dir", "auto");
-  var det = [sess ? t(sess) : "", ch.hours ? tf("dvMeta", { h: ch.hours }) : "", ch.points ? tf("dvPoints", { n: ch.points }) : ""].filter(Boolean);
-  vt.append(vh2, el("p", "", det.join(" · ")));
-  var open = runButton(); // the same button, with the same icon, as everywhere else on the site
-  open.classList.add("pp-open");
-  open.querySelector(".pg-run-t").textContent = t("ppOpen");
-  open.title = t("ppOpen");
-  open.setAttribute("aria-label", t("ppOpen"));
-  open.addEventListener("click", function () {
-    openPaperEditor(ch);
-  });
-  vh.append(vt, open);
-  var tools = el("div", "pp-vtools");
-  var doc = el("span", "pp-vdoc", t("ppSheet"));
-  var zoom = 100;
-  var pct = el("span", "pp-vpct", "0 %");
-  var mk = function (txt, label, d) {
-    var b = el("button", "pp-vz", txt);
-    b.type = "button";
-    b.title = label;
-    b.setAttribute("aria-label", label);
-    b.addEventListener("click", function () {
-      zoom = Math.max(80, Math.min(160, zoom + d));
-      sheet.style.setProperty("--pp-z", String(zoom / 100));
-    });
-    return b;
-  };
-  var zg = el("span", "pp-vzoom");
-  zg.append(mk("−", t("ppZoomOut"), -10), mk("+", t("ppZoomIn"), 10));
-  tools.append(doc, zg, pct);
-  var frame = el("div", "pp-frame");
-  frame.append(sheet);
-  frame.addEventListener("scroll", function () {
-    var max = frame.scrollHeight - frame.clientHeight;
-    pct.textContent = (max > 0 ? Math.round((frame.scrollTop / max) * 100) : 100) + " %";
-  });
-  viewer.append(vh, tools, frame);
-  box.append(viewer);
-
-  var corr = el("section", "pp-corr");
-  corr.append(el("h2", "ch-section-title", t("ppCorr")));
-  var cur = S.cur;
-  if (!cur || cur.loading) {
-    corr.append(el("div", "student-empty", t("loading")));
-    box.append(corr);
-    return box;
-  }
-  if (cur.failed) {
-    var fail = el("div", "student-empty");
-    fail.append(el("b", "", t("loadFail")));
-    var retry = el("button", "pc-btn", t("retry"));
-    retry.type = "button";
-    retry.addEventListener("click", function () {
-      loadExercises(ch.id).then(null, function () {});
-      render();
-    });
-    fail.append(retry);
-    corr.append(fail);
-    box.append(corr);
-    return box;
-  }
-  var exs = cur.exercises;
-  var key = ch.id + "/paper";
-  var allMarked = exs.length > 0 && exs.every(function (ex) {
-    return !!statusOf(ch.id)[ex.id];
-  });
-  if (revealed[key]) {
-    exs.forEach(function (ex, i) {
-      var k = ch.id + "/" + ex.id;
-      var st = statusOf(ch.id)[ex.id];
-      var part = el("article", "pp-part" + (st ? " is-" + st : ""));
-      part.append(el("h3", "pp-part-title", ex.label || tf("ppPart", { n: i + 1 })));
-      part.append(md(solutions[k] || "", { noRun: true }));
-      var mark = el("div", "ex-actions");
-      if (st) {
-        var mine = el("div", "ex-eval is-" + st);
-        mine.append(el("span", "ex-eval-k", t("evalMine")), el("b", "ex-eval-v", t(st)));
-        part.append(mine);
-      } else {
-        mark.classList.add("ex-eval-choices");
-        mark.append(el("p", "ex-eval-ask", t("evalAsk")));
-        [["done", "evalOk"], ["mid", "evalMid"], ["review", "evalBad"]].forEach(function (c) {
-          var b = el("button", "pc-btn ev-" + c[0], t(c[1]));
-          b.type = "button";
-          b.addEventListener("click", async function () {
-            b.disabled = true;
-            await setStatus(ch.id, ex.id, c[0]);
-            render();
-          });
-          mark.append(b);
-        });
-        part.append(mark);
-      }
-      corr.append(part);
-    });
-    box.append(corr);
-    return box;
-  }
-  // the gate: same thinking time as an exercise (field "think" of the devoir, in seconds; default 15 min)
-  var needT = allMarked ? 0 : ch.think != null && isFinite(Number(ch.think)) && Number(ch.think) >= 0 ? Math.min(7200, Math.round(Number(ch.think))) : 900;
-  var gate = el("div", "pp-gate");
-  gate.append(el("p", "pp-try", t("ppTry")));
-  var show = el("button", "pc-btn", t("showSolution"));
-  show.type = "button";
-  var started = function () {
-    return thinkSpent[key] !== undefined;
-  };
-  var timeLeft = function () {
-    return Math.max(0, needT - (thinkSpent[key] || 0));
-  };
-  var unlocked = function () {
-    return needT <= 0 || (started() && timeLeft() <= 0);
-  };
-  var stopBtn = el("button", "pc-stop");
-  stopBtn.type = "button";
-  stopBtn.hidden = true;
-  stopBtn.title = t("thinkStop");
-  stopBtn.setAttribute("aria-label", t("thinkStop"));
-  stopBtn.innerHTML = ICON_RESET; // static, trusted SVG
-  stopBtn.addEventListener("click", function () {
-    delete thinkSpent[key];
-    saveThink();
-    paint();
-  });
-  var paint = function () {
-    var l = timeLeft();
-    var waiting = needT > 0 && started() && l > 0;
-    var notYet = needT > 0 && !started();
-    stopBtn.hidden = !waiting;
-    show.disabled = !unlocked() && !notYet;
-    show.textContent = notYet ? tf("thinkStart", { t: mmss(needT) }) : waiting ? tf("thinkWait", { t: mmss(l) }) : t("showSolution");
-    show.classList.toggle("is-timing", waiting);
-    show.classList.toggle("is-start", notYet);
-    show.style.setProperty("--tp", needT ? Math.min(100, ((needT - l) / needT) * 100) + "%" : "100%");
-  };
-  paint();
-  if (needT > 0) thinkTimers[key] = { card: gate, update: paint };
-  show.addEventListener("click", async function () {
-    if (needT > 0 && !started()) {
-      thinkSpent[key] = 0;
-      saveThink();
-      paint();
-      return;
+      if (selIdx < 0) selIdx = exs.length - 1; // everything is done: show the last one
     }
-    show.disabled = true;
-    try {
-      for (var i = 0; i < exs.length; i++) {
-        var k = ch.id + "/" + exs[i].id;
-        if (solutions[k] === undefined) await loadSolution(ch.id, exs[i].id);
-      }
-      revealed[key] = true;
-    } catch (e) {
-      console.warn("Couldn’t load the correction:", e);
-      show.disabled = false;
-      return;
-    }
-    render();
-  });
-  var actions = el("div", "ex-actions");
-  actions.append(show, stopBtn);
-  gate.append(actions);
-  corr.append(gate);
-  box.append(corr);
+    box.append(exParcours(ch, exs, selIdx, curId));
+    var det = el("div", "ex-detail");
+    det.append(exerciseCard(ch, exs[selIdx], selIdx));
+    box.append(det);
+  }
   return box;
 }
 
@@ -4778,7 +4656,7 @@ function renderView(view, ch) {
     main.append(lessonBlock(ch, true));
   }
   else if (tab === "notes") main.append(notesSection(ch, false));
-  else main.append(ch.kind === "devoir" && ch.paper ? paperPart(ch) : exercisesPart(ch));
+  else main.append(exercisesPart(ch));
   view.append(main);
 
   if (side) {
@@ -4787,7 +4665,6 @@ function renderView(view, ch) {
     view.append(aside);
   }
   syncBackButton();
-  if (tab === "ex") scrollToCurrentExercise(ch);
 }
 
 /* Opening the exercises lands on the exercise the student has reached (not on the first one, already finished).
