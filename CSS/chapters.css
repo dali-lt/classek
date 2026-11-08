@@ -4413,3 +4413,53 @@ html:has(.modal-overlay.open) .s-menu-btn {
   .ex-lab b { font-size: 12px; }
   .ex-tag { padding: 1px 8px; font-size: 11px; }
 }
+
+/* ---------------- devoir: the subject on white A4 sheets, in a box of fixed height ---------------- */
+.pp-box { background: var(--card, #fff); border: 1px solid var(--line, #dbe5f3); border-radius: 26px; overflow: hidden; margin-bottom: 18px; }
+.pp-bar { display: flex; align-items: center; gap: 8px; padding: 10px 14px 10px 20px; background: #01092d; color: #fff; flex-wrap: wrap; }
+.pp-title { margin: 0; font-size: 17px; color: #fff; }
+.pp-chip { background: rgba(255, 255, 255, 0.12); color: #fff; border-radius: 99px; padding: 4px 10px; font-size: 12px; font-weight: 700; }
+.pp-sp { flex: 1; }
+.pp-page { font-size: 13px; font-weight: 700; color: #aee37b; margin-right: 4px; }
+.pp-tb, .pp-edit { background: transparent; border: 0; color: #fff; cursor: pointer; font: inherit; font-weight: 700; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.15s; }
+.pp-tb { width: 34px; height: 34px; font-size: 18px; }
+.pp-edit { padding: 8px 14px; font-size: 13px; }
+.pp-tb:hover, .pp-edit:hover, .pp-tb:focus-visible, .pp-edit:focus-visible { background: rgba(255, 255, 255, 0.16); outline: none; }
+.pp-view { height: 560px; overflow: auto; background: #e4e9f1; padding: 24px 12px; }
+.pp-pages { display: flex; flex-direction: column; align-items: flex-start; gap: 22px; --pz: 1; }
+.pp-sheet { zoom: var(--pz); width: 595px; max-width: none; min-height: 842px; height: 842px; overflow: hidden; background: #fff; color: #111; box-shadow: 0 2px 4px rgba(1, 9, 45, 0.12), 0 10px 28px rgba(1, 9, 45, 0.14); padding: 36px 48px 44px; font-family: Georgia, "Times New Roman", serif; font-size: 14px; line-height: 1.55; flex: none; position: relative; text-align: left; margin: 0 auto; }
+.pp-sh { display: flex; justify-content: space-between; gap: 12px; font-family: inherit; font-family: "Space Grotesk", system-ui, sans-serif; font-size: 10px; color: #7b86a0; border-bottom: 1.5px solid #0464de; padding-bottom: 7px; margin-bottom: 16px; }
+.pp-sh b { color: #0464de; }
+.pp-pn { position: absolute; bottom: 14px; left: 0; right: 0; text-align: center; font: 10px "Space Grotesk", system-ui, sans-serif; color: #99a3b8; }
+.pp-head { border: 1.5px solid #111; margin-bottom: 14px; font-family: Arial, sans-serif; font-size: 12px; text-align: center; }
+.pp-hrow { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border-bottom: 1.5px solid #111; }
+.pp-hrow:last-child { border-bottom: 0; }
+.pp-hrow > span { padding: 5px; border-right: 1.5px solid #111; }
+.pp-hrow > span:last-child { border-right: 0; }
+.pp-hwide { font-weight: 700; font-size: 14px; }
+.pp-sheet .ch-content { color: #111; font-family: inherit; font-size: inherit; line-height: inherit; margin: 12px 0; }
+.pp-sheet .ch-content p { margin: 0 0 8px; }
+.pp-sheet .ch-content strong { font-size: 14.5px; }
+.pp-sheet .ch-content code { background: #f1f4f9; color: #111; }
+.pp-sheet .ch-content pre, .pp-sheet .code-one { max-width: 100%; }
+.pp-corr { margin: 4px 0 10px; font-size: 18px; }
+.pp-exs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.pp-ex-tab { border: 1.5px solid var(--line, #dbe5f3); background: var(--card, #fff); color: inherit; border-radius: 12px; padding: 7px 14px; font: inherit; font-weight: 700; cursor: pointer; }
+.pp-ex-tab.is-on { background: #0464de; border-color: #0464de; color: #fff; }
+.pp-ex-tab.is-done { border-color: #aee37b; }
+.pp-ex-tab:disabled { opacity: 0.45; cursor: not-allowed; }
+.ex-detail.is-paper .ex-panel > .ch-content { display: none; }
+@media (max-width: 800px) {
+  .pp-view { height: 480px; padding: 14px 6px; }
+  .pp-bar { padding: 8px 10px 8px 14px; flex-wrap: nowrap; gap: 2px; }
+  .pp-chip { display: none; }
+  .pp-page { font-size: 12px; }
+  .pp-edit span { display: none; }
+  .pp-edit { width: 34px; height: 34px; padding: 0; }
+}
+@media print {
+  body.pp-printing * { visibility: hidden !important; }
+  body.pp-printing .pp-pages, body.pp-printing .pp-pages * { visibility: visible !important; }
+  body.pp-printing .pp-pages { position: absolute; left: 0; top: 0; gap: 0; display: block; }
+  body.pp-printing .pp-sheet { zoom: 1; box-shadow: none; break-after: page; margin: 0; }
+}

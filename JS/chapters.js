@@ -24,6 +24,16 @@ var STR = {
     allSubjects: "Toutes les matières",
     tabChapters: "Chapitres",
     svIntro: "Entraîne-toi par niveau, puis passe aux sujets de Bac.",
+    ppSheet: "Sujet",
+    ppPage: "Page {n} / {total}",
+    ppEditor: "Ouvrir l’éditeur",
+    ppPrint: "Imprimer",
+    ppZoomIn: "Agrandir",
+    ppZoomOut: "Réduire",
+    ppCorr: "Réponses et correction",
+    ppExam: "Épreuve",
+    ppHours: "Durée : {h} h",
+    ppPoints: "{p} points",
     exPathTitle: "Ton parcours",
     exPathLine: "{done} / {total} terminés · tu en es au n° {n}",
     exPathAll: "{done} / {total} terminés · bravo, tout est fait !",
@@ -239,6 +249,16 @@ var STR = {
     allSubjects: "كل المواد",
     tabChapters: "الدروس",
     svIntro: "تمرّن حسب المستوى، وبعدها اعمل مواضيع الباك.",
+    ppSheet: "الموضوع",
+    ppPage: "صفحة {n} / {total}",
+    ppEditor: "فتح المحرّر",
+    ppPrint: "طباعة",
+    ppZoomIn: "تكبير",
+    ppZoomOut: "تصغير",
+    ppCorr: "الإجابات والتصحيح",
+    ppExam: "اختبار",
+    ppHours: "المدة : {h} س",
+    ppPoints: "{p} نقطة",
     exPathTitle: "مسارك",
     exPathLine: "{done} / {total} منتهية · وصلت للتمرين {n}",
     exPathAll: "{done} / {total} منتهية · برافو، كمّلت كل شي !",
@@ -4571,6 +4591,137 @@ function exParcours(ch, exs, selIdx, curId) {
   return card;
 }
 
+/* ---------------- devoir: the subject on white A4 sheets (like a PDF viewer), in a box of fixed height ---------------- */
+var ICON_PP_EDIT = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>';
+var ICON_PP_PRINT = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>';
+var ppZoom = 1;
+function paperPart(ch, exs) {
+  var title = ctx.getLang() === "ar" && ch.title_ar ? ch.title_ar : ch.title;
+  var box = el("section", "pp-box");
+  var bar = el("div", "pp-bar");
+  bar.append(el("h3", "pp-title", t("ppSheet")));
+  if (ch.hours) bar.append(el("span", "pp-chip", ch.hours + " h"));
+  if (ch.points) bar.append(el("span", "pp-chip", ch.points + " pts"));
+  bar.append(el("span", "pp-sp"));
+  var pageLab = el("span", "pp-page");
+  function tb(label, text, svg) {
+    var b = el("button", "pp-tb");
+    b.type = "button";
+    b.title = label;
+    b.setAttribute("aria-label", label);
+    if (svg) b.innerHTML = svg; // static, trusted SVG
+    else b.textContent = text;
+    return b;
+  }
+  var zOut = tb(t("ppZoomOut"), "−");
+  var zIn = tb(t("ppZoomIn"), "+");
+  var pr = tb(t("ppPrint"), "", ICON_PP_PRINT);
+  var ed = el("button", "pp-edit");
+  ed.type = "button";
+  ed.innerHTML = ICON_PP_EDIT; // static, trusted SVG
+  ed.append(el("span", "", t("ppEditor")));
+  ed.addEventListener("click", function () {
+    openPlayground({ code: "", title: title || "", tone: "bac" });
+  });
+  bar.append(pageLab, zOut, zIn, pr, ed);
+
+  var view = el("div", "pp-view");
+  view.tabIndex = 0;
+  var pages = el("div", "pp-pages");
+  view.append(pages);
+  box.append(bar, view);
+
+  var head = el("div", "pp-head");
+  var row = function (cells) {
+    var r = el("div", "pp-hrow");
+    cells.forEach(function (c) {
+      r.append(el("span", c[1] || "", c[0]));
+    });
+    return r;
+  };
+  head.append(
+    row([[t("s_" + ch.subject).toUpperCase()], [(ch.session === "controle" ? "CONTRÔLE" : "EXAMEN") + (ch.year ? " " + ch.year : "")]]),
+    row([[title || "", "pp-hwide"]]),
+    row([[ch.points ? tf("ppPoints", { p: ch.points }) : ""], [ch.hours ? tf("ppHours", { h: ch.hours }) : ""]])
+  );
+  var blocks = [head];
+  exs.forEach(function (e) {
+    var b = md(e.statement);
+    b.classList.add("pp-ex");
+    blocks.push(b);
+  });
+  var total = 1;
+  function sheet() {
+    var sh = el("div", "pp-sheet");
+    var h = el("div", "pp-sh");
+    var l = el("span", "");
+    l.append(el("b", "", "Classek"), document.createTextNode(" · " + t("s_" + ch.subject)));
+    h.append(l, el("span", "", (title || "") + (ch.hours ? " · " + ch.hours + " h" : "") + (ch.points ? " · " + ch.points + " pts" : "")));
+    sh.append(h);
+    pages.append(sh);
+    return sh;
+  }
+  function paginate() {
+    pages.textContent = "";
+    var cur = sheet();
+    blocks.forEach(function (b) {
+      cur.append(b);
+      if (cur.scrollHeight > cur.clientHeight + 1 && cur.children.length > 2) {
+        cur.removeChild(b);
+        cur = sheet();
+        cur.append(b);
+      }
+    });
+    var all = pages.querySelectorAll(".pp-sheet");
+    total = all.length;
+    all.forEach(function (sh, i) {
+      sh.append(el("div", "pp-pn", i + 1 + " / " + total));
+    });
+    paintPage();
+  }
+  function paintPage() {
+    var sheets = pages.querySelectorAll(".pp-sheet");
+    var n = 1;
+    var mid = view.scrollTop + view.clientHeight / 3;
+    sheets.forEach(function (sh, i) {
+      if (sh.offsetTop - pages.offsetTop <= mid) n = i + 1;
+    });
+    pageLab.textContent = tf("ppPage", { n: n, total: sheets.length || 1 });
+  }
+  view.addEventListener("scroll", paintPage, { passive: true });
+  function applyZoom() {
+    var fit = Math.min(1, Math.max(0.3, (view.clientWidth - 24) / 595)); // narrow screens: the sheet shrinks to the width
+    pages.style.setProperty("--pz", String(Math.round(fit * ppZoom * 100) / 100));
+  }
+  function zoom(d) {
+    ppZoom = Math.max(0.6, Math.min(1.6, Math.round((ppZoom + d) * 10) / 10));
+    applyZoom();
+  }
+  if (window.ResizeObserver) new ResizeObserver(applyZoom).observe(view);
+  applyZoom();
+  zOut.addEventListener("click", function () {
+    zoom(-0.1);
+  });
+  zIn.addEventListener("click", function () {
+    zoom(0.1);
+  });
+  pr.addEventListener("click", function () {
+    document.body.classList.add("pp-printing");
+    var done = function () {
+      document.body.classList.remove("pp-printing");
+      window.removeEventListener("afterprint", done);
+    };
+    window.addEventListener("afterprint", done);
+    window.print();
+  });
+  // the sheets are cut after they are in the page (their height is measured)
+  window.requestAnimationFrame(function () {
+    paginate();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(paginate);
+  });
+  return box;
+}
+
 function exercisesPart(ch) {
   var box = el("div", "ch-ex");
   var cur = S.cur;
@@ -4603,8 +4754,27 @@ function exercisesPart(ch) {
       });
       if (selIdx < 0) selIdx = exs.length - 1; // everything is done: show the last one
     }
-    box.append(exParcours(ch, exs, selIdx, curId));
-    var det = el("div", "ex-detail");
+    var isDv = ch.kind === "devoir";
+    if (isDv) box.append(paperPart(ch, exs));
+    else box.append(exParcours(ch, exs, selIdx, curId));
+    var det = el("div", "ex-detail" + (isDv ? " is-paper" : ""));
+    if (isDv) {
+      det.append(el("h3", "pp-corr", t("ppCorr")));
+      var tabs = el("div", "pp-exs");
+      exs.forEach(function (e, i) {
+        var st1 = st0[e.id];
+        var lk = !st1 && !!curId && curId !== e.id;
+        var b = el("button", "pp-ex-tab" + (i === selIdx ? " is-on" : "") + (st1 ? " is-" + st1 : ""), (i < 9 ? "0" : "") + (i + 1));
+        b.type = "button";
+        b.disabled = lk;
+        b.addEventListener("click", function () {
+          openEx[ch.id] = e.id;
+          render();
+        });
+        tabs.append(b);
+      });
+      det.append(tabs);
+    }
     det.append(exerciseCard(ch, exs[selIdx], selIdx));
     box.append(det);
   }
