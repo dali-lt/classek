@@ -416,7 +416,7 @@ html[dir="rtl"] .fd-back {
 .ch-back.ch-back-float {
   position: fixed;
   top: calc(10px + env(safe-area-inset-top, 0px));
-  inset-inline-start: max(14px, calc((100vw - 1040px) / 2 - 80px)); /* in the margin beside the page when the screen is wide */
+  inset-inline-start: max(14px, calc((100vw - 1040px) / 2 - 62px)); /* in the margin beside the page when the screen is wide */
   z-index: 1000;
   width: 46px;
   height: 46px;
@@ -1441,6 +1441,9 @@ input.note-input {
   .ch-tabs .ch-back {
     pointer-events: auto;
     box-shadow: 0 4px 14px rgba(1, 9, 45, 0.08);
+  }
+  .ch-back.ch-back-float {
+    display: none;
   }
 }
 
@@ -3092,6 +3095,11 @@ html[dir="rtl"] .note-band {
 .ch-back.ch-back-float.ch-algo-float {
   top: calc(66px + env(safe-area-inset-top, 0px));
 }
+@media (min-width: 801px) {
+  .ch-back.ch-algo-float {
+    display: none;
+  }
+}
 
 /* v65: subjects page: back on the left, visualiser on the right, same height; icon only when the row is narrow */
 .ch-tabs {
@@ -4218,165 +4226,46 @@ body:has(.av-modal) .ch-back.ch-back-float {
 .ch-head { margin: 8px 0 18px; }
 .ch-head .sv-head-title { overflow-wrap: anywhere; }
 
-/* v58: the pinned round buttons (back, visualiser) also on wide screens; under any open box (bilan, results...); phone menu button goes under boxes too */
-body:has(.modal-overlay.open) .ch-back.ch-back-float {
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-}
-html:has(.modal-overlay.open) .s-menu-btn {
-  z-index: 40;
-}
-
-/* v59: breadcrumb takes ~3/4 of the row on ONE line (long chapter titles end with …); the visualiser is a round icon on phones */
-.ch-back-slot:has(.sv-crumb),
-.ch-tabs:has(.sv-crumb) { flex-wrap: nowrap; }
-.sv-crumb { flex: 1 1 0; max-width: 75%; white-space: nowrap; overflow: hidden; }
-.sv-crumb > * { flex: none; }
-.sv-crumb > b { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.sv-crumb-link { white-space: nowrap; }
-@media (max-width: 800px) {
-  .sv-crumb { font-size: 13px; gap: 6px; }
-  .ch-back-slot .ch-back.ch-algo,
-  .ch-tabs .ch-back.ch-algo {
-    flex: none;
-    width: 44px;
-    height: 44px;
-    min-height: 0;
-    padding: 0;
-    border-radius: 50%;
-    justify-content: center;
-    gap: 0;
-    align-self: center;
-    margin-inline-start: auto;
-  }
-  .ch-back.ch-algo > span:not(.ch-back-ico) { display: none; }
-}
-
-/* v60: tabs with an icon instead of a count */
-.sv-tab-ico { display: inline-flex; flex: none; }
-.sv-tab-ico svg { width: 20px; height: 20px; }
-.sv-tab.is-on .sv-tab-ico { color: var(--color-accent); }
-@media (max-width: 800px) {
-  .sv-tab { gap: 6px; }
-  .sv-tab-ico svg { width: 18px; height: 18px; }
-}
-@media (max-width: 800px) {
-  .sv-tabs { width: 100%; }
-  .sv-tab { flex: 1 1 0; justify-content: center; padding: 0 8px; font-size: 15px; min-width: 0; }
-}
-
-/* v61: winding line between the level circles; circles alternate up and down */
-.sv-steps { position: relative; padding-bottom: 6px; }
-.sv-step:nth-child(odd) { margin-top: 56px; }
-.sv-step:nth-child(even) { margin-top: 0; }
-.sv-l { visibility: hidden; }
-.sv-path { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
-.sv-step { position: relative; z-index: 1; }
-.sv-path-seg {
-  fill: none;
-  stroke-width: 12;
-  stroke-linecap: round;
-  stroke: color-mix(in srgb, var(--color-text) 12%, transparent);
-}
-.sv-path-seg.is-on { stroke: color-mix(in srgb, var(--color-accent) 60%, var(--color-surface)); }
-@media (max-width: 640px) {
-  .sv-step:nth-child(odd) { margin-top: 38px; }
-  .sv-path-seg { stroke-width: 9; }
-}
-
-/* v62: "Ton parcours" box (circles on a winding line) + one exercise detail card below */
-.ex-parcours {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 18px;
-  padding: 22px 24px 14px;
-  border: 1px solid var(--color-border);
-  border-radius: 26px;
-  background: var(--color-surface);
-}
-.ex-parcours-top { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 10px 16px; }
-.ex-parcours-text h3 { margin: 0; font-size: 21px; font-weight: 800; }
-.ex-parcours-text p { margin: 4px 0 0; font-size: 14px; color: var(--color-text-muted); }
-.ex-parcours-legend { display: flex; flex-wrap: wrap; gap: 6px; }
-.ex-lg { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px; background: var(--color-sunken); color: var(--color-text); font-size: 12.5px; font-weight: 700; }
-.ex-lg i { width: 9px; height: 9px; border-radius: 50%; background: var(--c); }
-.ex-lg.d-easy, .ex-node.d-easy { --c: var(--color-accent); --ink: var(--brand-deep-navy, #01092d); }
-.ex-lg.d-medium, .ex-node.d-medium { --c: var(--color-primary); --ink: #fff; }
-.ex-lg.d-bac, .ex-node.d-bac { --c: #e64d6b; --ink: #fff; }
-.ex-map { position: relative; width: 100%; min-height: 120px; }
-.ex-map-line { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
-.ex-map-seg { fill: none; stroke-linecap: round; stroke-width: 11; stroke: color-mix(in srgb, var(--color-text) 12%, transparent); }
-.ex-map-seg.is-on { stroke: color-mix(in srgb, var(--color-accent) 60%, var(--color-surface)); }
-.ex-node {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  display: grid;
-  place-items: center;
-  padding: 0;
-  border-radius: 50%;
-  border: 3px solid var(--c);
-  background: var(--color-surface);
-  color: var(--c);
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-  transition: box-shadow 0.15s ease, transform 0.15s ease;
-}
-.ex-node:hover:not(:disabled) { transform: translate(-50%, -50%) scale(1.06); }
-.ex-node:focus-visible { outline: 3px solid var(--color-primary); outline-offset: 3px; }
-.ex-node svg { width: 52%; height: 52%; }
-.ex-node.is-done { background: var(--c); border-color: var(--c); color: var(--ink); }
-.ex-node.is-mid { background: #f0a62b; border-color: #f0a62b; color: #01092d; }
-.ex-node.is-review { background: var(--color-surface); border-color: #e64d6b; color: #e64d6b; }
-.ex-node.is-locked { background: var(--color-sunken); border: 2px dashed color-mix(in srgb, var(--color-primary-dark) 40%, transparent); color: var(--color-text-muted); font-weight: 600; cursor: not-allowed; }
-.ex-node.is-sel { box-shadow: 0 0 0 6px color-mix(in srgb, var(--color-primary) 22%, transparent); }
-.ex-node.is-sel::after {
-  content: "";
-  position: absolute;
-  inset-inline-start: 50%;
-  bottom: -15px;
-  margin-inline-start: -6px;
-  border: 6px solid transparent;
-  border-bottom-color: var(--color-text);
-}
-.ex-node.is-cur:not(.is-sel) { border-color: var(--color-primary); color: var(--color-primary); }
-
-/* the detail card: a normal box, no coloured side stripe, no path pin, always open */
-.ex-detail { display: flex; flex-direction: column; }
-.ex-card.ex-solo {
+/* ---------------- devoir shown as a Bac paper ---------------- */
+.pp { display: grid; gap: 22px; }
+.pp-sheet {
+  background: #fff;
+  color: #111827;
+  border-radius: 6px;
+  padding: clamp(18px, 5vw, 56px) clamp(16px, 6vw, 64px);
+  box-shadow: 0 2px 4px rgba(1, 9, 45, .08), 0 14px 36px rgba(1, 9, 45, .16);
+  font-family: inherit;
+  font-size: 15.5px;
+  height: min(72vh, 720px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  line-height: 1.6;
+  max-width: 860px;
   width: 100%;
-  align-self: stretch;
-  transform: none;
-  border: 1px solid var(--color-border);
+  margin-inline: auto;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
 }
-.ex-card.ex-solo::after, .ex-card.ex-solo .ex-pin { display: none; }
-.ex-card.ex-solo .ex-sum { display: none; }
-.ex-card.ex-solo .ex-panel > .ex-head { display: flex; }
-.ex-card.ex-solo:hover, .ex-card.ex-solo:focus-within { transform: none; }
-@media (max-width: 640px) {
-  .ex-parcours { padding: 16px 14px 10px; border-radius: 22px; }
-  .ex-map-seg { stroke-width: 9; }
-}
-
-/* v63: path circles: no border, no arrow. In progress = white circle, number in the level colour. Finished = level colour + icon (done ✓, medium —, wrong ✕). The shadow carries the level colour; the picked one has the strongest */
-.ex-node {
-  border: 0;
-  background: var(--color-surface);
-  color: var(--c);
-  box-shadow: 0 6px 14px -6px color-mix(in srgb, var(--c) 55%, transparent);
-}
-.ex-node.is-done, .ex-node.is-mid, .ex-node.is-review { background: var(--c); border: 0; color: var(--ink); }
-.ex-node.is-locked { background: var(--color-sunken); border: 2px dashed color-mix(in srgb, var(--color-primary-dark) 40%, transparent); color: var(--color-text-muted); box-shadow: none; }
-.ex-node.is-sel { box-shadow: 0 10px 22px -4px color-mix(in srgb, var(--c) 80%, transparent); transform: translate(-50%, -50%) scale(1.08); }
-.ex-node.is-sel::after { display: none; }
-.ex-node.is-cur:not(.is-sel) { border: 0; color: var(--c); }
-
-/* v64: same halo as the level ladder ("you are here"): a soft ring, no drop shadow */
-.ex-node { box-shadow: none; }
-.ex-node.is-sel { box-shadow: 0 0 0 6px color-mix(in srgb, var(--c) 28%, transparent); transform: translate(-50%, -50%); }
-.ex-node:hover:not(:disabled) { transform: translate(-50%, -50%) scale(1.06); }
-.ex-node.is-locked { box-shadow: none; }
-.ex-node.is-cur { box-shadow: 0 3px 12px -2px rgba(1, 9, 45, 0.22); }
-.ex-node.is-cur.is-sel { box-shadow: 0 0 0 6px color-mix(in srgb, var(--c) 28%, transparent), 0 3px 12px -2px rgba(1, 9, 45, 0.22); }
+.pp-bar { max-width: 860px; width: 100%; margin-inline: auto; display: flex; justify-content: flex-end; }
+.pp-open { font-weight: 800; }
+.pp-head { border-bottom: 3px double #032c7b; padding-bottom: 14px; margin-bottom: 18px; text-align: center; }
+.pp-row { display: flex; justify-content: space-between; font-weight: 700; font-size: 12px; line-height: 1; font-family: inherit; letter-spacing: .08em; text-transform: uppercase; color: #032c7b; }
+.pp-title { margin: 14px 0 8px; font-size: clamp(19px, 4.6vw, 26px); line-height: 1.25; color: #01092d; }
+.pp-meta { display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; font-weight: 600; font-size: 13px; font-family: inherit; color: #374151; }
+.pp-body h2 { font-size: 17px; margin: 22px 0 8px; color: #032c7b; border-bottom: 1px solid #cbd5e1; padding-bottom: 3px; }
+.pp-body h3 { font-size: 15.5px; margin: 16px 0 6px; color: #01092d; }
+.pp-body p, .pp-body li { color: #111827; }
+.pp-body code { background: #eef2ff; color: #032c7b; padding: 1px 5px; border-radius: 4px; font-size: .9em; }
+.pp-body pre { background: #f6f8fa; color: #111827; border: 1px solid #d0d7de; border-radius: 6px; padding: 10px 12px; overflow-x: auto; }
+.pp-body pre code { background: none; padding: 0; color: inherit; }
+.pp-table-wrap { overflow-x: auto; margin: 10px 0; }
+.pp-table { border-collapse: collapse; margin: 0 auto; font-size: 14px; }
+.pp-table th, .pp-table td { border: 1px solid #111827; padding: 5px 12px; text-align: left; }
+.pp-table th { background: #f1f5f9; }
+.pp-end { text-align: center; color: #6b7280; font-weight: 600; font-size: 12px; font-family: inherit; margin: 26px 0 0; letter-spacing: .1em; }
+.pp-corr { max-width: 860px; width: 100%; margin-inline: auto; display: grid; gap: 14px; box-sizing: border-box; }
+.pp-gate { display: grid; gap: 10px; }
+.pp-try { margin: 0; opacity: .85; }
+.pp-part { border: 1px solid var(--color-border, rgba(127,127,127,.3)); border-radius: 14px; padding: 14px 16px; display: grid; gap: 10px; }
+.pp-part.is-done { border-color: #aee37b; }
+.pp-part-title { margin: 0; font-size: 15px; color: var(--color-primary); }
