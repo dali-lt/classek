@@ -4563,3 +4563,14 @@ html:has(.modal-overlay.open) .s-menu-btn {
 .pp-corr-part h4 { margin: 0 0 8px; font-size: 16px; color: #0464de; }
 .pp-run-note p { font-weight: 500; font-size: 14px; }
 .pg-run.is-big { justify-self: start; width: fit-content; }
+
+/* ---------------- editor of a practical exam: the subject (the sheets) and the result take turns on the side ---------------- */
+.pg-modal-card.has-task .pg-side.is-switch { display: flex; flex-direction: column; gap: 8px; }
+.pg-side.is-switch .pg-views3 { display: flex; flex: none; padding: 3px; align-self: flex-start; border-radius: 999px; background: rgba(255, 255, 255, 0.9); }
+.pg-side.is-switch .pg-views3 .pg-vw { padding: 4px 14px; font-size: 12.5px; }
+.pg-side.is-switch > .pg-task > .pg-views { display: none; }
+.pg-modal-card.has-task .pg-side.is-switch > .pg-task { flex: 1; min-height: 0; border-radius: 18px; }
+.pg-modal-card.has-task .pg-side.is-switch > .live-frame { flex: 1; min-height: 0; }
+.pg-side.is-switch[data-pview="mine"] > .pg-task, .pg-side.is-switch:not([data-pview="mine"]) > .live-frame { display: none; }
+.pg-task-body.pp-modal-pages { background: #e4e9f1; padding: 14px 8px; align-items: flex-start; gap: 16px; }
+.pg-task-body.pp-modal-pages .pp-sheet { box-shadow: 0 2px 8px rgba(1, 9, 45, 0.16); }

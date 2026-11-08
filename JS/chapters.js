@@ -28,6 +28,8 @@ var STR = {
     ppPage: "Page {n} / {total}",
     ppPageOf: "Page {n} sur {total}",
     openEditor: "Ouvrir l’éditeur",
+    ppDevoir: "Devoir",
+    ppResult: "Résultat",
     ppRunNote: "Pour faire ce devoir, ouvre l’éditeur et écris tes fichiers (HTML, CSS, JavaScript, PHP, SQL). Lance le chronomètre quand tu commences : à la fin du temps, la correction s’affiche ici.",
     ppStart: "Lancer le chronomètre · {t}",
     ppStop: "Arrêter",
@@ -261,6 +263,8 @@ var STR = {
     ppPage: "صفحة {n} / {total}",
     ppPageOf: "صفحة {n} من {total}",
     openEditor: "فتح المحرّر",
+    ppDevoir: "الفرض",
+    ppResult: "النتيجة",
     ppRunNote: "باش تعمل الفرض هذا، افتح المحرّر واكتب ملفاتك (HTML وCSS وJavaScript وPHP وSQL). شغّل المؤقّت كي تبدا: وقت ما يخلص الوقت يظهر التصحيح هنا.",
     ppStart: "شغّل المؤقّت · {t}",
     ppStop: "إيقاف",
@@ -1592,7 +1596,7 @@ function openPlayground(opts) {
   x.setAttribute("aria-label", t("pgClose"));
   x.innerHTML = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg>';
   var side = live.wrap;
-  if (opts.statement || expFrame) {
+  if (opts.statement || expFrame || opts.sheetsOf) {
     // right side: the exercise (and, as a second tab, the expected page) above, the student's own live result below
     card.classList.add("has-task");
     var task = el("div", "pg-task d-" + (opts.tone || "easy"));
@@ -1600,9 +1604,10 @@ function openPlayground(opts) {
     var views = el("div", "pg-views"); // wide screens: exercise | expected page, above the live result
     var views3 = el("div", "pg-views pg-views3"); // phones: exercise | expected page | my live result, in one panel under the code
     var list = [];
-    if (opts.statement) list.push(["task", t("pgTask")]);
+    if (opts.statement || opts.sheetsOf) list.push(["task", opts.sheetsOf ? t("ppDevoir") : t("pgTask")]);
+    if (opts.sheetsOf) side.classList.add("is-switch"); // the subject and the result take turns on the whole side
     if (expFrame) list.push(["exp", t("liveExpected")]);
-    var all = list.concat([["mine", t("liveMine")]]);
+    var all = list.concat([["mine", opts.sheetsOf ? t("ppResult") : t("liveMine")]]);
     var btns = [];
     function setView(v) {
       if (v !== "mine") task.setAttribute("data-view", v);
@@ -1628,7 +1633,16 @@ function openPlayground(opts) {
     });
     task.setAttribute("data-view", list[0][0]);
     task.append(views);
-    if (opts.statement) {
+    if (opts.sheetsOf) {
+      var tb = el("div", "pg-task-body pp-pages pp-modal-pages");
+      fillSheets(opts.sheetsOf, tb, opts.title);
+      var fitSheets = function () {
+        tb.style.setProperty("--pz", String(Math.round(Math.min(1, Math.max(0.3, (tb.clientWidth - 28) / 680)) * 100) / 100));
+      };
+      if (window.ResizeObserver) new ResizeObserver(fitSheets).observe(tb);
+      window.requestAnimationFrame(fitSheets);
+      task.append(tb);
+    } else if (opts.statement) {
       var tb = el("div", "pg-task-body");
       tb.append(md(opts.statement, { noRun: true, rich: !!opts.rich, figures: opts.figures }));
       task.append(tb);
@@ -4819,16 +4833,57 @@ function examHeadBox(h) {
   w.append(left, right);
   return w;
 }
+// the sheets of a devoir written page by page (field "sheets"), put in a container
+function fillSheets(ch, box, title) {
+  box.textContent = "";
+  var n = ch.sheets.length;
+  ch.sheets.forEach(function (src, k) {
+    var sh = el("div", "pp-sheet is-flow");
+    var h = el("div", "pp-sh");
+    var l = el("span", "");
+    l.append(el("b", "", "Classek"), document.createTextNode(" · " + t("s_" + ch.subject)));
+    h.append(l, el("span", "", ch.sheetHeader || title || ""));
+    sh.append(h);
+    if (k === 0 && ch.examHead) sh.append(examHeadBox(ch.examHead));
+    sh.append(md(src, { rich: true, noRun: true, figures: ch.figures }));
+    sh.append(el("div", "pp-foot", tf("ppPageOf", { n: k + 1, total: n })));
+    box.append(sh);
+  });
+}
 // the free editor of a devoir: empty, with the subject on the side
 function openFreeEditor(ch, title) {
   var prat = ch.session === "pratique";
+  if (!prat) {
+    openPlayground({ code: "", title: title || "", tone: "bac" });
+    return;
+  }
+  // a practical exam: the three files of the exam, kept in this browser, the subject (the sheets themselves) | the result on the side
+  var key = "cl.dvFiles." + ch.id;
+  var saved = {};
+  try {
+    saved = JSON.parse(window.localStorage.getItem(key) || "{}") || {};
+  } catch (e) {}
+  var defs = [
+    { id: "index.html", name: "index.html", lang: "html" },
+    { id: "mesStyles.css", name: "mesStyles.css", lang: "css" },
+    { id: "mesControles.js", name: "mesControles.js", lang: "js" },
+  ];
   openPlayground({
-    code: "",
+    files: defs.map(function (d) {
+      return { id: d.id, name: d.name, lang: d.lang, value: typeof saved[d.id] === "string" ? saved[d.id] : "" };
+    }),
     title: title || "",
     tone: "bac",
-    rich: prat && !!(ch.paper || ch.sheets),
+    sheetsOf: ch.sheets ? ch : null,
+    rich: !!(ch.paper || ch.sheets),
     figures: ch.figures,
-    statement: prat ? (ch.sheets ? ch.sheets.join("\n\n") : ch.paper || "") : "",
+    statement: ch.sheets ? "" : ch.paper || "",
+    onChange: function (v, id) {
+      saved[id] = v;
+      try {
+        window.localStorage.setItem(key, JSON.stringify(saved));
+      } catch (e) {}
+    },
   });
 }
 function clock(sec) {
@@ -5013,14 +5068,7 @@ function paperPart(ch, exs) {
   function paginate() {
     if (fixedSheets) {
       // the subject is written page by page, like the printed paper (field "sheets")
-      pages.textContent = "";
-      ch.sheets.forEach(function (src, k) {
-        var sh = sheet();
-        sh.classList.add("is-flow");
-        if (k === 0 && ch.examHead) sh.append(examHeadBox(ch.examHead));
-        sh.append(md(src, { rich: true, noRun: true, figures: ch.figures }));
-        sh.append(el("div", "pp-foot", tf("ppPageOf", { n: k + 1, total: ch.sheets.length })));
-      });
+      fillSheets(ch, pages, title);
       return paintPage();
     }
     pages.textContent = "";
@@ -5121,6 +5169,10 @@ function exercisesPart(ch) {
       if (ch.session === "pratique") box.append(practiceRun(ch, exs));
     } else box.append(exParcours(ch, exs, selIdx, curId));
     var det = el("div", "ex-detail" + (isDv ? " is-paper" : ""));
+    if (isDv && ch.session === "pratique") {
+      // a practical exam is done in the editor (and corrected by the timer): no answers section
+      return box;
+    }
     if (isDv) {
       det.append(el("h3", "pp-corr", t("ppCorr")));
       var tabs = el("div", "pp-exs");
@@ -5176,7 +5228,7 @@ function renderView(view, ch) {
   var htext = el("div", "sv-head-text");
   var total = Number(ch.exerciseCount) || 0;
   htext.append(el("h1", "sv-head-title", title || ""));
-  if (total) htext.append(el("p", "sv-head-intro", tf("progress", { done: doneCount(ch), total: total })));
+  if (total && ch.session !== "pratique") htext.append(el("p", "sv-head-intro", tf("progress", { done: doneCount(ch), total: total })));
   hero.append(htext);
 
   backTargets.view = {
