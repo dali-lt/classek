@@ -27,8 +27,14 @@ var STR = {
     ppSheet: "Sujet",
     ppPage: "Page {n} / {total}",
     ppPageOf: "Page {n} sur {total}",
-    ppEditor: "Ouvrir l’éditeur",
-    ppOpenAns: "Ouvrir l’éditeur pour répondre",
+    openEditor: "Ouvrir l’éditeur",
+    ppRunNote: "Pour faire ce devoir, ouvre l’éditeur et écris tes fichiers (HTML, CSS, JavaScript, PHP, SQL). Lance le chronomètre quand tu commences : à la fin du temps, la correction s’affiche ici.",
+    ppStart: "Lancer le chronomètre · {t}",
+    ppStop: "Arrêter",
+    ppLeft: "Temps restant",
+    ppCorrTitle: "Correction",
+    ppTimeUp: "Le temps est écoulé : voici la correction.",
+    ppRestart: "Recommencer",
     ppPrint: "Imprimer",
     ppZoomIn: "Agrandir",
     ppZoomOut: "Réduire",
@@ -254,8 +260,14 @@ var STR = {
     ppSheet: "الموضوع",
     ppPage: "صفحة {n} / {total}",
     ppPageOf: "صفحة {n} من {total}",
-    ppEditor: "فتح المحرّر",
-    ppOpenAns: "افتح المحرّر باش تجاوب",
+    openEditor: "فتح المحرّر",
+    ppRunNote: "باش تعمل الفرض هذا، افتح المحرّر واكتب ملفاتك (HTML وCSS وJavaScript وPHP وSQL). شغّل المؤقّت كي تبدا: وقت ما يخلص الوقت يظهر التصحيح هنا.",
+    ppStart: "شغّل المؤقّت · {t}",
+    ppStop: "إيقاف",
+    ppLeft: "الوقت المتبقّي",
+    ppCorrTitle: "التصحيح",
+    ppTimeUp: "خلص الوقت: هذا التصحيح.",
+    ppRestart: "عاود من الأول",
     ppPrint: "طباعة",
     ppZoomIn: "تكبير",
     ppZoomOut: "تصغير",
@@ -899,6 +911,17 @@ var LANG_ICON = {
 LANG_ICON.python = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="4" fill="#3776ab"/><text x="12" y="16.4" font-size="10" font-weight="800" fill="#ffd43b" text-anchor="middle" font-family="Arial,sans-serif">Py</text></svg>';
 LANG_ICON.algo = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="#f5a524" d="M12 1.5l10.5 10.5L12 22.5 1.5 12z"/><text x="12" y="15.6" font-size="9.5" font-weight="800" fill="#2a1a00" text-anchor="middle" font-family="Arial,sans-serif">A</text></svg>';
 var RUN_ICON = '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l12-7.5z"/></svg>';
+// every button that opens the editor looks the same on the whole site: green, same pencil icon, same words
+var EDITOR_ICON = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>';
+function editorButton(big) {
+  var b = el("button", "pg-run pg-editor" + (big ? " is-big" : ""));
+  b.type = "button";
+  b.innerHTML = EDITOR_ICON; // static, trusted SVG
+  b.append(el("span", "pg-run-t", t("openEditor")));
+  b.title = t("openEditor");
+  b.setAttribute("aria-label", t("openEditor"));
+  return b;
+}
 function runButton() {
   var b = el("button", "pg-run");
   b.type = "button";
@@ -1803,7 +1826,7 @@ function webExample(code, lang, noRun) {
   var win = codeWindow(lang);
   win.showStatic(code);
   if (lang === "html" && !noRun) {
-    var tryBtn = runButton();
+    var tryBtn = editorButton();
     tryBtn.addEventListener("click", function () {
       openPlayground({ code: code });
     });
@@ -3830,7 +3853,7 @@ function answerBox(ch, ex, boxId, placeholder, onInput, rows, asCode) {
       },
       onChange: applyFs,
     });
-    var mopen = runButton();
+    var mopen = editorButton();
     mopen.addEventListener("click", function () {
       var em = /```htmlview\n?([\s\S]*?)```/.exec(ch.session === "pratique" && ch.paper ? ch.paper : ex.statement || "");
       openPlayground({
@@ -3873,10 +3896,7 @@ function answerBox(ch, ex, boxId, placeholder, onInput, rows, asCode) {
     mw.win.append(mtools.el);
     if (ch.session === "pratique") {
       // a practical exam: the answer is written in the editor, which opens straight away (no small box on the page)
-      var big = el("button", "pp-open-ans");
-      big.type = "button";
-      big.innerHTML = ICON_PP_EDIT; // static, trusted SVG
-      big.append(el("span", "", t("ppOpenAns")));
+      var big = editorButton(true);
       big.addEventListener("click", function () {
         mopen.click();
       });
@@ -3903,8 +3923,8 @@ function answerBox(ch, ex, boxId, placeholder, onInput, rows, asCode) {
     var pw = codeWindow(curLang);
     pw.win.classList.add("is-answer");
     pw.useField(ta);
-    pw.bar.append(
-      expandButton(function () {
+    var openFull = editorButton();
+    openFull.addEventListener("click", function () {
         openCodeFull({
           code: ta.value,
           lang: curLang,
@@ -3917,8 +3937,8 @@ function answerBox(ch, ex, boxId, placeholder, onInput, rows, asCode) {
             autoGrow(ta);
           },
         });
-      })
-    );
+    });
+    pw.bar.append(openFull);
     ta.addEventListener("input", function () {
       autoGrow(ta);
     });
@@ -4799,6 +4819,124 @@ function examHeadBox(h) {
   w.append(left, right);
   return w;
 }
+// the free editor of a devoir: empty, with the subject on the side
+function openFreeEditor(ch, title) {
+  var prat = ch.session === "pratique";
+  openPlayground({
+    code: "",
+    title: title || "",
+    tone: "bac",
+    rich: prat && !!(ch.paper || ch.sheets),
+    figures: ch.figures,
+    statement: prat ? (ch.sheets ? ch.sheets.join("\n\n") : ch.paper || "") : "",
+  });
+}
+function clock(sec) {
+  sec = Math.max(0, Math.round(sec));
+  var h = Math.floor(sec / 3600);
+  var m = Math.floor((sec % 3600) / 60);
+  var x = sec % 60;
+  return h + ":" + (m < 10 ? "0" : "") + m + ":" + (x < 10 ? "0" : "") + x;
+}
+// under the paper of a practical exam: how to work, the timer, and the correction once the time is over
+function practiceRun(ch, exs) {
+  var title = ctx.getLang() === "ar" && ch.title_ar ? ch.title_ar : ch.title;
+  var total = Math.round((ch.hours || 2) * 3600);
+  var key = "cl.dvTimer." + ch.id;
+  var wrap = el("section", "pp-run");
+  var read = function () {
+    try {
+      var v = parseInt(window.localStorage.getItem(key), 10);
+      return v > 0 ? v : 0;
+    } catch (e) {
+      return 0;
+    }
+  };
+  var write = function (v) {
+    try {
+      if (v) window.localStorage.setItem(key, String(v));
+      else window.localStorage.removeItem(key);
+    } catch (e) {}
+  };
+  var timer = null;
+  function stop() {
+    if (timer) window.clearInterval(timer);
+    timer = null;
+  }
+  function paint() {
+    stop();
+    wrap.textContent = "";
+    var end = read();
+    var left = end ? Math.ceil((end - Date.now()) / 1000) : total;
+    var note = el("div", "pp-run-note");
+    note.append(el("span", "pp-run-ico", "!"), el("p", "", t("ppRunNote")));
+    var edBtn = editorButton();
+    edBtn.addEventListener("click", function () {
+      openFreeEditor(ch, title);
+    });
+    note.append(edBtn);
+    wrap.append(note);
+    if (end && left <= 0) {
+      wrap.append(correction());
+      return;
+    }
+    var row = el("div", "pp-run-row");
+    if (!end) {
+      var go = el("button", "pp-timer-go", tf("ppStart", { t: clock(total) }));
+      go.type = "button";
+      go.addEventListener("click", function () {
+        write(Date.now() + total * 1000);
+        paint();
+      });
+      row.append(go);
+    } else {
+      var lab = el("span", "pp-timer-lab", t("ppLeft"));
+      var big = el("b", "pp-timer-t", clock(left));
+      var halt = el("button", "pp-timer-stop", t("ppStop"));
+      halt.type = "button";
+      halt.addEventListener("click", function () {
+        write(0);
+        paint();
+      });
+      row.append(lab, big, halt);
+      timer = window.setInterval(function () {
+        if (!document.body.contains(wrap)) return stop();
+        var l = Math.ceil((read() - Date.now()) / 1000);
+        if (l <= 0) return paint();
+        big.textContent = clock(l);
+      }, 500);
+    }
+    wrap.append(row);
+  }
+  function correction() {
+    var box = el("div", "pp-corr-box");
+    var head = el("div", "pp-corr-head");
+    head.append(el("h3", "", t("ppCorrTitle")), el("p", "", t("ppTimeUp")));
+    var again = el("button", "pp-timer-stop", t("ppRestart"));
+    again.type = "button";
+    again.addEventListener("click", function () {
+      write(0);
+      paint();
+    });
+    head.append(again);
+    box.append(head);
+    exs.forEach(function (e) {
+      var part = el("div", "pp-corr-part");
+      part.append(el("h4", "", e.label || e.statement || e.id));
+      var body = el("div", "pp-corr-body", "…");
+      part.append(body);
+      box.append(part);
+      loadSolution(ch.id, e.id).then(function () {
+        var txt = solutions[ch.id + "/" + e.id];
+        body.textContent = "";
+        if (txt) body.append(md(txt));
+      });
+    });
+    return box;
+  }
+  paint();
+  return wrap;
+}
 function paperPart(ch, exs) {
   var title = ctx.getLang() === "ar" && ch.title_ar ? ch.title_ar : ch.title;
   var box = el("section", "pp-box");
@@ -4820,12 +4958,9 @@ function paperPart(ch, exs) {
   var zOut = tb(t("ppZoomOut"), "−");
   var zIn = tb(t("ppZoomIn"), "+");
   var pr = tb(t("ppPrint"), "", ICON_PP_PRINT);
-  var ed = el("button", "pp-edit");
-  ed.type = "button";
-  ed.innerHTML = ICON_PP_EDIT; // static, trusted SVG
-  ed.append(el("span", "", t("ppEditor")));
+  var ed = editorButton();
   ed.addEventListener("click", function () {
-    openPlayground({ code: "", title: title || "", tone: "bac" });
+    openFreeEditor(ch, title);
   });
   bar.append(pageLab, zOut, zIn, pr, ed);
 
@@ -4981,8 +5116,10 @@ function exercisesPart(ch) {
       if (selIdx < 0) selIdx = exs.length - 1; // everything is done: show the last one
     }
     var isDv = ch.kind === "devoir";
-    if (isDv) box.append(paperPart(ch, exs));
-    else box.append(exParcours(ch, exs, selIdx, curId));
+    if (isDv) {
+      box.append(paperPart(ch, exs));
+      if (ch.session === "pratique") box.append(practiceRun(ch, exs));
+    } else box.append(exParcours(ch, exs, selIdx, curId));
     var det = el("div", "ex-detail" + (isDv ? " is-paper" : ""));
     if (isDv) {
       det.append(el("h3", "pp-corr", t("ppCorr")));

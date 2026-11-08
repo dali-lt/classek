@@ -4532,3 +4532,34 @@ html:has(.modal-overlay.open) .s-menu-btn {
 .pp-sheet.is-flow .pp-exam { margin: 0 0 8px; }
 .pp-sheet.is-flow .pp-sh { margin-bottom: 10px; }
 .pp-sheet.is-flow { padding: 28px 44px 28px; }
+
+/* ---------------- the "Ouvrir l'éditeur" button: the same green button everywhere ---------------- */
+.pg-run.pg-editor { background: #aee37b; color: #01092d; }
+.pg-run.pg-editor:hover { background: #c4f09a; }
+.pp-bar .pg-run.pg-editor { margin-inline-start: 6px; }
+.pg-run.is-big { min-height: 44px; padding: 8px 22px 8px 18px; border-radius: 99px; font-size: 14px; align-self: flex-start; }
+@media (max-width: 560px) {
+  .pg-run.is-big { width: auto; border-radius: 99px; padding: 8px 18px 8px 14px; }
+  .pg-run.is-big .pg-run-t { display: inline; }
+}
+
+/* ---------------- practical exam: how to work, the timer, the correction ---------------- */
+.pp-run { margin: 0 0 18px; display: flex; flex-direction: column; gap: 12px; }
+.pp-run-note { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; background: var(--card, #fff); border: 1.5px solid #aee37b; border-radius: 18px; padding: 14px 18px; }
+.pp-run-note p { margin: 0; flex: 1 1 260px; font-weight: 600; line-height: 1.5; }
+.pp-run-ico { width: 30px; height: 30px; border-radius: 50%; background: #aee37b; color: #01092d; font-weight: 800; display: grid; place-items: center; flex: none; }
+.pp-run-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.pp-timer-go { border: 0; cursor: pointer; font: inherit; font-weight: 800; background: #0464de; color: #fff; padding: 12px 22px; border-radius: 99px; }
+.pp-timer-go:hover { background: #032c7b; }
+.pp-timer-stop { border: 1.5px solid var(--line, #dbe5f3); background: transparent; color: inherit; cursor: pointer; font: inherit; font-weight: 700; padding: 8px 16px; border-radius: 99px; }
+.pp-timer-stop:hover { background: rgba(4, 100, 222, 0.08); }
+.pp-timer-lab { font-weight: 700; color: var(--mut, #5a6785); }
+.pp-timer-t { font-size: 30px; font-variant-numeric: tabular-nums; }
+.pp-corr-box { background: var(--card, #fff); border: 1.5px solid #0464de; border-radius: 22px; padding: 18px 22px; }
+.pp-corr-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+.pp-corr-head h3 { margin: 0; font-size: 20px; }
+.pp-corr-head p { margin: 0; flex: 1; color: var(--mut, #5a6785); font-weight: 600; }
+.pp-corr-part { border-top: 1px solid var(--line, #dbe5f3); padding: 12px 0 4px; }
+.pp-corr-part h4 { margin: 0 0 8px; font-size: 16px; color: #0464de; }
+.pp-run-note p { font-weight: 500; font-size: 14px; }
+.pg-run.is-big { justify-self: start; width: fit-content; }
