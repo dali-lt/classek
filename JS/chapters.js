@@ -82,6 +82,9 @@ var STR = {
     ppPart: "Partie {n}",
     ppEnd: "Fin du sujet",
     ppOpen: "Ouvrir l’éditeur",
+    ppSheet: "Sujet",
+    ppZoomIn: "Agrandir",
+    ppZoomOut: "Réduire",
     ppCorrWait: "La correction s’ouvre après ton temps de réflexion.",
     dvMeta: "{h} h",
     dvExCount: "{n} exercices",
@@ -295,6 +298,9 @@ var STR = {
     ppPart: "الجزء {n}",
     ppEnd: "نهاية الموضوع",
     ppOpen: "فتح المحرر",
+    ppSheet: "الموضوع",
+    ppZoomIn: "تكبير",
+    ppZoomOut: "تصغير",
     ppCorrWait: "التصحيح يتحل بعد وقت التفكير.",
     dvMeta: "{h} س",
     dvExCount: "{n} تمارين",
@@ -4555,14 +4561,50 @@ function paperPart(ch) {
   if (ch.points) meta.append(el("span", "", tf("dvPoints", { n: ch.points })));
   head.append(row, title, meta);
   sheet.append(head, paperBody(ch.paper), el("p", "pp-end", "— " + t("ppEnd") + " —"));
-  var bar = el("div", "pp-bar");
-  var open = el("button", "pc-btn pp-open", "</> " + t("ppOpen"));
-  open.type = "button";
+
+  // the viewer: a header (title, details, the editor button), a thin toolbar, then the sheet in a scrolling frame
+  var viewer = el("section", "pp-viewer");
+  var vh = el("header", "pp-vhead");
+  var vt = el("div", "pp-vtitle");
+  var vh2 = el("h2", "", titleOf(ch));
+  vh2.setAttribute("dir", "auto");
+  var det = [sess ? t(sess) : "", ch.hours ? tf("dvMeta", { h: ch.hours }) : "", ch.points ? tf("dvPoints", { n: ch.points }) : ""].filter(Boolean);
+  vt.append(vh2, el("p", "", det.join(" · ")));
+  var open = runButton(); // the same button, with the same icon, as everywhere else on the site
+  open.classList.add("pp-open");
+  open.querySelector(".pg-run-t").textContent = t("ppOpen");
+  open.title = t("ppOpen");
+  open.setAttribute("aria-label", t("ppOpen"));
   open.addEventListener("click", function () {
     openPaperEditor(ch);
   });
-  bar.append(open);
-  box.append(bar, sheet);
+  vh.append(vt, open);
+  var tools = el("div", "pp-vtools");
+  var doc = el("span", "pp-vdoc", t("ppSheet"));
+  var zoom = 100;
+  var pct = el("span", "pp-vpct", "0 %");
+  var mk = function (txt, label, d) {
+    var b = el("button", "pp-vz", txt);
+    b.type = "button";
+    b.title = label;
+    b.setAttribute("aria-label", label);
+    b.addEventListener("click", function () {
+      zoom = Math.max(80, Math.min(160, zoom + d));
+      sheet.style.setProperty("--pp-z", String(zoom / 100));
+    });
+    return b;
+  };
+  var zg = el("span", "pp-vzoom");
+  zg.append(mk("−", t("ppZoomOut"), -10), mk("+", t("ppZoomIn"), 10));
+  tools.append(doc, zg, pct);
+  var frame = el("div", "pp-frame");
+  frame.append(sheet);
+  frame.addEventListener("scroll", function () {
+    var max = frame.scrollHeight - frame.clientHeight;
+    pct.textContent = (max > 0 ? Math.round((frame.scrollTop / max) * 100) : 100) + " %";
+  });
+  viewer.append(vh, tools, frame);
+  box.append(viewer);
 
   var corr = el("section", "pp-corr");
   corr.append(el("h2", "ch-section-title", t("ppCorr")));

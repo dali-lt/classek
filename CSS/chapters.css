@@ -4228,26 +4228,34 @@ body:has(.av-modal) .ch-back.ch-back-float {
 
 /* ---------------- devoir shown as a Bac paper ---------------- */
 .pp { display: grid; gap: 22px; }
+.pp-viewer { max-width: 900px; width: 100%; margin-inline: auto; border-radius: 18px; overflow: hidden; background: #01092d; color: #fff; box-shadow: 0 14px 36px rgba(1, 9, 45, .22); }
+.pp-vhead { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 16px 20px 12px; }
+.pp-vtitle { min-width: 0; }
+.pp-vtitle h2 { margin: 0; font-size: clamp(16px, 3.6vw, 21px); line-height: 1.25; color: #fff; }
+.pp-vtitle p { margin: 3px 0 0; font-size: 13px; color: rgba(255, 255, 255, .68); }
+.pp-vtools { display: flex; align-items: center; gap: 12px; padding: 8px 20px; border-block: 1px solid rgba(255, 255, 255, .1); font-size: 12.5px; color: rgba(255, 255, 255, .72); }
+.pp-vdoc { font-weight: 700; color: #aee37b; margin-inline-end: auto; }
+.pp-vzoom { display: inline-flex; gap: 6px; }
+.pp-vz { width: 28px; height: 28px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, .22); background: transparent; color: #fff; font: inherit; font-weight: 800; cursor: pointer; }
+.pp-vz:hover { background: rgba(255, 255, 255, .12); }
+.pp-vpct { min-width: 40px; text-align: end; font-variant-numeric: tabular-nums; }
+.pp-frame { background: #032c7b; padding: clamp(10px, 3vw, 24px); height: min(70vh, 700px); overflow-y: auto; overscroll-behavior: contain; }
 .pp-sheet {
+  --pp-z: 1;
   background: #fff;
   color: #111827;
-  border-radius: 6px;
-  padding: clamp(18px, 5vw, 56px) clamp(16px, 6vw, 64px);
-  box-shadow: 0 2px 4px rgba(1, 9, 45, .08), 0 14px 36px rgba(1, 9, 45, .16);
+  border-radius: 4px;
+  padding: clamp(18px, 5vw, 48px) clamp(16px, 6vw, 56px);
+  box-shadow: 0 6px 22px rgba(1, 9, 45, .35);
   font-family: inherit;
-  font-size: 15.5px;
-  height: min(72vh, 720px);
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  font-size: calc(15.5px * var(--pp-z));
   line-height: 1.6;
-  max-width: 860px;
+  max-width: 780px;
   width: 100%;
   margin-inline: auto;
   box-sizing: border-box;
   overflow-wrap: anywhere;
 }
-.pp-bar { max-width: 860px; width: 100%; margin-inline: auto; display: flex; justify-content: flex-end; }
-.pp-open { font-weight: 800; }
 .pp-head { border-bottom: 3px double #032c7b; padding-bottom: 14px; margin-bottom: 18px; text-align: center; }
 .pp-row { display: flex; justify-content: space-between; font-weight: 700; font-size: 12px; line-height: 1; font-family: inherit; letter-spacing: .08em; text-transform: uppercase; color: #032c7b; }
 .pp-title { margin: 14px 0 8px; font-size: clamp(19px, 4.6vw, 26px); line-height: 1.25; color: #01092d; }
