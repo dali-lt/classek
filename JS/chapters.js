@@ -26,6 +26,7 @@ var STR = {
     svIntro: "Entraîne-toi par niveau, puis passe aux sujets de Bac.",
     ppSheet: "Sujet",
     ppPage: "Page {n} / {total}",
+    ppPageOf: "Page {n} sur {total}",
     ppEditor: "Ouvrir l’éditeur",
     ppOpenAns: "Ouvrir l’éditeur pour répondre",
     ppPrint: "Imprimer",
@@ -252,6 +253,7 @@ var STR = {
     svIntro: "تمرّن حسب المستوى، وبعدها اعمل مواضيع الباك.",
     ppSheet: "الموضوع",
     ppPage: "صفحة {n} / {total}",
+    ppPageOf: "صفحة {n} من {total}",
     ppEditor: "فتح المحرّر",
     ppOpenAns: "افتح المحرّر باش تجاوب",
     ppPrint: "طباعة",
@@ -593,13 +595,18 @@ function el(tag, cls, text) {
 }
 
 /* ---------------- tiny safe markdown: ## title, **bold**, `code`, ``` fences ``` ---------------- */
+var inlineRich = false; // the printed subject of a devoir also understands __underlined__ and *italic*
 function inline(parent, text) {
   String(text)
-    .split(/(\*\*[^*]+\*\*|`[^`]+`)/)
+    .split(inlineRich ? /(\*\*[^*]+\*\*|__[^_]+__|\*[^*\s][^*]*\*|`[^`]+`)/ : /(\*\*[^*]+\*\*|`[^`]+`)/)
     .forEach(function (part) {
       if (!part) return;
       if (part.slice(0, 2) === "**" && part.slice(-2) === "**" && part.length > 4) {
         parent.append(el("strong", "", part.slice(2, -2)));
+      } else if (inlineRich && part.slice(0, 2) === "__" && part.slice(-2) === "__" && part.length > 4) {
+        parent.append(el("u", "pp-u", part.slice(2, -2)));
+      } else if (inlineRich && part.charAt(0) === "*" && part.slice(-1) === "*" && part.length > 2 && part.charAt(1) !== "*") {
+        parent.append(el("em", "", part.slice(1, -1)));
       } else if (part.charAt(0) === "`" && part.slice(-1) === "`" && part.length > 2) {
         parent.append(el("code", "ch-inline-code", part.slice(1, -1)));
       } else {
@@ -1600,7 +1607,7 @@ function openPlayground(opts) {
     task.append(views);
     if (opts.statement) {
       var tb = el("div", "pg-task-body");
-      tb.append(md(opts.statement, { noRun: true, rich: !!opts.rich }));
+      tb.append(md(opts.statement, { noRun: true, rich: !!opts.rich, figures: opts.figures }));
       task.append(tb);
     }
     if (expFrame) {
@@ -1835,6 +1842,15 @@ function svgFigure(src) {
 
 var WEB_FENCE = { html: 1, htmlsrc: 1, htmlview: 1, css: 1, js: 1, php: 1, sql: 1 };
 function md(text, opts) {
+  var prevRich = inlineRich;
+  inlineRich = !!(opts && opts.rich);
+  try {
+    return mdBlocks(text, opts);
+  } finally {
+    inlineRich = prevRich;
+  }
+}
+function mdBlocks(text, opts) {
   var box = el("div", "ch-content");
   box.setAttribute("lang", "fr");
   box.setAttribute("dir", "ltr");
@@ -1868,17 +1884,29 @@ function md(text, opts) {
         }
       });
   }
-  // rich text (the printed subject of a devoir): ## and ### titles, bullet and numbered lists, tables
-  function richWords(v) {
+  // rich text (the printed subject of a devoir): titles, lists (nested by indentation, with the markers of an exam paper),
+  // grey note boxes, tables, indented blocks and figures
+  var LI = /^(\s*)(-|▪|✓|❖|[a-z]\)|\d+[).]) (.*)$/;
+  function richWords(v, host) {
     var lines = v.replace(/\r/g, "").split("\n");
     var i = 0;
     var isRow = function (l) {
       return /^\s*\|.*\|\s*$/.test(l || "");
     };
-    var cells = function (l) {
+    var cellsOf = function (l) {
       return l.trim().replace(/^\||\|$/g, "").split("|").map(function (c) {
         return c.trim();
       });
+    };
+    var fill = function (td, text) {
+      text.split("<br>").forEach(function (part, k) {
+        if (k) td.append(document.createElement("br"));
+        inline(td, part);
+      });
+    };
+    var para = function (cls) {
+      var p = el("p", cls || "ch-p");
+      return p;
     };
     while (i < lines.length) {
       var l = lines[i];
@@ -1887,63 +1915,121 @@ function md(text, opts) {
         continue;
       }
       var m;
-      if ((m = /^(#{2,3}) (.*)$/.exec(l))) {
+      if (/^\s*>/.test(l)) {
+        // grey note box (consignes, remarques)
+        var inner = [];
+        while (i < lines.length && /^\s*>/.test(lines[i])) {
+          inner.push(lines[i].replace(/^\s*> ?/, ""));
+          i++;
+        }
+        var note = el("div", "pp-note");
+        richWords(inner.join("\n"), note);
+        host.append(note);
+      } else if ((m = /^\[\[fig:(\w+)(\|right)?\]\]$/.exec(l.trim()))) {
+        var fg = opts && opts.figures && opts.figures[m[1]];
+        if (fg) {
+          var fw = el("div", "pp-fig" + (m[2] ? " is-right" : ""));
+          var fr = document.createElement("iframe");
+          fr.setAttribute("sandbox", "");
+          fr.setAttribute("title", m[1]);
+          fr.srcdoc = '<!doctype html><meta charset="utf-8"><body style="margin:0;font:13px/1.3 Times New Roman,serif">' + fg.html;
+          fr.style.width = (fg.w || 320) + "px";
+          fr.style.height = (fg.h || 200) + "px";
+          fr.style.maxWidth = "100%";
+          fw.append(fr);
+          host.append(fw);
+        }
+        i++;
+      } else if ((m = /^(#{2,3}) (.*)$/.exec(l))) {
         var h = el(m[1].length === 2 ? "h3" : "h4", m[1].length === 2 ? "ch-h" : "ch-h2");
         inline(h, m[2]);
-        box.append(h);
+        host.append(h);
         i++;
       } else if (isRow(l) && isRow(lines[i + 1]) && /^[\s|:-]+$/.test(lines[i + 1])) {
         var tb = el("table", "ch-table");
-        var thead = el("thead");
-        var hr = el("tr");
-        cells(l).forEach(function (c) {
-          var th = el("th");
-          inline(th, c);
-          hr.append(th);
+        var aligns = cellsOf(lines[i + 1]).map(function (c) {
+          return c.charAt(0) === ":" && c.slice(-1) === ":" ? "center" : "";
         });
-        thead.append(hr);
+        var addRow = function (parent, cs, tag) {
+          var tr = el("tr");
+          cs.forEach(function (c, k) {
+            if (c === "=" && tr.lastChild) {
+              tr.lastChild.colSpan = (tr.lastChild.colSpan || 1) + 1;
+              return;
+            }
+            var td = el(tag);
+            if (aligns[k]) td.style.textAlign = aligns[k];
+            fill(td, c);
+            tr.append(td);
+          });
+          parent.append(tr);
+        };
+        var thead = el("thead");
+        addRow(thead, cellsOf(l), "th");
         var tbody = el("tbody");
         i += 2;
         while (i < lines.length && isRow(lines[i])) {
-          var tr = el("tr");
-          cells(lines[i]).forEach(function (c) {
-            var td = el("td");
-            inline(td, c);
-            tr.append(td);
-          });
-          tbody.append(tr);
+          addRow(tbody, cellsOf(lines[i]), "td");
           i++;
         }
         tb.append(thead, tbody);
-        box.append(tb);
-      } else if (/^\s*(?:[-*]|\d+\.) /.test(l)) {
-        var ordered = /^\s*\d+\. /.test(l);
-        var list = el(ordered ? "ol" : "ul", "ch-list");
-        while (i < lines.length && /^\s*(?:[-*]|\d+\.) /.test(lines[i])) {
+        host.append(tb);
+      } else if (LI.test(l)) {
+        var stack = [];
+        while (i < lines.length && LI.test(lines[i])) {
+          var q = LI.exec(lines[i]);
+          var ind = q[1].replace(/\t/g, "  ").length;
+          var mk = q[2];
+          while (stack.length && ind < stack[stack.length - 1].ind) stack.pop();
+          var top = stack[stack.length - 1];
+          var kindOf = /^[a-z]\)$/.test(mk) ? "alpha" : /^\d/.test(mk) ? "num" : mk;
+          if (top && ind === top.ind && kindOf !== top.kind) {
+            stack.pop(); // another kind of marker at the same level starts a new list
+            top = stack[stack.length - 1];
+            var after = true;
+          }
+          if (!top || ind > top.ind || after) {
+            after = false;
+            var alpha = /^[a-z]\)$/.test(mk);
+            var num = /^\d/.test(mk);
+            var lst = el(alpha || num ? "ol" : "ul", "ch-list " + (alpha ? "m-alpha" : num ? "m-num" : mk === "▪" ? "m-sq" : mk === "✓" ? "m-check" : mk === "❖" ? "m-dia" : "m-dot"));
+            if (alpha) lst.style.counterReset = "li " + (mk.charCodeAt(0) - 97);
+            if (num) lst.style.counterReset = "li " + (parseInt(mk, 10) - 1);
+            var parentLi = top && ind > top.ind ? top.list.lastChild : null;
+            (parentLi || host).append(lst);
+            top = { ind: ind, list: lst, kind: kindOf };
+            stack.push(top);
+          }
           var li = el("li");
-          inline(li, lines[i].replace(/^\s*(?:[-*]|\d+\.) /, ""));
-          list.append(li);
+          inline(li, q[3]);
+          top.list.append(li);
           i++;
         }
-        box.append(list);
       } else {
-        var p = el("p", "ch-p");
+        var p = para();
         var first = true;
-        while (i < lines.length && lines[i].trim() && !/^#{2,3} /.test(lines[i]) && !(isRow(lines[i]) && isRow(lines[i + 1])) && !/^\s*(?:[-*]|\d+\.) /.test(lines[i])) {
+        while (i < lines.length && lines[i].trim() && !/^\s*>/.test(lines[i]) && !/^#{2,3} /.test(lines[i]) && !LI.test(lines[i]) && !(isRow(lines[i]) && isRow(lines[i + 1])) && !/^\[\[fig:/.test(lines[i].trim())) {
           if (!first) p.append(document.createElement("br"));
-          inline(p, lines[i]);
+          inline(p, lines[i].trim());
           first = false;
           i++;
         }
-        box.append(p);
+        host.append(p);
       }
     }
   }
   for (var i = 0; i < segs.length; i++) {
     var s = segs[i];
     if (!s.code) {
-      if (opts && opts.rich) richWords(s.v);
+      if (opts && opts.rich) richWords(s.v, box);
       else words(s.v);
+      continue;
+    }
+    if (s.lang === "indent") {
+      // an indented block of the printed subject (the text under a numbered item)
+      var indBox = el("div", "pp-indent");
+      richWords(s.v, indBox);
+      box.append(indBox);
       continue;
     }
     if (s.lang === "viz") continue; // old lessons: the Run button on the code replaces the launcher card
@@ -3757,8 +3843,9 @@ function answerBox(ch, ex, boxId, placeholder, onInput, rows, asCode) {
         },
         title: starterTitle(ch, ex),
         tone: ex.difficulty === "bac" || ex.difficulty === "medium" ? ex.difficulty : "easy",
-        rich: ch.session === "pratique" && !!ch.paper,
-        statement: (ch.session === "pratique" && ch.paper ? ch.paper : ex.statement || "")
+        rich: ch.session === "pratique" && !!(ch.paper || ch.sheets),
+        figures: ch.figures,
+        statement: (ch.session === "pratique" && ch.sheets ? ch.sheets.join("\n\n") : ch.session === "pratique" && ch.paper ? ch.paper : ex.statement || "")
           .replace(/```htmlview\n?[\s\S]*?```/g, "")
           .replace(/\n[^\n]*:\s*$/, function (m) {
             return em ? "" : m; // "Résultat attendu :" introduced the expected page, which now has its own tab
@@ -4689,6 +4776,29 @@ function exParcours(ch, exs, selIdx, curId) {
 var ICON_PP_EDIT = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>';
 var ICON_PP_PRINT = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>';
 var ppZoom = 1;
+// the official header of an exam paper (république, ministère, épreuve, section, coefficient, durée)
+function examHeadBox(h) {
+  var w = el("div", "pp-exam");
+  var left = el("div", "pp-exam-l");
+  (h.left || []).forEach(function (x) {
+    left.append(el("div", "", x));
+  });
+  var right = el("div", "pp-exam-r");
+  (h.right || []).forEach(function (row) {
+    var r = el("div", "pp-exam-row");
+    row.forEach(function (c) {
+      var d = el("div", "pp-exam-c");
+      c.split("<br>").forEach(function (part, k) {
+        if (k) d.append(document.createElement("br"));
+        inline(d, part);
+      });
+      r.append(d);
+    });
+    right.append(r);
+  });
+  w.append(left, right);
+  return w;
+}
 function paperPart(ch, exs) {
   var title = ctx.getLang() === "ar" && ch.title_ar ? ch.title_ar : ch.title;
   var box = el("section", "pp-box");
@@ -4754,17 +4864,30 @@ function paperPart(ch, exs) {
     });
   }
   var total = 1;
+  var fixedSheets = Array.isArray(ch.sheets) && ch.sheets.length;
   function sheet() {
     var sh = el("div", "pp-sheet");
     var h = el("div", "pp-sh");
     var l = el("span", "");
     l.append(el("b", "", "Classek"), document.createTextNode(" · " + t("s_" + ch.subject)));
-    h.append(l, el("span", "", (title || "") + (ch.hours ? " · " + ch.hours + " h" : "") + (ch.points ? " · " + ch.points + " pts" : "")));
+    h.append(l, el("span", "", ch.sheetHeader || (title || "") + (ch.hours ? " · " + ch.hours + " h" : "") + (ch.points ? " · " + ch.points + " pts" : "")));
     sh.append(h);
     pages.append(sh);
     return sh;
   }
   function paginate() {
+    if (fixedSheets) {
+      // the subject is written page by page, like the printed paper (field "sheets")
+      pages.textContent = "";
+      ch.sheets.forEach(function (src, k) {
+        var sh = sheet();
+        sh.classList.add("is-flow");
+        if (k === 0 && ch.examHead) sh.append(examHeadBox(ch.examHead));
+        sh.append(md(src, { rich: true, noRun: true, figures: ch.figures }));
+        sh.append(el("div", "pp-foot", tf("ppPageOf", { n: k + 1, total: ch.sheets.length })));
+      });
+      return paintPage();
+    }
     pages.textContent = "";
     var cur = sheet();
     blocks.forEach(function (b) {
@@ -4793,7 +4916,7 @@ function paperPart(ch, exs) {
   }
   view.addEventListener("scroll", paintPage, { passive: true });
   function applyZoom() {
-    var fit = Math.min(1, Math.max(0.3, (view.clientWidth - 24) / 595)); // narrow screens: the sheet shrinks to the width
+    var fit = Math.min(1, Math.max(0.3, (view.clientWidth - 24) / 680)); // narrow screens: the sheet shrinks to the width
     pages.style.setProperty("--pz", String(Math.round(fit * ppZoom * 100) / 100));
   }
   function zoom(d) {
