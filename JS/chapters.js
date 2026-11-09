@@ -4889,7 +4889,7 @@ function examHeadBox(h) {
   var right = el("div", "pp-exam-r");
   (h.right || []).forEach(function (row) {
     var r = el("div", "pp-exam-row");
-    row.forEach(function (c) {
+    (Array.isArray(row) ? row : row.cells || []).forEach(function (c) { // a row is a list, or { cells: [...] } once saved in Firestore
       var d = el("div", "pp-exam-c");
       c.split("<br>").forEach(function (part, k) {
         if (k) d.append(document.createElement("br"));
