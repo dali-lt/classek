@@ -4645,3 +4645,12 @@ html:has(.modal-overlay.open) .s-menu-btn {
   .pg-m3 .pg-vw[aria-pressed="true"] { padding: 4px 14px 4px 11px; }
 }
 .pg-timebar[hidden] { display: none; }
+
+/* wide screens: the alerts of a practical devoir live in the right column (instead of the notes) */
+.ch-side-run { position: sticky; top: 12px; }
+.ch-side-run .pp-run { margin: 0; }
+.ch-side-run .pp-run-note { flex-direction: column; align-items: stretch; gap: 10px; padding: 14px; }
+.ch-side-run .pp-run-text { align-items: flex-start; }
+.ch-side-run .tm-alert-go { margin-inline-start: 0; width: 100%; justify-content: center; }
+.tm-alert { box-sizing: border-box; max-width: 100%; min-width: 0; }
+.pp-run-row { min-width: 0; }

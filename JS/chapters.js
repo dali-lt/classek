@@ -5037,7 +5037,7 @@ function dvTimer(ch) {
   };
 }
 // under the paper of a practical exam: how to work, the timer, and the correction once the time is over
-function practiceRun(ch, exs) {
+function practiceRun(ch, exs, corrOut) {
   var title = ctx.getLang() === "ar" && ch.title_ar ? ch.title_ar : ch.title;
   var tm = dvTimer(ch);
   var total = tm.total;
@@ -5061,6 +5061,7 @@ function practiceRun(ch, exs) {
   function paint() {
     stop();
     wrap.textContent = "";
+    if (corrOut) corrOut.textContent = "";
     var end = read();
     var left = end ? Math.ceil((end - Date.now()) / 1000) : total;
     var note = el("div", "pp-run-note");
@@ -5075,7 +5076,7 @@ function practiceRun(ch, exs) {
     note.append(noteRow, act);
     wrap.append(note);
     if (end && left <= 0) {
-      wrap.append(correction());
+      (corrOut || wrap).append(correction());
       return;
     }
     var row = el("div", "pp-run-row");
@@ -5276,6 +5277,7 @@ function paperPart(ch, exs) {
   return box;
 }
 
+var runHost = null; // the right column of a practical devoir (wide screens), where its alerts go
 function exercisesPart(ch) {
   var box = el("div", "ch-ex");
   var cur = S.cur;
@@ -5311,7 +5313,14 @@ function exercisesPart(ch) {
     var isDv = ch.kind === "devoir";
     if (isDv) {
       box.append(paperPart(ch, exs));
-      if (ch.session === "pratique") box.append(practiceRun(ch, exs));
+      if (ch.session === "pratique") {
+        // wide screens: the chrono alert and the editor note sit in the right column, which replaces the notes
+        if (runHost) {
+          var corrOut = el("div", "pp-run-corr");
+          runHost.append(practiceRun(ch, exs, corrOut));
+          box.append(corrOut);
+        } else box.append(practiceRun(ch, exs));
+      }
     } else box.append(exParcours(ch, exs, selIdx, curId));
     var det = el("div", "ex-detail" + (isDv ? " is-paper" : ""));
     if (isDv && ch.session === "pratique") {
@@ -5346,7 +5355,10 @@ function exercisesPart(ch) {
 
 function renderView(view, ch) {
   view.textContent = "";
-  var side = notesWide.matches;
+  var wide = notesWide.matches;
+  var listKind = ch.kind === "serie" || ch.kind === "devoir"; // series and devoirs have no notes column
+  var prat = ch.kind === "devoir" && ch.session === "pratique";
+  var side = wide && (!listKind || prat);
   view.className = "ch-grid" + (side ? " has-side" : "");
   var tab = curTab(ch);
   syncRail(ch, "chapter");
@@ -5389,14 +5401,20 @@ function renderView(view, ch) {
     main.append(lessonBlock(ch, true));
   }
   else if (tab === "notes") main.append(notesSection(ch, false));
-  else main.append(exercisesPart(ch));
+  else {
+    runHost = side && prat ? el("div", "ch-side-run") : null;
+    main.append(exercisesPart(ch));
+  }
   view.append(main);
 
   if (side) {
     var aside = el("aside", "ch-side");
-    aside.append(notesSection(ch, true));
+    if (prat) {
+      if (runHost) aside.append(runHost);
+    } else aside.append(notesSection(ch, true));
     view.append(aside);
   }
+  runHost = null;
   syncBackButton();
 }
 
