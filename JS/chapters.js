@@ -182,6 +182,7 @@ var STR = {
     liveReload: "Recharger",
     liveExpected: "Résultat attendu",
     liveMine: "Mon résultat",
+    thinkWarn: "Lance le chrono de réflexion pour débloquer la solution.",
     pgTask: "Exercice",
     answerPlaceholder: "Essaie d’abord : écris ta réponse ici pour débloquer la solution.",
     qPlaceholder: "Ta réponse à la question {n}…",
@@ -421,6 +422,7 @@ var STR = {
     liveReload: "أعد التحميل",
     liveExpected: "النتيجة المطلوبة",
     liveMine: "نتيجتي",
+    thinkWarn: "شغّل مؤقّت التفكير باش يتفتح الحلّ.",
     pgTask: "التمرين",
     answerPlaceholder: "جرّب الأول: اكتب جوابك هنا باش يتفتح الحل.",
     qPlaceholder: "جوابك على السؤال {n}…",
@@ -924,6 +926,26 @@ LANG_ICON.python = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden=
 LANG_ICON.algo = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="#f5a524" d="M12 1.5l10.5 10.5L12 22.5 1.5 12z"/><text x="12" y="15.6" font-size="9.5" font-weight="800" fill="#2a1a00" text-anchor="middle" font-family="Arial,sans-serif">A</text></svg>';
 var RUN_ICON = '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l12-7.5z"/></svg>';
 // every button that opens the editor looks the same on the whole site: green, same pencil icon, same words
+var SW_ICON_ATTR = 'viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"';
+var SW_ICON = {
+  editor: "<svg " + SW_ICON_ATTR + '><path d="m8 7-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/></svg>',
+  task: "<svg " + SW_ICON_ATTR + '><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 13h6M9 17h4"/></svg>',
+  exp: "<svg " + SW_ICON_ATTR + '><circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.8 2.8L16 9.5"/></svg>',
+  mine: "<svg " + SW_ICON_ATTR + '><rect x="3" y="4" width="18" height="13" rx="2.5"/><path d="M8 21h8M12 17v4"/></svg>',
+  clock: "<svg " + SW_ICON_ATTR + '><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></svg>',
+  play: "<svg " + SW_ICON_ATTR + '><path d="M7 4.5v15l12-7.5z"/></svg>',
+  bulb: "<svg " + SW_ICON_ATTR + '><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg>',
+};
+// a switch button: an icon and a word (on phones only the pressed one keeps its word)
+function tabButton(key, label) {
+  var b = el("button", "pg-vw");
+  b.type = "button";
+  b.innerHTML = SW_ICON[key] || ""; // static, trusted SVG
+  b.append(el("span", "pg-vw-t", label));
+  b.title = label;
+  b.setAttribute("aria-label", label);
+  return b;
+}
 var EDITOR_ICON = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>';
 function editorButton(big) {
   var b = el("button", "pg-run pg-editor" + (big ? " is-big" : ""));
@@ -1626,8 +1648,7 @@ function openPlayground(opts) {
       });
     }
     function addBtn(bar, v) {
-      var b = el("button", "pg-vw", v[1]);
-      b.type = "button";
+      var b = tabButton(v[0], v[1]);
       b.addEventListener("click", function () {
         setView(v[0]);
       });
@@ -1675,13 +1696,17 @@ function openPlayground(opts) {
       var left = tmr.left();
       if (!e) {
         bar.className = "pg-timebar is-warn";
-        var go = el("button", "pg-timebar-go", tf("ppStart", { t: clock(tmr.total) }));
+        var go = el("button", "pg-timebar-go");
         go.type = "button";
+        go.innerHTML = SW_ICON.play; // static, trusted SVG
+        go.append(el("span", "", tf("ppStart", { t: clock(tmr.total) })));
         go.addEventListener("click", function () {
           tmr.set(Date.now() + tmr.total * 1000);
           paintBar();
         });
-        bar.append(el("span", "pg-timebar-ico", "!"), el("span", "pg-timebar-t", t("tmWarn")), go);
+        var wico = el("span", "pg-timebar-ico");
+        wico.innerHTML = SW_ICON.clock; // static, trusted SVG
+        bar.append(wico, el("span", "pg-timebar-t", t("tmWarn")), go);
       } else if (left > 0) {
         bar.className = "pg-timebar is-run";
         bar.append(el("span", "pg-timebar-k", t("tmLeft")), el("b", "pg-timebar-v", clock(left)));
@@ -1778,8 +1803,7 @@ function openPlayground(opts) {
     };
     var tabs = devSetView ? [["editor", t("ppEditor")]].concat(all) : [["editor", t("ppEditor")], ["mine", t("liveMine")]];
     tabs.forEach(function (v) {
-      var b = el("button", "pg-vw", v[1]);
-      b.type = "button";
+      var b = tabButton(v[0], v[1]);
       b.addEventListener("click", function () {
         setM(v[0]);
       });
@@ -4300,6 +4324,17 @@ function exerciseCard(ch, ex, index) {
       show.classList.toggle("is-start", notYet);
       show.style.setProperty("--tp", Math.min(100, ((needT - l) / needT) * 100) + "%");
     };
+    // soft orange reminder while the thinking timer has not been started
+    var thinkWarn = el("div", "ex-thinkwarn");
+    var twIco = el("span", "ex-thinkwarn-ico");
+    twIco.innerHTML = SW_ICON.bulb; // static, trusted SVG
+    thinkWarn.append(twIco, el("span", "ex-thinkwarn-t", t("thinkWarn")));
+    var paintShow0 = paintShow;
+    paintShow = function () {
+      paintShow0();
+      thinkWarn.hidden = !(!st && needT > 0 && !started());
+    };
+    if (needT > 0) work.append(thinkWarn);
     paintShow();
     refresh = paintShow;
     if (needT > 0) thinkTimers[key] = { card: card, update: paintShow };
