@@ -388,6 +388,11 @@
           topics: Array.isArray(data.topics) ? data.topics.filter(function (x) { return typeof x === "string" && x.trim(); }).slice(0, 3) : [],
           minutes: Number(data.minutes) > 0 ? Math.round(Number(data.minutes)) : 0,
           paper: data.kind === "devoir" && typeof data.paper === "string" ? data.paper : "",
+          // a devoir written page by page, like the printed paper
+          sheets: data.kind === "devoir" && Array.isArray(data.sheets) && data.sheets.length ? data.sheets.filter(function (x) { return typeof x === "string"; }).slice(0, 12) : null,
+          sheetHeader: data.kind === "devoir" && typeof data.sheetHeader === "string" ? data.sheetHeader : "",
+          examHead: data.kind === "devoir" && data.examHead && typeof data.examHead === "object" ? JSON.parse(JSON.stringify(data.examHead)) : null,
+          figures: data.kind === "devoir" && data.figures && typeof data.figures === "object" ? JSON.parse(JSON.stringify(data.figures)) : null,
           think: Number(data.think) >= 0 && data.think !== undefined && data.think !== "" ? Math.round(Number(data.think)) : 0,
           session: data.session === "principale" || data.session === "controle" || data.session === "pratique" ? data.session : "",
           hours: Number(data.hours) > 0 ? Number(data.hours) : 0,

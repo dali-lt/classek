@@ -1960,12 +1960,12 @@ function mdBlocks(text, opts) {
   box.setAttribute("dir", "ltr");
   var src = String(text || "");
   var segs = [];
-  var fence = /```([a-zA-Z]*)\n?([\s\S]*?)```/g;
+  var fence = /```([a-zA-Z]*)[ \t]*([^\n`]*)\n?([\s\S]*?)```/g; // ```php connexion.php : the language, then the name of the file
   var last = 0;
   var f;
   while ((f = fence.exec(src))) {
     if (f.index > last) segs.push({ code: false, v: src.slice(last, f.index) });
-    segs.push({ code: true, lang: f[1], v: f[2].replace(/\n+$/, "") });
+    segs.push({ code: true, lang: f[1], name: f[2].trim(), v: f[3].replace(/\n+$/, "") });
     last = fence.lastIndex;
   }
   if (last < src.length) segs.push({ code: false, v: src.slice(last) });
@@ -2142,7 +2142,9 @@ function mdBlocks(text, opts) {
       continue;
     }
     if (WEB_FENCE[s.lang]) {
-      box.append(webExample(s.v, s.lang, opts && opts.noRun)); // a solution is for reading: no editor to open
+      var wb = webExample(s.v, s.lang, opts && opts.noRun); // a solution is for reading: no editor to open
+      if (s.name) wb.prepend(el("span", "code-label", s.name));
+      box.append(wb);
       continue;
     }
     var known = s.lang === "algo" || s.lang === "python";
@@ -5088,7 +5090,7 @@ function practiceRun(ch, exs) {
       loadSolution(ch.id, e.id).then(function () {
         var txt = solutions[ch.id + "/" + e.id];
         body.textContent = "";
-        if (txt) body.append(md(txt));
+        if (txt) body.append(md(txt, { noRun: true }));
       });
     });
     return box;

@@ -1,0 +1,140 @@
+{
+ "chapterId": "devoir-pratique-2024",
+ "level": "bac",
+ "subject": "sti",
+ "kind": "devoir",
+ "session": "pratique",
+ "hours": 2,
+ "points": 20,
+ "title": "Épreuve pratique 2024 : Jardinons ensemble",
+ "title_ar": "الامتحان التطبيقي 2024 : Jardinons ensemble",
+ "order": 304,
+ "published": true,
+ "think": 900,
+ "sheetHeader": "Bac 2024 · Épreuve pratique · Sciences de l’informatique · 20/05 · 8h30",
+ "examHead": {
+  "left": [
+   "RÉPUBLIQUE TUNISIENNE",
+   "----------------",
+   "MINISTÈRE DE L’ÉDUCATION"
+  ],
+  "right": [
+   [
+    "**EXAMEN DU BACCALAURÉAT**",
+    "**SESSION 2024**"
+   ],
+   [
+    "**ÉPREUVE PRATIQUE**<br>Matière : **Systèmes et Technologies de l’Informatique**"
+   ],
+   [
+    "Section : **Sciences de l’informatique**"
+   ],
+   [
+    "Coefficient de l’épreuve : **1.2**",
+    "Durée : **2h**"
+   ]
+  ]
+ },
+ "figures": {
+  "layout": {
+   "w": 250,
+   "h": 290,
+   "html": "<div style=\"border:2px solid #111;padding:4px;width:100%;box-sizing:border-box\"><div style=\"border:2px solid #111;padding:4px;margin-bottom:4px\"><div style=\"text-align:center;font:bold 13px Arial\">&lt;header&gt;</div><div style=\"border:2px solid #111;background:#ddd;text-align:center;font-weight:bold;font-family:Arial;font-size:13px;padding:6px;margin-top:6px\">&lt;h1&gt;</div><div style=\"border:2px solid #111;background:#ddd;text-align:center;font-weight:bold;font-family:Arial;font-size:13px;padding:6px;margin-top:6px\">&lt;nav&gt;</div></div><div style=\"border:2px solid #111;padding:4px;margin-bottom:4px\"><div style=\"text-align:center;font:bold 13px Arial\">&lt;main&gt;</div><div style=\"display:flex;gap:6px;margin-top:6px\"><div style=\"flex:3;border:2px solid #111;background:#ddd;height:80px;text-align:center;font:bold 13px Arial;padding-top:4px\">&lt;section&gt;</div><div style=\"flex:2;border:2px solid #111;background:#ddd;height:80px;text-align:center;font:bold 13px Arial;padding-top:4px\">&lt;aside&gt;</div></div></div><div style=\"border:2px solid #111;background:#ddd;text-align:center;font:bold 13px Arial;padding:7px\">&lt;footer&gt;</div></div>"
+  },
+  "inserts": {
+   "w": 540,
+   "h": 285,
+   "html": "<div style=\"display:flex;gap:18px;align-items:flex-start;font:13px Times New Roman,serif\"><div><div style=\"text-align:center\">Table <b>jardin</b></div><table border=\"1\" cellspacing=\"0\" cellpadding=\"3\" style=\"border-collapse:collapse;text-align:center\"><tr style=\"background:#e5e5e5\"><th>idJar</th><th>nomJar</th><th>adresse</th></tr><tr><td>J1</td><td>Résidence des Pins</td><td>Cité des pins</td></tr><tr><td>R3</td><td>Eden des roses</td><td>Rue des martyres</td></tr></table></div><div><div style=\"text-align:center\">Table <b>parcelle</b></div><table border=\"1\" cellspacing=\"0\" cellpadding=\"3\" style=\"border-collapse:collapse;text-align:center\"><tr style=\"background:#e5e5e5\"><th>idPar</th><th>numPar</th><th>idJar</th></tr><tr><td>1</td><td>1</td><td>J1</td></tr><tr><td>2</td><td>2</td><td>J1</td></tr><tr><td>3</td><td>3</td><td>J1</td></tr><tr><td>4</td><td>4</td><td>J1</td></tr><tr><td>5</td><td>1</td><td>R3</td></tr><tr><td>6</td><td>2</td><td>R3</td></tr><tr><td>7</td><td>3</td><td>R3</td></tr><tr><td>8</td><td>4</td><td>R3</td></tr></table></div></div>"
+  },
+  "inscription": {
+   "w": 430,
+   "h": 275,
+   "html": "<form style=\"margin:4px\"><fieldset style=\"padding:6px 14px\"><legend><b>Inscription</b></legend><table style=\"font-size:13px;border-spacing:6px;width:100%\"><tr><td><b>Nom</b></td><td><input style=\"width:150px\"></td></tr><tr><td><b>Adresse email</b></td><td><input style=\"width:150px\"></td></tr><tr><td><b>Date de naissance</b></td><td><input type=\"date\" style=\"width:130px\"></td></tr><tr><td><b>Genre</b></td><td><input type=\"radio\" name=\"g\"> <b>Masculin</b> <input type=\"radio\" name=\"g\"> <b>Féminin</b></td></tr><tr><td><b>Mot de passe</b></td><td><input type=\"password\" style=\"width:150px\"></td></tr><tr><td><b>Retaper le mot de passe</b></td><td><input type=\"password\" style=\"width:150px\"></td></tr></table><div style=\"text-align:right;margin-top:6px\"><button type=\"button\">Annuler</button> <button type=\"button\">Enregistrer</button></div></fieldset></form>"
+  },
+  "extrait": {
+   "w": 560,
+   "h": 96,
+   "html": "<div style=\"background:#f3f5f9;border:1px solid #cbd5e1;padding:8px 10px;font:12px/1.5 Consolas,monospace;white-space:nowrap\">&lt;div&nbsp;class&nbsp;=&nbsp;\"parcelles\"&nbsp;id&nbsp;=&nbsp;\"p1\"&nbsp;onclick&nbsp;=&nbsp;\"choixParcelle(1)\"&gt;1&lt;/div&gt;<br>&lt;div&nbsp;class&nbsp;=&nbsp;\"parcelles\"&nbsp;id&nbsp;=&nbsp;\"p2\"&nbsp;onclick&nbsp;=&nbsp;\"choixParcelle(2)\"&gt;2&lt;/div&gt;<br>&lt;div&nbsp;class&nbsp;=&nbsp;\"parcelles\"&nbsp;id&nbsp;=&nbsp;\"p3\"&nbsp;onclick&nbsp;=&nbsp;\"choixParcelle(3)\"&gt;3&lt;/div&gt;<br>&lt;div&nbsp;class&nbsp;=&nbsp;\"parcelles\"&nbsp;id&nbsp;=&nbsp;\"p4\"&nbsp;onclick&nbsp;=&nbsp;\"choixParcelle(4)\"&gt;4&lt;/div&gt;</div>"
+  }
+ },
+ "sheets": [
+  "> *Important :*\n> - Toutes les ressources à utiliser se trouvent dans le répertoire « **Ressources** » situé sur la racine du disque **C**.\n> - Il est demandé au candidat de :\n>   ✓ créer, dans le répertoire du serveur web local (**www** ou **htdocs**), un dossier de travail en le nommant \"**SW<votre numéro d’inscription>**\" où seront enregistrés tous les documents à réaliser.\n>   ✓ copier, dans le dossier de travail, le fichier \"**Sti2024.rar**\" situé dans \"**C:\\Ressources**\", puis extraire son contenu dans ce même dossier de travail, en utilisant le mot de passe \"**7h497t**\".\n>   ✓ s’assurer que le contenu extrait est formé des fichiers : \"**affectation.html**\", \"**mesStyles.css**\", \"**jardin.jpeg**\" et \"**parcelles.jpeg**\".\n>   ✓ vérifier à la fin de l’épreuve que tous les fichiers créés sont stockés dans le dossier de travail.\n\nDans le but de favoriser les interactions sociales et de soutenir la préservation de l’environnement, la municipalité d’une ville envisage de réaliser un projet qui permettrait à un groupe d’habitants de participer d’une manière collaborative à l’entretien des jardins publics. Chaque jardin est composé de 4 parcelles et chaque habitant participant au projet sera chargé de l’entretien d’une ou de plusieurs parcelles.\nPour ce faire, on demande de créer la partie du site Web permettant de réaliser les opérations suivantes :\n▪ Inscription d’un membre (habitant).\n▪ Affectation d’une parcelle d’un jardin à un membre.\n\n## __Travail demandé__\n### __Partie A__ : Création de la base de données\nLe concepteur du site utilise une base de données simplifiée décrite par la représentation textuelle suivante :\n\n```indent\n**jardin** (__idJar__, nomJar, adresse)\n**parcelle** (__idPar__, numPar, idJar#)\n**membre** (__idMem__, nomMem, genre, dateNais, email, mdp)\n**affectation** (__idMem__#, __idPar__#, dateDeb)\n```\n\nLa description des différents champs est présentée dans le tableau suivant :\n\n| Champ | Type et propriété(s) | Description |\n|---|---|---|\n| idJar | Chaîne de 2 caractères | Identifiant d’un jardin. |\n| nomJar | Chaîne de 50 caractères | Nom d’un jardin. |\n| adresse | Chaîne de 50 caractères | Adresse d’un jardin. |\n| idPar | Entier (auto-incrémenté dans la table parcelle) | Identifiant d’une parcelle d’un jardin. |\n| numPar | Entier | Numéro d’une parcelle d’un jardin. |\n| idMem | Entier (auto-incrémenté dans la table membre) | Identifiant d’un membre. |\n| nomMem | Chaîne de 50 caractères | Nom et prénom d’un membre. |\n| genre | Caractère | Genre d’un membre : \"**M**\" pour Masculin et \"**F**\" pour Féminin. |\n| dateNais | Date | Date de naissance d’un membre. |\n| email | Chaîne de 50 caractères (valeur unique) | Adresse email d’un membre. |\n| mdp | Chaîne de 6 caractères | Mot de passe d’un membre. |\n| dateDeb | Date | Date de début de l’affectation d’une parcelle à un membre. |",
+  "1) Créer cette base de données en lui attribuant le nom \"**BD<votre numéro d’inscription>**\".\n2) En se référant à la représentation textuelle fournie, réaliser les tâches suivantes :\n  a) Créer les tables de cette base de données.\n  b) Etablir les relations entre les différentes tables.\n3) Insérer les lignes suivantes dans les tables **jardin** et **parcelle** :\n\n[[fig:inserts]]\n\n4) Exporter cette base de données au format **sql** sous le nom \"**BD<votre numéro d’inscription>**\".\n\n### __Partie B__ : Création des documents Web\n> __Consignes__\n> a) Toutes les fonctions JavaScript doivent être enregistrées dans un fichier nommé \"**mesControles.js**\".\n> b) Toutes les règles CSS doivent être enregistrées dans le fichier \"**mesStyles.css**\".\n> c) Toutes les pages HTML doivent être reliées au fichier \"**mesStyles.css**\".\n> d) Les pages \"**inscription.html**\" et \"**affectation.html**\" doivent être reliées au fichier \"**mesControles.js**\".\n> e) Le clic sur le bouton \"**Annuler**\" de chaque formulaire à créer, permet d’initialiser les champs.\n\n1) **Création de la page index du site**\n```indent\na) Créer la page \"**index.html**\" tout en la reliant au fichier \"**mesStyles.css**\" afin de respecter la disposition ci-contre.\n[[fig:layout|right]]\nSachant que :\n✓ L’élément <**h1**> contient le texte : \"Jardinons ensemble\".\n✓ L’élément <**nav**> représente le volet de navigation et contient les liens hypertextes suivants :\n  ▪ *Inscription d’un membre* (servira de lien vers la page \"**inscription.html**\").\n  ▪ *Affectation d’une parcelle* (servira de lien vers la page \"**affectation.html**\").\n✓ L’élément <**section**> représente la zone d’affichage des différentes pages web et contient par défaut la page \"**inscription.html**\".\n✓ L’élément <**aside**> contient l’image \"**jardin.jpeg**\" située dans votre dossier de travail.\n✓ L’élément <**footer**> représente le pied de page et contient la liste à puces suivante :\n\n> - Email : admin@jardinpartage.tn\n> - Téléphone : +216 60 600 600\n\nb) Ajouter au fichier \"**mesStyles.css**\", les règles permettant d’appliquer aux éléments de cette page, les mises en forme spécifiées dans le tableau suivant :\n\n| Elément | Mise en forme |\n|:-:|---|\n| h1<br>nav | Alignement du texte : centré |\n| image | Filtre : inversement total des couleurs (100 %) |\n| liste à puces | Style de marqueur de la liste : square<br>Style du texte : italique |\n```",
+  "2) **Inscription d’un membre**\n```indent\na) Créer la page \"**inscription.html**\" qui permet la saisie des données relatives à un nouveau membre via le formulaire suivant :\n[[fig:inscription]]\nSachant que :\n✓ Le champ de saisie relatif au libellé \"**Adresse email**\" est de type **email**.\n✓ Le champ de saisie relatif au libellé \"**Date de naissance**\" est de type **date**.\n✓ Les attributs \"**value**\" des boutons radio (**Masculin** et **Féminin**) relatifs au genre ont respectivement les valeurs \"**M**\" et \"**F**\" et aucun bouton n’est sélectionné par défaut.\n✓ Les champs de saisie relatifs aux libellés \"**Mot de passe**\" et \"**Retaper le mot de passe**\" sont de type **password**.\n✓ Le clic sur le bouton \"**Enregistrer**\" fait appel à :\n  ▪ une fonction JavaScript nommée \"**inscription**\",\n  ▪ un fichier intitulé \"*inscription.php*\".\nb) Ajouter au fichier \"**mesStyles.css**\", les règles permettant d’appliquer aux éléments de cette page, les mises en forme spécifiées dans le tableau suivant :\n\n| Elément | Mise en forme |\n|:-:|---|\n| Les champs de saisie relatifs au nom, adresse email et les deux mots de passe. | Couleur du texte : #009933<br>Couleur de l’arrière-plan : #FFFFD8<br>Marge intérieur des 4 côtés : 4px |\n\nc) Développer, dans le fichier \"**mesControles.js**\", la fonction \"**inscription**\" afin de s’assurer de la validité des champs du formulaire tout en respectant les contrôles suivants :\n\n| Champ | Contrôle |\n|:-:|---|\n| Nom | Une chaîne alphabétique de **50** caractères au maximum qui contient au minimum un espace et qui commence et se termine par une lettre. |\n| Adresse email | Une chaîne de **50** caractères au maximum, commençant obligatoirement par une lettre et se termine par l’extension \"**.tn**\". |\n| Date de naissance | Une date dont l’année est comprise entre **1950** et **2006**. |\n| Genre | Un genre doit être sélectionné. |\n| Mot de passe | Une chaîne de **6** caractères sans espaces. |\n| Retaper le mot de passe | Une chaîne de caractères identique à celle saisie dans le champ \"**Mot de passe**\". |\n```",
+  "```indent\nd) Créer le fichier \"**inscription.php**\" permettant :\n✓ d’afficher le message \"*Adresse email déjà utilisée !*\" dans le cas où l’adresse email saisie existe déjà dans la base de données,\nou bien\n✓ d’insérer dans la table appropriée, les données relatives au nouveau membre, puis afficher la __valeur générée__ du champ **idMem**, suivi par le message \"*Inscription réussie*\".\n```\n3) **Affectation d’une parcelle à un membre**\n```indent\na) Ouvrir la page \"**affectation.html**\" et compléter les attributs de la balise <**form**> sachant que le clic sur le bouton \"**Enregistrer**\" fait appel à :\n✓ une fonction JavaScript nommée \"**affectation**\",\n✓ un fichier intitulé \"**affectation.php**\".\nb) Appliquer à tous les champs de saisie, les mêmes styles CSS définis dans la question 2-b (**Partie B**).\nc) Développer, dans le fichier \"**mesControles.js**\", les fonctions suivantes :\n✓ \"**choixParcelle(x)**\" qui permet d’afficher dans le champ de saisie d’identifiant \"**numPar**\" la valeur du paramètre **x** qui représente le numéro d’une parcelle.\nCette fonction est appelée lors du clic sur l’un des éléments **div** d’identifiant **p1**, **p2**, **p3** ou **p4** comme le montre l’extrait ci-dessous :\n[[fig:extrait]]\n✓ \"**affectation**\" permettant de s’assurer de la validité des champs du formulaire tout en respectant les contrôles suivants :\n\n| Champ | Contrôle |\n|---|---|\n| Identifiant | Un entier supérieur ou égal à **1**. |\n| Mot de passe | Même contrôle défini dans la question 2-c (**Partie B**). |\n| Jardin | Sélection obligatoire d’un jardin. |\n| Numéro de la Parcelle | Un entier supérieur ou égal à **1**. |\n\nd) Créer le fichier \"**affectation.php**\" permettant :\n✓ d’afficher le message \"*Membre inexistant !*\" dans le cas où le couple de valeur formé par l’identifiant et le mot de passe, n’existe pas dans la base,\nou bien\n✓ d’afficher le message \"*Affectation existante !*\" dans le cas où la parcelle choisie du jardin sélectionné est déjà affectée au membre dont l’identifiant est saisi,\nou bien\n✓ d’insérer les données relatives à l’affectation de la parcelle au membre, puis d’afficher le message \"*Affectation réussie*\".\n**N.B. :** Le champ **dateDeb** aura comme valeur la date courante.\n```\n\n## Grille d’évaluation\n\n| Partie A | Q1 | Q2-a | Q2-b | Q3 | Q4 |\n|:-:|:-:|:-:|:-:|:-:|:-:|\n| Point(s) | 0.25 | 1 | 0.75 | 0.5 | 0.25 |\n\n| Partie B | Consignes | 1-a | 1-b | 2-a | 2-b | 2-c | 2-d | 3-a | 3-b | 3-c | 3-d |\n|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|\n| Point(s) | 0.5 | 2 | 1.5 | 1.75 | 1.25 | 3 | 2.25 | 0.75 | 0.25 | 0.75 | 3.25 |"
+ ],
+ "exercises": [
+  {
+   "id": "ex1",
+   "order": 1,
+   "difficulty": "bac",
+   "label": "Partie A : base de données",
+   "statement": "Partie A : base de données",
+   "hints": [],
+   "solution": "Les relations peuvent s'écrire directement dans les `CREATE TABLE` avec `FOREIGN KEY ... REFERENCES ...`, ou après avec `ALTER TABLE`.\n\n```sql etape1.sql\nCREATE TABLE jardin (\n  idJar VARCHAR(2) NOT NULL PRIMARY KEY,\n  nomJar VARCHAR(50) NOT NULL,\n  adresse VARCHAR(50) NOT NULL\n);\n\nCREATE TABLE parcelle (\n  idPar INT NOT NULL AUTO_INCREMENT PRIMARY KEY,\n  numPar INT NOT NULL,\n  idJar VARCHAR(2) NOT NULL,\n  FOREIGN KEY (idJar) REFERENCES jardin(idJar)\n);\n\nCREATE TABLE membre (\n  idMem INT NOT NULL AUTO_INCREMENT PRIMARY KEY,\n  nomMem VARCHAR(50) NOT NULL,\n  genre CHAR(1) NOT NULL,\n  dateNais DATE NOT NULL,\n  email VARCHAR(50) NOT NULL UNIQUE,\n  mdp VARCHAR(6) NOT NULL\n);\n\nCREATE TABLE affectation (\n  idMem INT NOT NULL,\n  idPar INT NOT NULL,\n  dateDeb DATE NOT NULL,\n  PRIMARY KEY (idMem, idPar),\n  FOREIGN KEY (idMem) REFERENCES membre(idMem),\n  FOREIGN KEY (idPar) REFERENCES parcelle(idPar)\n);\n\nINSERT INTO jardin VALUES\n('J1', 'Résidence des Pins', 'Cité des pins'),\n('R3', 'Eden des roses', 'Rue des martyres');\n\nINSERT INTO parcelle (numPar, idJar) VALUES\n(1, 'J1'), (2, 'J1'), (3, 'J1'), (4, 'J1'),\n(1, 'R3'), (2, 'R3'), (3, 'R3'), (4, 'R3');\n```\n\nAprès l'import, on **exporte** la base au format `sql` dans le dossier de travail, comme demandé par le sujet. Les identifiants `idPar` obtenus (1 à 8) suivent l'ordre d'insertion : c'est pour cela que `J1` est inséré avant `R3`."
+  },
+  {
+   "id": "ex2",
+   "order": 2,
+   "difficulty": "bac",
+   "label": "B.1 : index.html et son style",
+   "statement": "B.1 : index.html et son style",
+   "hints": [],
+   "solution": "**Étape 1 :** `index.html`\n\n```html index.html\n<!DOCTYPE html>\n<html lang=\"fr\">\n<head>\n  <meta charset=\"utf-8\">\n  <title>Jardinons ensemble</title>\n  <link rel=\"stylesheet\" href=\"mesStyles.css\">\n</head>\n<body>\n  <header>\n    <h1>Jardinons ensemble</h1>\n    <nav>\n      <a href=\"inscription.html\" target=\"zone\">Inscription d'un membre</a>\n      <a href=\"affectation.html\" target=\"zone\">Affectation d'une parcelle</a>\n    </nav>\n  </header>\n  <main>\n    <section>\n      <iframe name=\"zone\" src=\"inscription.html\"></iframe>\n    </section>\n    <aside>\n      <img src=\"jardin.jpeg\" alt=\"Jardin\">\n    </aside>\n  </main>\n  <footer>\n    <ul>\n      <li>Email : admin@jardinpartage.tn</li>\n      <li>Téléphone : +216 60 600 600</li>\n    </ul>\n  </footer>\n</body>\n</html>\n```\n\n**Étape 2 : règles à ajouter à la fin de** `mesStyles.css`\n\n```css mesStyles.css\n/* Règles demandées */\nh1, nav {\n  text-align: center;\n}\naside img {\n  filter: invert(100%);\n}\nul {\n  list-style-type: square;\n  font-style: italic;\n}\ninput[type=\"text\"], input[type=\"email\"], input[type=\"password\"], input[type=\"number\"] {\n  color: #009933;\n  background-color: #FFFFD8;\n  padding: 4px;\n}\nfooter {\n  clear: both;\n}\n```\n\nLe `target=\"zone\"` des liens est égal au `name` de l'iframe. `aside img` n'inverse que l'image de la colonne de droite : un `img` seul toucherait aussi `parcelles.jpeg` dans l'iframe, et l'image, devenue un élément filtré, passerait **au-dessus** des numéros de parcelles. `clear: both` pousse le pied de page sous `section` et `aside`."
+  },
+  {
+   "id": "ex3",
+   "order": 3,
+   "difficulty": "bac",
+   "label": "B.2 : inscription.html et son style",
+   "statement": "B.2 : inscription.html et son style",
+   "hints": [],
+   "solution": "**Étape 1 :** `inscription.html`\n\n```html inscription.html\n<!DOCTYPE html>\n<html lang=\"fr\">\n<head>\n  <meta charset=\"utf-8\">\n  <title>Inscription d'un membre</title>\n  <script src=\"mesControles.js\"></script>\n  <link rel=\"stylesheet\" href=\"mesStyles.css\">\n</head>\n<body>\n  <form action=\"inscription.php\" method=\"post\" onsubmit=\"return inscription()\">\n    <fieldset>\n      <legend>Inscription</legend>\n      <label for=\"nom\">Nom</label>\n      <input type=\"text\" id=\"nom\" name=\"nom\"><br><br>\n      <label for=\"email\">Adresse email</label>\n      <input type=\"email\" id=\"email\" name=\"email\"><br><br>\n      <label for=\"dateNais\">Date de naissance</label>\n      <input type=\"date\" id=\"dateNais\" name=\"dateNais\"><br><br>\n      <label>Genre</label>\n      <input type=\"radio\" name=\"genre\" value=\"M\"> Masculin\n      <input type=\"radio\" name=\"genre\" value=\"F\"> Féminin<br><br>\n      <label for=\"mdp\">Mot de passe</label>\n      <input type=\"password\" id=\"mdp\" name=\"mdp\"><br><br>\n      <label for=\"mdp2\">Retaper le mot de passe</label>\n      <input type=\"password\" id=\"mdp2\" name=\"mdp2\"><br><br>\n      <input type=\"reset\" value=\"Annuler\">\n      <input type=\"submit\" value=\"Enregistrer\">\n    </fieldset>\n  </form>\n</body>\n</html>\n```\n\n**Étape 2 : règle à ajouter dans** `mesStyles.css`\n\n```css mesStyles.css\ninput[type=\"text\"], input[type=\"email\"], input[type=\"password\"], input[type=\"number\"] {\n  color: #009933;\n  background-color: #FFFFD8;\n  padding: 4px;\n}\n```\n\nCette règle sert aussi pour la page d'affectation (question 3-b du sujet : « les mêmes styles ») : c'est pourquoi `input[type=\"number\"]` y figure déjà. Le champ de date et les boutons (`reset`, `submit`) ne sont pas concernés."
+  },
+  {
+   "id": "ex4",
+   "order": 4,
+   "difficulty": "bac",
+   "label": "B.2 : fonction inscription",
+   "statement": "B.2 : fonction inscription",
+   "hints": [],
+   "solution": "À écrire dans `mesControles.js` :\n\n```js mesControles.js\n/* une lettre (accentuée ou non) a une majuscule différente de sa minuscule */\nfunction estLettre(c)\n{\n  return c.toLowerCase() != c.toUpperCase()\n}\n\n/* le même contrôle du mot de passe est utilisé dans deux pages */\nfunction mdpValide(mdp)\n{\n  if (mdp.length != 6)\n    return false\n  if (mdp.indexOf(\" \") != -1)\n    return false\n  return true\n}\n\nfunction inscription()\n{\n  let nom = document.getElementById(\"nom\").value\n  let ok = nom.length > 0 && nom.length <= 50 && nom.indexOf(\" \") != -1\n  if (ok)\n  {\n    ok = estLettre(nom.charAt(0)) && estLettre(nom.charAt(nom.length - 1))\n    for (let i = 0; i < nom.length; i++)\n      if (!estLettre(nom.charAt(i)) && nom.charAt(i) != \" \")\n        ok = false\n  }\n  if (!ok)\n  {\n    alert(\"Nom invalide : lettres et espaces, au moins un espace, 50 caractères au plus\")\n    return false\n  }\n\n  let email = document.getElementById(\"email\").value\n  if (email.length > 50 || !estLettre(email.charAt(0)) || email.slice(-3) != \".tn\")\n  {\n    alert(\"Adresse email invalide : elle commence par une lettre et se termine par .tn\")\n    return false\n  }\n\n  let annee = Number(document.getElementById(\"dateNais\").value.slice(0, 4))\n  if (annee < 1950 || annee > 2006)\n  {\n    alert(\"L'année de naissance doit être comprise entre 1950 et 2006\")\n    return false\n  }\n\n  let radios = document.getElementsByName(\"genre\")\n  if (!radios[0].checked && !radios[1].checked)\n  {\n    alert(\"Choisissez un genre\")\n    return false\n  }\n\n  let mdp = document.getElementById(\"mdp\").value\n  if (!mdpValide(mdp))\n  {\n    alert(\"Le mot de passe contient 6 caractères sans espace\")\n    return false\n  }\n  if (document.getElementById(\"mdp2\").value != mdp)\n  {\n    alert(\"Les deux mots de passe sont différents\")\n    return false\n  }\n  return true\n}\n```\n\nÀ chaque `return false`, la fonction s'arrête et le formulaire n'est pas envoyé. La fonction `mdpValide` sert aussi dans `affectation()` (question 3-c). Si la page contient un nom avec un accent, `estLettre` l'accepte aussi."
+  },
+  {
+   "id": "ex5",
+   "order": 5,
+   "difficulty": "bac",
+   "label": "B.2 : connexion.php et inscription.php",
+   "statement": "B.2 : connexion.php et inscription.php",
+   "hints": [],
+   "solution": "```php connexion.php\n<?php\nmysqli_report(MYSQLI_REPORT_OFF);\n$cnx = mysqli_connect(\"localhost\", \"root\", \"\", \"BD2\");\nif (!$cnx) {\n  die(\"Connexion impossible\");\n}\nmysqli_set_charset($cnx, \"utf8\");\n?>\n```\n\n```php inscription.php\n<?php\ninclude \"connexion.php\";\n$nom = mysqli_real_escape_string($cnx, $_POST[\"nom\"]);\n$email = mysqli_real_escape_string($cnx, $_POST[\"email\"]);\n$date = $_POST[\"dateNais\"];\n$genre = $_POST[\"genre\"];\n$mdp = mysqli_real_escape_string($cnx, $_POST[\"mdp\"]);\n\n$res = mysqli_query($cnx, \"SELECT * FROM membre WHERE email = '$email'\");\nif (mysqli_num_rows($res) > 0) {\n  echo \"Adresse email déjà utilisée !\";\n} else {\n  mysqli_query($cnx, \"INSERT INTO membre (nomMem, genre, dateNais, email, mdp) VALUES ('$nom', '$genre', '$date', '$email', '$mdp')\");\n  $id = mysqli_insert_id($cnx);\n  echo \"Votre identifiant est : \" . $id . \"<br>\";\n  echo \"<i>Inscription réussie</i>\";\n}\n?>\n```\n\nSans le test préalable, un email déjà présent ferait échouer l'`INSERT` (`UNIQUE`) et le sujet demande un message précis. `mysqli_insert_id` doit être appelé **juste après** l'`INSERT`, avant toute autre requête."
+  },
+  {
+   "id": "ex6",
+   "order": 6,
+   "difficulty": "bac",
+   "label": "B.3 : affectation.html, style et choixParcelle",
+   "statement": "B.3 : affectation.html, style et choixParcelle",
+   "hints": [],
+   "solution": "**Étape 1 : la balise** `<form>` et l'ajout du script\n\n```html affectation.html\n<head>\n...\n<link href = \"mesStyles.css\" rel = \"stylesheet\" type = \"text/css\">\n<script src=\"mesControles.js\"></script>\n</head>\n...\n<form action=\"affectation.php\" method=\"post\" onsubmit=\"return affectation()\">\n```\n\n**Étape 2 : le style**\n\nLa règle de la question 2-b contient déjà les quatre types de champs :\n\n```css mesStyles.css\ninput[type=\"text\"], input[type=\"email\"], input[type=\"password\"], input[type=\"number\"] {\n  color: #009933;\n  background-color: #FFFFD8;\n  padding: 4px;\n}\n```\n\n**Étape 3 :** `choixParcelle` dans `mesControles.js`\n\n```js mesControles.js\nfunction choixParcelle(x)\n{\n  document.getElementById(\"numPar\").value = x\n}\n```\n\nLe champ `numPar` est `readonly` : l'utilisateur ne peut pas le taper, mais le code JavaScript le remplit, et il est bien **envoyé** avec le formulaire."
+  },
+  {
+   "id": "ex7",
+   "order": 7,
+   "difficulty": "bac",
+   "label": "B.3 : fonction affectation",
+   "statement": "B.3 : fonction affectation",
+   "hints": [],
+   "solution": "À ajouter dans `mesControles.js` :\n\n```js mesControles.js\nfunction affectation()\n{\n  let id = Number(document.getElementById(\"idMem\").value)\n  if (id < 1 || id != Math.floor(id))\n  {\n    alert(\"L'identifiant est un entier supérieur ou égal à 1\")\n    return false\n  }\n  if (!mdpValide(document.getElementById(\"mdp\").value))\n  {\n    alert(\"Le mot de passe contient 6 caractères sans espace\")\n    return false\n  }\n  if (document.getElementById(\"idJar\").selectedIndex == 0)\n  {\n    alert(\"Choisissez un jardin\")\n    return false\n  }\n  let num = Number(document.getElementById(\"numPar\").value)\n  if (num < 1 || num != Math.floor(num))\n  {\n    alert(\"Choisissez une parcelle\")\n    return false\n  }\n  return true\n}\n```\n\nOn réutilise `mdpValide` pour le mot de passe. Si aucune parcelle n'a été cliquée, `numPar` est vide : `Number(\"\")` donne `0`, ce qui est refusé comme il faut."
+  },
+  {
+   "id": "ex8",
+   "order": 8,
+   "difficulty": "bac",
+   "label": "B.3 : affectation.php",
+   "statement": "B.3 : affectation.php",
+   "hints": [],
+   "solution": "```php affectation.php\n<?php\ninclude \"connexion.php\";\n$id = (int) $_POST[\"idMem\"];\n$mdp = mysqli_real_escape_string($cnx, $_POST[\"mdp\"]);\n$jardin = mysqli_real_escape_string($cnx, $_POST[\"idJar\"]);\n$num = (int) $_POST[\"numPar\"];\n\n$res = mysqli_query($cnx, \"SELECT * FROM membre WHERE idMem = $id AND mdp = '$mdp'\");\nif (mysqli_num_rows($res) == 0) {\n  echo \"Membre inexistant !\";\n} else {\n  $res = mysqli_query($cnx, \"SELECT idPar FROM parcelle WHERE numPar = $num AND idJar = '$jardin'\");\n  $ligne = mysqli_fetch_assoc($res);\n  $idPar = $ligne[\"idPar\"];\n  $res = mysqli_query($cnx, \"SELECT * FROM affectation WHERE idMem = $id AND idPar = $idPar\");\n  if (mysqli_num_rows($res) > 0) {\n    echo \"Affectation existante !\";\n  } else {\n    mysqli_query($cnx, \"INSERT INTO affectation VALUES ($id, $idPar, CURDATE())\");\n    echo \"Affectation réussie\";\n  }\n}\n?>\n```\n\nOn convertit `idMem` et `numPar` avec `(int)` : ce sont des nombres, pas du texte. Les deux jardins ont chacun des parcelles numérotées de 1 à 4 : il faut donc **les deux** conditions (`numPar` et `idJar`) pour retrouver la bonne ligne de `parcelle`."
+  }
+ ]
+}
