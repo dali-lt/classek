@@ -1764,19 +1764,20 @@ function openPlayground(opts) {
   });
   document.addEventListener("keydown", onKey);
   card.append(wrapL, side);
-  if (opts.sheetsOf && devSetView) {
-    // phones: one thing at a time (the editor first), and a bar to go from the editor to the subject and to the result
-    card.classList.add("is-devoir");
+  {
+    // phones: one thing at a time (the editor first), and a bar to go from the editor to the subject / the page / the result
+    card.classList.add("is-m3");
     var m3 = el("div", "pg-m3");
     var m3b = [];
     var setM = function (v) {
       card.setAttribute("data-mview", v);
-      if (v !== "editor") devSetView(v);
+      if (v !== "editor" && devSetView) devSetView(v);
       m3b.forEach(function (x) {
         x.b.setAttribute("aria-pressed", x.v === v ? "true" : "false");
       });
     };
-    [["editor", t("ppEditor")], ["task", t("ppDevoir")], ["mine", t("ppResult")]].forEach(function (v) {
+    var tabs = devSetView ? [["editor", t("ppEditor")]].concat(all) : [["editor", t("ppEditor")], ["mine", t("liveMine")]];
+    tabs.forEach(function (v) {
       var b = el("button", "pg-vw", v[1]);
       b.type = "button";
       b.addEventListener("click", function () {
@@ -4779,19 +4780,7 @@ function exParcours(ch, exs, selIdx, curId) {
     el("h3", "", t("exPathTitle")),
     el("p", "", curId ? tf("exPathLine", { done: done, total: total, n: curIdx + 1 }) : tf("exPathAll", { done: done, total: total })),
   );
-  var leg = el("div", "ex-parcours-legend");
-  ["easy", "medium", "bac"].forEach(function (d) {
-    if (
-      !exs.some(function (e) {
-        return (e.difficulty === "bac" || e.difficulty === "medium" ? e.difficulty : "easy") === d;
-      })
-    )
-      return;
-    var chip = el("span", "ex-lg d-" + d);
-    chip.append(el("i", ""), el("span", "", t(EX_LEVEL[d])));
-    leg.append(chip);
-  });
-  top.append(txt, leg);
+  top.append(txt);
   var map = el("div", "ex-map");
   card.append(top, map);
 
