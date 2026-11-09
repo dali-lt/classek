@@ -104,9 +104,10 @@ var STR = {
     dvStep4: "Correction",
     dvStep4t: "La solution, après ton temps de réflexion.",
     dvAll: "Tous",
-    dvMain: "Bac principale",
-    dvControl: "Bac contrôle",
-    dvOther: "Autres devoirs",
+    dvMain: "Principale",
+    dvControl: "Contrôle",
+    dvPrat: "Pratique",
+    dvNone: "Aucun devoir dans cette catégorie pour le moment.",
     dvSessMain: "Session principale",
     dvSessControl: "Session de contrôle",
     dvMeta: "{h} h",
@@ -343,9 +344,10 @@ var STR = {
     dvStep4: "التصحيح",
     dvStep4t: "الحل، بعد وقت التفكير.",
     dvAll: "الكل",
-    dvMain: "باك دورة رئيسية",
-    dvControl: "باك دورة المراقبة",
-    dvOther: "فروض أخرى",
+    dvMain: "رئيسية",
+    dvControl: "مراقبة",
+    dvPrat: "تطبيقي",
+    dvNone: "لا توجد فروض في هذا الصنف حاليا.",
     dvSessMain: "الدورة الرئيسية",
     dvSessControl: "دورة المراقبة",
     dvMeta: "{h} س",
@@ -3115,7 +3117,7 @@ function devoirCard(ch) {
   return card;
 }
 
-var devoirFilter = "all"; // "all" | "principale" | "controle" | "other"
+var devoirFilter = "all"; // "all" | "principale" | "controle" | "pratique"
 
 function renderDevoirs(host, sub) {
   var list = extrasOf(sub, "devoir");
@@ -3160,44 +3162,33 @@ function renderDevoirs(host, sub) {
   how.append(hh, row);
   host.append(how);
 
-  // filters (only the kinds that exist)
+  // filters: the same four everywhere, in every subject
   var kindOf = function (c) {
-    return c.session === "principale" ? "principale" : c.session === "controle" ? "controle" : "other";
+    return c.session === "principale" ? "principale" : c.session === "controle" ? "controle" : c.session === "pratique" ? "pratique" : "other";
   };
-  var kinds = ["principale", "controle", "other"].filter(function (k) {
-    return list.some(function (c) {
-      return kindOf(c) === k;
+  var fl = el("div", "dv-filters");
+  [["all", "dvAll"], ["principale", "dvMain"], ["controle", "dvControl"], ["pratique", "dvPrat"]].forEach(function (f) {
+    var b = el("button", "dv-filter" + (devoirFilter === f[0] ? " is-on" : ""), t(f[1]));
+    b.type = "button";
+    b.addEventListener("click", function () {
+      devoirFilter = f[0];
+      render();
     });
+    fl.append(b);
   });
-  if (devoirFilter !== "all" && kinds.indexOf(devoirFilter) < 0) devoirFilter = "all";
-  if (kinds.length > 1) {
-    var fl = el("div", "dv-filters");
-    [["all", "dvAll"]]
-      .concat(
-        kinds.map(function (k) {
-          return [k, { principale: "dvMain", controle: "dvControl", other: "dvOther" }[k]];
-        })
-      )
-      .forEach(function (f) {
-        var b = el("button", "dv-filter" + (devoirFilter === f[0] ? " is-on" : ""), t(f[1]));
-        b.type = "button";
-        b.addEventListener("click", function () {
-          devoirFilter = f[0];
-          render();
-        });
-        fl.append(b);
-      });
-    host.append(fl);
-  }
+  host.append(fl);
 
+  var shown = list.filter(function (c) {
+    return devoirFilter === "all" || kindOf(c) === devoirFilter;
+  });
+  if (!shown.length) {
+    host.append(el("div", "student-empty", t("dvNone")));
+    return;
+  }
   var grid = el("div", "sv-grid");
-  list
-    .filter(function (c) {
-      return devoirFilter === "all" || kindOf(c) === devoirFilter;
-    })
-    .forEach(function (c) {
-      grid.append(devoirCard(c));
-    });
+  shown.forEach(function (c) {
+    grid.append(devoirCard(c));
+  });
   host.append(grid);
 }
 
