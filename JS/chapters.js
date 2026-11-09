@@ -5064,16 +5064,11 @@ function practiceRun(ch, exs, corrOut) {
     if (corrOut) corrOut.textContent = "";
     var end = read();
     var left = end ? Math.ceil((end - Date.now()) / 1000) : total;
+    // the note: words only (the editor button is in the toolbar of the sheet)
     var note = el("div", "pp-run-note");
     var noteRow = el("div", "pp-run-text");
     noteRow.append(el("span", "pp-run-ico", "!"), el("p", "", t("ppRunNote")));
-    var edBtn = editorButton();
-    edBtn.addEventListener("click", function () {
-      openFreeEditor(ch, title);
-    });
-    var act = el("div", "pp-run-act");
-    act.append(edBtn);
-    note.append(noteRow, act);
+    note.append(noteRow);
     wrap.append(note);
     if (end && left <= 0) {
       (corrOut || wrap).append(correction());
@@ -5413,6 +5408,18 @@ function renderView(view, ch) {
       if (runHost) aside.append(runHost);
     } else aside.append(notesSection(ch, true));
     view.append(aside);
+    if (prat) {
+      // same top line as the sheet box
+      var alignSide = function () {
+        var target = main.querySelector(".pp-box");
+        if (!target || !aside.isConnected) return;
+        aside.style.marginTop = "0px";
+        var d = target.getBoundingClientRect().top - aside.getBoundingClientRect().top;
+        aside.style.marginTop = Math.max(0, Math.round(d)) + "px";
+      };
+      window.requestAnimationFrame(alignSide);
+      window.setTimeout(alignSide, 400);
+    }
   }
   runHost = null;
   syncBackButton();

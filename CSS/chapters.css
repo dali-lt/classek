@@ -4654,3 +4654,5 @@ html:has(.modal-overlay.open) .s-menu-btn {
 .ch-side-run .tm-alert-go { margin-inline-start: 0; width: 100%; justify-content: center; }
 .tm-alert { box-sizing: border-box; max-width: 100%; min-width: 0; }
 .pp-run-row { min-width: 0; }
+.ch-side-run .pp-run-row:not(:has(.tm-alert)) { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 14px; border-radius: 16px; background: #fff; border: 1.5px solid #cfe0ff; box-shadow: 0 6px 18px rgba(1, 9, 45, 0.06); }
+.ch-side-run .pp-timer-t { font-size: 28px; flex: 1 1 100%; }
