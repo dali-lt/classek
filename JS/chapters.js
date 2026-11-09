@@ -5683,7 +5683,7 @@ function exercisesPart(ch) {
         });
         tabs.append(b);
       });
-      det.append(tabs);
+      // the arrows and "Exercice i / n" are enough: no row of numbers
       if (exs[selIdx] && exs[selIdx].label) det.append(el("h4", "pp-part", exs[selIdx].label));
     }
     var qf = dvQuestions(ch, exs[selIdx]);

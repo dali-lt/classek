@@ -4660,7 +4660,7 @@ html:has(.modal-overlay.open) .s-menu-btn {
 /* ---------------- theory devoir: sheet on the left, answers on the right ---------------- */
 .dv-sw { display: none; }
 .dv-split { display: grid; grid-template-columns: minmax(0, 1fr) 440px; gap: 22px; align-items: start; }
-.dv-split-r { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; border-radius: 22px; scrollbar-width: thin; }
+.dv-split-r { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; padding: 4px 6px 4px 4px; scrollbar-width: thin; }
 .dv-split-r .ex-detail { margin: 0; }
 .dv-ans-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
 .dv-ans-head .pp-corr { margin: 0; }
@@ -4722,3 +4722,7 @@ html:has(.modal-overlay.open) .s-menu-btn {
 .dv-gr-c { font: inherit; font-weight: 700; font-size: 12.5px; padding: 6px 12px; border-radius: 99px; border: 1.5px solid var(--line, #dbe5f3); background: #fff; color: inherit; cursor: pointer; }
 .dv-gr-c.is-on { background: #01092d; border-color: #01092d; color: #fff; }
 .dv-gr-good { flex: 1 1 100%; font-weight: 700; font-size: 12.5px; color: #2d7d0c; padding-inline-start: 32px; }
+
+/* theory devoir: the number and level of the exercise are already in the header */
+.ex-detail.is-paper .ex-head .ex-num, .ex-detail.is-paper .ex-head .ex-diff, .ex-detail.is-paper .ex-sum { display: none; }
+.ex-detail.is-paper .ex-head:not(:has(.ex-state, .ex-hints-used)) { display: none; }
