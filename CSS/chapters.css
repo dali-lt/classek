@@ -4703,3 +4703,22 @@ html:has(.modal-overlay.open) .s-menu-btn {
 }
 .dv-split-l { position: sticky; top: 12px; }
 @media (max-width: 1100px) { .dv-split-l { position: static; } }
+
+/* arrows between the exercises of a theory devoir, tables to tick */
+.dv-nav { display: inline-flex; align-items: center; gap: 6px; }
+.dv-nav-b { width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--line, #dbe5f3); background: #fff; color: #01092d; font-size: 20px; line-height: 1; cursor: pointer; display: grid; place-items: center; padding: 0 0 2px; }
+.dv-nav-b:hover:not(:disabled) { background: #01092d; color: #fff; }
+.dv-nav-b:disabled { opacity: 0.35; cursor: default; }
+.dv-nav-n { font-weight: 700; font-size: 13px; color: var(--mut, #5a6785); min-width: 74px; text-align: center; }
+.dv-next { display: block; width: 100%; margin-top: 12px; padding: 12px 16px; border: 0; border-radius: 14px; background: #01092d; color: #fff; font: inherit; font-weight: 800; font-size: 14px; cursor: pointer; }
+.dv-next:hover { background: #0a1a55; }
+.dv-grid { display: flex; flex-direction: column; gap: 6px; }
+.dv-gr-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 7px 8px; border: 1.5px solid var(--line, #dbe5f3); border-radius: 12px; background: #fff; }
+.dv-gr-row.is-ok { border-color: #6cc24a; background: #f3fbe9; }
+.dv-gr-row.is-ko { border-color: #e8486a; background: #fff1f4; }
+.dv-gr-n { width: 22px; height: 22px; border-radius: 7px; background: #eef2fb; color: #4a5578; font-weight: 800; font-size: 12px; display: grid; place-items: center; flex: none; }
+.dv-gr-t { flex: 1 1 160px; font-size: 13.5px; line-height: 1.35; min-width: 0; }
+.dv-gr-cells { display: inline-flex; gap: 4px; flex: none; }
+.dv-gr-c { font: inherit; font-weight: 700; font-size: 12.5px; padding: 6px 12px; border-radius: 99px; border: 1.5px solid var(--line, #dbe5f3); background: #fff; color: inherit; cursor: pointer; }
+.dv-gr-c.is-on { background: #01092d; border-color: #01092d; color: #fff; }
+.dv-gr-good { flex: 1 1 100%; font-weight: 700; font-size: 12.5px; color: #2d7d0c; padding-inline-start: 32px; }

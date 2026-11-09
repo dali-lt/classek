@@ -420,8 +420,16 @@
             hints: hintList(ex),
             hint: hintList(ex)[0] || "",
             think: Number.isFinite(Number(ex.think)) && ex.think !== null && ex.think !== "" ? Number(ex.think) : null,
+            // theory devoir: one field per question (select, multi, radio, tf, text, code, grid), without the right answers
+            questions: Array.isArray(ex.questions)
+              ? ex.questions.filter(function (q) { return q && typeof q === "object" && typeof q.id === "string" && q.id; }).slice(0, 40).map(function (q) { return JSON.parse(JSON.stringify(q)); })
+              : [],
           });
-          batch.set(sdk.doc(exRef, "private", "solution"), { text: ex.solution || "" });
+          // the right answers stay private, with the solution: { questionId: index | [indexes] | true/false | "text" | [index per row] }
+          batch.set(sdk.doc(exRef, "private", "solution"), {
+            text: ex.solution || "",
+            answers: ex.answers && typeof ex.answers === "object" && !Array.isArray(ex.answers) ? JSON.parse(JSON.stringify(ex.answers)) : {},
+          });
         });
         bar.style.width = "40%";
         await batch.commit();

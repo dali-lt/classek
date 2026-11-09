@@ -60,6 +60,9 @@ var STR = {
     dvTyTf: "Vrai / Faux",
     dvTyText: "Réponse courte",
     dvTyCode: "Code",
+    dvTyGrid: "Tableau à cocher",
+    dvPrev: "Exercice précédent",
+    dvNext: "Exercice suivant",
     dvTypeHere: "Ta réponse…",
     ppExam: "Épreuve",
     ppHours: "Durée : {h} h",
@@ -316,6 +319,9 @@ var STR = {
     dvTyTf: "صحيح / خطأ",
     dvTyText: "إجابة قصيرة",
     dvTyCode: "كود",
+    dvTyGrid: "جدول اختيار",
+    dvPrev: "التمرين السابق",
+    dvNext: "التمرين التالي",
     dvTypeHere: "إجابتك…",
     ppExam: "اختبار",
     ppHours: "المدة : {h} س",
@@ -4157,7 +4163,7 @@ function exerciseCard(ch, ex, index) {
   var isOpenCard = true; // the page shows one exercise at a time (the one picked on the path), always open
   // exercises come one at a time: the ones after the one the student has reached stay locked until it is finished
   var reachedId = currentExerciseId(ch);
-  var locked = !st && !!reachedId && !reached;
+  var locked = !st && !!reachedId && !reached && ch.kind !== "devoir";
   if (locked) isOpenCard = false;
   var card = el(
     "article",
@@ -4332,7 +4338,7 @@ function exerciseCard(ch, ex, index) {
     var actions = el("div", "ex-actions");
     var show = el("button", "pc-btn", t("showSolution"));
     show.type = "button";
-    var needT = st ? 0 : thinkNeed(ex, diff);
+    var needT = st || ch.kind === "devoir" ? 0 : thinkNeed(ex, diff); // a devoir has no thinking timer
     var started = function () {
       return thinkSpent[key] !== undefined;
     };
@@ -5350,11 +5356,17 @@ function dvQuestions(ch, ex) {
   var clearMarks = function () {
     Object.keys(rows).forEach(function (k) {
       rows[k].classList.remove("is-ok", "is-ko");
+      rows[k].querySelectorAll(".dv-gr-row").forEach(function (g) {
+        g.classList.remove("is-ok", "is-ko");
+      });
     });
     score.textContent = "";
     good.hidden = true;
     goodOn = false;
     goods.forEach(function (g) {
+      g.remove();
+    });
+    box.querySelectorAll(".dv-gr-good").forEach(function (g) {
       g.remove();
     });
     goods = [];
@@ -5363,7 +5375,7 @@ function dvQuestions(ch, ex) {
     save();
     clearMarks();
   };
-  var TYPE_LABEL = { select: "dvTyChoice", multi: "dvTyMulti", radio: "dvTyRadio", tf: "dvTyTf", text: "dvTyText", code: "dvTyCode" };
+  var TYPE_LABEL = { grid: "dvTyGrid", select: "dvTyChoice", multi: "dvTyMulti", radio: "dvTyRadio", tf: "dvTyTf", text: "dvTyText", code: "dvTyCode" };
   qs.forEach(function (q, i) {
     var row = el("div", "dv-q");
     rows[q.id] = row;
@@ -5418,6 +5430,36 @@ function dvQuestions(ch, ex) {
         list.append(b);
       });
       row.append(list);
+    } else if (q.type === "grid") {
+      // a table to tick: one choice per line (e.g. "Valide / Invalide")
+      var cols = (ar && q.cols_ar ? q.cols_ar : q.cols) || [];
+      var rl = (ar && q.rows_ar ? q.rows_ar : q.rows) || [];
+      var cur2 = Array.isArray(mine[q.id]) ? mine[q.id].slice() : [];
+      var grid = el("div", "dv-grid");
+      rl.forEach(function (rt, ri) {
+        var gr = el("div", "dv-gr-row");
+        gr.append(el("span", "dv-gr-n", String(ri + 1)), el("span", "dv-gr-t", rt));
+        var cells = el("div", "dv-gr-cells");
+        cols.forEach(function (cn, ci) {
+          var cb = el("button", "dv-gr-c" + (cur2[ri] === ci ? " is-on" : ""), cn);
+          cb.type = "button";
+          cb.setAttribute("aria-pressed", cur2[ri] === ci ? "true" : "false");
+          cb.addEventListener("click", function () {
+            cur2[ri] = ci;
+            for (var z = 0; z < rl.length; z++) if (cur2[z] === undefined) cur2[z] = null;
+            mine[q.id] = cur2.slice();
+            cells.querySelectorAll(".dv-gr-c").forEach(function (x, xi) {
+              x.classList.toggle("is-on", xi === ci);
+              x.setAttribute("aria-pressed", xi === ci ? "true" : "false");
+            });
+            changed();
+          });
+          cells.append(cb);
+        });
+        gr.append(cells);
+        grid.append(gr);
+      });
+      row.append(grid);
     } else if (q.type === "tf") {
       var tfBox = el("div", "dv-tf");
       [[true, "dvTrue"], [false, "dvFalse"]].forEach(function (c) {
@@ -5476,6 +5518,21 @@ function dvQuestions(ch, ex) {
         var n = 0;
         var m = 0;
         qs.forEach(function (q) {
+          if (q.type === "grid") {
+            var want = Array.isArray(ans[q.id]) ? ans[q.id] : [];
+            var have = Array.isArray(mine[q.id]) ? mine[q.id] : [];
+            var els = rows[q.id].querySelectorAll(".dv-gr-row");
+            var allOk = true;
+            want.forEach(function (a, ri) {
+              m++;
+              var ok = have[ri] !== undefined && have[ri] !== null && Number(have[ri]) === Number(a);
+              if (ok) n++;
+              else allOk = false;
+              if (els[ri]) els[ri].classList.add(ok ? "is-ok" : "is-ko");
+            });
+            rows[q.id].classList.add(allOk ? "is-ok" : "is-ko");
+            return;
+          }
           var r = dvRight(q, mine[q.id], ans[q.id]);
           if (r === null) return;
           m++;
@@ -5501,6 +5558,14 @@ function dvQuestions(ch, ex) {
     qs.forEach(function (q) {
       var a = lastAns[q.id];
       if (a === undefined || a === null || !rows[q.id].classList.contains("is-ko")) return;
+      if (q.type === "grid") {
+        var gcols = (ar && q.cols_ar ? q.cols_ar : q.cols) || [];
+        rows[q.id].querySelectorAll(".dv-gr-row.is-ko").forEach(function (g) {
+          var ri = Array.prototype.indexOf.call(rows[q.id].querySelectorAll(".dv-gr-row"), g);
+          g.append(el("span", "dv-gr-good", "✓ " + (gcols[a[ri]] || "")));
+        });
+        return;
+      }
       var txt;
       if (q.type === "tf") txt = a ? t("dvTrue") : t("dvFalse");
       else if (q.type === "multi") txt = (Array.isArray(a) ? a : [a]).map(function (k) { return (q.options || [])[k]; }).join(" · ");
@@ -5540,7 +5605,7 @@ function exercisesPart(ch) {
     var want = openEx[ch.id];
     var selIdx = -1;
     exs.forEach(function (e, i) {
-      var lockedE = !st0[e.id] && !!curId && curId !== e.id;
+      var lockedE = !st0[e.id] && !!curId && curId !== e.id && ch.kind !== "devoir";
       if (e.id === want && !lockedE) selIdx = i;
     });
     if (selIdx < 0) {
@@ -5572,12 +5637,41 @@ function exercisesPart(ch) {
     }
     if (isDv) {
       var dhead = el("div", "dv-ans-head");
-      dhead.append(el("h3", "pp-corr", t("dvAnswers")), el("span", "dv-ans-of", tf("dvExOf", { i: selIdx + 1, n: exs.length })));
+      var goTo = function (k) {
+        openEx[ch.id] = exs[k].id;
+        render();
+        window.requestAnimationFrame(function () {
+          var rp = document.querySelector(".dv-split-r");
+          if (rp) rp.scrollTop = 0;
+        });
+      };
+      var navBox = function () {
+        var nv = el("div", "dv-nav");
+        var pv = el("button", "dv-nav-b", "‹");
+        pv.type = "button";
+        pv.title = t("dvPrev");
+        pv.setAttribute("aria-label", t("dvPrev"));
+        pv.disabled = selIdx <= 0;
+        pv.addEventListener("click", function () {
+          goTo(selIdx - 1);
+        });
+        var nx = el("button", "dv-nav-b", "›");
+        nx.type = "button";
+        nx.title = t("dvNext");
+        nx.setAttribute("aria-label", t("dvNext"));
+        nx.disabled = selIdx >= exs.length - 1;
+        nx.addEventListener("click", function () {
+          goTo(selIdx + 1);
+        });
+        nv.append(pv, el("span", "dv-nav-n", tf("dvExOf", { i: selIdx + 1, n: exs.length })), nx);
+        return nv;
+      };
+      dhead.append(el("h3", "pp-corr", t("dvAnswers")), navBox());
       det.append(dhead);
       var tabs = el("div", "pp-exs");
       exs.forEach(function (e, i) {
         var st1 = st0[e.id];
-        var lk = !st1 && !!curId && curId !== e.id;
+        var lk = !st1 && !!curId && curId !== e.id && ch.kind !== "devoir";
         var short = (i < 9 ? "0" : "") + (i + 1);
         var b = el("button", "pp-ex-tab" + (i === selIdx ? " is-on" : "") + (st1 ? " is-" + st1 : ""), short);
         if (e.label) b.title = e.label;
@@ -5595,6 +5689,19 @@ function exercisesPart(ch) {
     var qf = dvQuestions(ch, exs[selIdx]);
     if (qf) det.append(qf);
     det.append(exerciseCard(ch, exs[selIdx], selIdx));
+    if (isDv && selIdx < exs.length - 1) {
+      var nextBtn = el("button", "dv-next", t("dvNext") + " →");
+      nextBtn.type = "button";
+      nextBtn.addEventListener("click", function () {
+        openEx[ch.id] = exs[selIdx + 1].id;
+        render();
+        window.requestAnimationFrame(function () {
+          var rp = document.querySelector(".dv-split-r");
+          if (rp) rp.scrollTop = 0;
+        });
+      });
+      det.append(nextBtn);
+    }
     if (isDv) {
       var pane = dvPane[ch.id] === "mine" ? "mine" : "task";
       var split = el("div", "dv-split");
