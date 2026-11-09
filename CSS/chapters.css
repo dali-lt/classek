@@ -4656,3 +4656,50 @@ html:has(.modal-overlay.open) .s-menu-btn {
 .pp-run-row { min-width: 0; }
 .ch-side-run .pp-run-row:not(:has(.tm-alert)) { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 14px; border-radius: 16px; background: #fff; border: 1.5px solid #cfe0ff; box-shadow: 0 6px 18px rgba(1, 9, 45, 0.06); }
 .ch-side-run .pp-timer-t { font-size: 28px; flex: 1 1 100%; }
+
+/* ---------------- theory devoir: sheet on the left, answers on the right ---------------- */
+.dv-sw { display: none; }
+.dv-split { display: grid; grid-template-columns: minmax(0, 1fr) 440px; gap: 22px; align-items: start; }
+.dv-split-r { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; border-radius: 22px; scrollbar-width: thin; }
+.dv-split-r .ex-detail { margin: 0; }
+.dv-ans-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.dv-ans-head .pp-corr { margin: 0; }
+.dv-ans-of { color: var(--mut, #5a6785); font-weight: 700; font-size: 13px; }
+.dv-qs { display: flex; flex-direction: column; gap: 10px; margin: 0 0 14px; }
+.dv-q { background: var(--card, #fff); border: 1.5px solid var(--line, #dbe5f3); border-radius: 16px; padding: 12px 14px; }
+.dv-q.is-ok { border-color: #6cc24a; background: #f3fbe9; }
+.dv-q.is-ko { border-color: #e8486a; background: #fff1f4; }
+.dv-q-h { margin: 0 0 8px; font-size: 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.dv-q-n { background: #01092d; color: #fff; border-radius: 8px; padding: 1px 7px; font-size: 12px; }
+.dv-q-l { flex: 1 1 140px; }
+.dv-q-type { font-size: 10.5px; font-weight: 800; background: #e8f0ff; color: #0a5be0; border-radius: 99px; padding: 2px 8px; }
+.dv-select, .dv-input, .dv-code { width: 100%; box-sizing: border-box; font: inherit; font-size: 14px; padding: 9px 12px; border: 1.5px solid var(--line, #dbe5f3); border-radius: 12px; background: #fff; color: inherit; }
+.dv-select:focus, .dv-input:focus, .dv-code:focus { outline: none; border-color: #0a5be0; }
+.dv-code { font-family: ui-monospace, Consolas, monospace; font-size: 13px; background: #050c2b; color: #cfe0ff; resize: vertical; }
+.dv-opts { display: flex; flex-direction: column; gap: 6px; }
+.dv-opt { display: flex; align-items: center; gap: 10px; text-align: start; font: inherit; font-size: 14px; color: inherit; background: #fff; border: 1.5px solid var(--line, #dbe5f3); border-radius: 12px; padding: 8px 12px; cursor: pointer; }
+.dv-opt.is-on { border-color: #0a5be0; background: #eaf1ff; }
+.dv-cb, .dv-rd { width: 18px; height: 18px; flex: none; border: 2px solid #9fb0d6; box-sizing: border-box; }
+.dv-cb { border-radius: 5px; display: grid; place-items: center; }
+.dv-rd { border-radius: 50%; }
+.dv-opt.is-on .dv-cb { background: #0a5be0; border-color: #0a5be0; }
+.dv-opt.is-on .dv-cb::after { content: "✓"; color: #fff; font-size: 12px; line-height: 1; }
+.dv-opt.is-on .dv-rd { border: 5px solid #0a5be0; }
+.dv-tf { display: flex; gap: 8px; }
+.dv-tf-b { flex: 1; font: inherit; font-weight: 700; font-size: 14px; padding: 8px; border-radius: 12px; border: 1.5px solid var(--line, #dbe5f3); background: #fff; color: inherit; cursor: pointer; }
+.dv-tf-b.is-on { background: #01092d; border-color: #01092d; color: #fff; }
+.dv-qs-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.dv-score { font-weight: 800; font-size: 14px; }
+.dv-showgood { border: 0; background: none; color: #0a5be0; font: inherit; font-weight: 700; cursor: pointer; text-decoration: underline; padding: 0; }
+.dv-showgood[hidden] { display: none; }
+.dv-good { margin: 8px 0 0; font-weight: 700; color: #2d7d0c; font-size: 13.5px; }
+@media (max-width: 1100px) {
+  .dv-sw { display: inline-flex; gap: 4px; padding: 4px; margin-bottom: 12px; border-radius: 999px; background: #fff; box-shadow: 0 6px 18px rgba(1, 9, 45, 0.1); }
+  .dv-sw .pg-vw { padding: 6px 14px; }
+  .dv-sw .pg-vw[aria-pressed="true"] { background: #01092d; color: #fff; }
+  .dv-split { grid-template-columns: minmax(0, 1fr); }
+  .dv-split[data-pane="task"] .dv-split-r, .dv-split[data-pane="mine"] .dv-split-l { display: none; }
+  .dv-split-r { position: static; max-height: none; overflow: visible; }
+}
+.dv-split-l { position: sticky; top: 12px; }
+@media (max-width: 1100px) { .dv-split-l { position: static; } }

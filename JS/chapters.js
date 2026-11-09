@@ -45,6 +45,22 @@ var STR = {
     ppZoomIn: "Agrandir",
     ppZoomOut: "Réduire",
     ppCorr: "Réponses et correction",
+    dvAnswers: "Mes réponses",
+    dvExOf: "Exercice {i} / {n}",
+    dvPick: "Choisis une réponse…",
+    dvTrue: "Vrai",
+    dvFalse: "Faux",
+    dvCheck: "Vérifier mes réponses",
+    dvShowGood: "Voir les bonnes réponses",
+    dvScore: "{n} / {m} bonne(s) réponse(s)",
+    dvNoAuto: "Pas de correction automatique ici.",
+    dvTyChoice: "Liste déroulante",
+    dvTyMulti: "Cases à cocher",
+    dvTyRadio: "Un seul choix",
+    dvTyTf: "Vrai / Faux",
+    dvTyText: "Réponse courte",
+    dvTyCode: "Code",
+    dvTypeHere: "Ta réponse…",
     ppExam: "Épreuve",
     ppHours: "Durée : {h} h",
     ppPoints: "{p} points",
@@ -285,6 +301,22 @@ var STR = {
     ppZoomIn: "تكبير",
     ppZoomOut: "تصغير",
     ppCorr: "الإجابات والتصحيح",
+    dvAnswers: "إجاباتي",
+    dvExOf: "التمرين {i} / {n}",
+    dvPick: "اختر إجابة…",
+    dvTrue: "صحيح",
+    dvFalse: "خطأ",
+    dvCheck: "تحقّق من إجاباتي",
+    dvShowGood: "أظهر الإجابات الصحيحة",
+    dvScore: "{n} / {m} إجابة صحيحة",
+    dvNoAuto: "لا يوجد تصحيح آلي هنا.",
+    dvTyChoice: "قائمة منسدلة",
+    dvTyMulti: "خانات اختيار",
+    dvTyRadio: "اختيار واحد",
+    dvTyTf: "صحيح / خطأ",
+    dvTyText: "إجابة قصيرة",
+    dvTyCode: "كود",
+    dvTypeHere: "إجابتك…",
     ppExam: "اختبار",
     ppHours: "المدة : {h} س",
     ppPoints: "{p} نقطة",
@@ -2423,6 +2455,7 @@ async function loadExercises(chId) {
       S.cur.exercises = LOCAL[chId].map(function (e) {
         var c = Object.assign({}, e);
         delete c.solution;
+        delete c.answers;
         return c;
       });
     } else {
@@ -2539,6 +2572,7 @@ window.addEventListener("pagehide", function () {
   });
 });
 
+var solAnswers = {}; // "chapter/exercise" -> {questionId: right answer} (private, comes with the solution)
 async function loadSolution(chId, exId) {
   var key = chId + "/" + exId;
   if (LOCAL[chId]) {
@@ -2546,12 +2580,14 @@ async function loadSolution(chId, exId) {
       return e.id === exId;
     })[0];
     solutions[key] = le ? String(le.solution || "") : "";
+    solAnswers[key] = le && le.answers ? le.answers : null;
     return;
   }
   var snap = await ctx.sdk.getDoc(
     ctx.sdk.doc(ctx.db, "chapters", chId, "exercises", exId, "private", "solution"),
   );
   solutions[key] = snap.exists() ? String(snap.data().text || "") : "";
+  solAnswers[key] = snap.exists() && snap.data().answers ? snap.data().answers : null;
 }
 
 async function setStatus(chId, exId, value, opts) {
@@ -5263,6 +5299,223 @@ function paperPart(ch, exs) {
   return box;
 }
 
+
+/* ---- theory devoir: the answers panel (a field per question: dropdown, checkboxes, true/false, short text, code) ---- */
+var dvPane = {}; // chapterId -> "task" | "mine" (phones and narrow screens show one pane at a time)
+function dvAnsRead(chId) {
+  try {
+    return JSON.parse(window.localStorage.getItem("cl.dvAns." + chId) || "{}") || {};
+  } catch (e) {
+    return {};
+  }
+}
+function dvAnsWrite(chId, obj) {
+  try {
+    window.localStorage.setItem("cl.dvAns." + chId, JSON.stringify(obj));
+  } catch (e) {}
+}
+function dvNorm(v) {
+  return String(v == null ? "" : v).trim().toLowerCase().replace(/\s+/g, " ").replace(/,/g, ".");
+}
+// true / false, or null when the question is not auto-corrected
+function dvRight(q, val, ans) {
+  if (ans === undefined || ans === null) return null;
+  if (q.type === "select" || q.type === "radio") return val === undefined || val === "" ? false : Number(val) === Number(ans);
+  if (q.type === "multi") {
+    var a = (Array.isArray(ans) ? ans : [ans]).map(Number).sort().join(",");
+    var b = (Array.isArray(val) ? val : []).map(Number).sort().join(",");
+    return a === b;
+  }
+  if (q.type === "tf") return val === ans;
+  if (q.type === "text") {
+    var list = Array.isArray(ans) ? ans : [ans];
+    return list.some(function (x) {
+      return dvNorm(x) === dvNorm(val) && dvNorm(val) !== "";
+    });
+  }
+  return null;
+}
+function dvQuestions(ch, ex) {
+  var qs = ex.questions;
+  if (!Array.isArray(qs) || !qs.length) return null;
+  var ar = ctx.getLang() === "ar";
+  var all = dvAnsRead(ch.id);
+  var mine = all[ex.id] || {};
+  var save = function () {
+    all[ex.id] = mine;
+    dvAnsWrite(ch.id, all);
+  };
+  var box = el("div", "dv-qs");
+  var rows = {};
+  var clearMarks = function () {
+    Object.keys(rows).forEach(function (k) {
+      rows[k].classList.remove("is-ok", "is-ko");
+    });
+    score.textContent = "";
+    good.hidden = true;
+    goodOn = false;
+    goods.forEach(function (g) {
+      g.remove();
+    });
+    goods = [];
+  };
+  var changed = function () {
+    save();
+    clearMarks();
+  };
+  var TYPE_LABEL = { select: "dvTyChoice", multi: "dvTyMulti", radio: "dvTyRadio", tf: "dvTyTf", text: "dvTyText", code: "dvTyCode" };
+  qs.forEach(function (q, i) {
+    var row = el("div", "dv-q");
+    rows[q.id] = row;
+    var head = el("h4", "dv-q-h");
+    head.append(el("span", "dv-q-n", "Q" + (i + 1)), el("span", "dv-q-l", (ar && q.label_ar ? q.label_ar : q.label) || ""));
+    if (TYPE_LABEL[q.type]) head.append(el("span", "dv-q-type", t(TYPE_LABEL[q.type])));
+    row.append(head);
+    var opts = (ar && q.options_ar ? q.options_ar : q.options) || [];
+    if (q.type === "select") {
+      var sel = el("select", "dv-select");
+      var o0 = el("option", "", t("dvPick"));
+      o0.value = "";
+      sel.append(o0);
+      opts.forEach(function (o, k) {
+        var op = el("option", "", o);
+        op.value = String(k);
+        sel.append(op);
+      });
+      if (mine[q.id] !== undefined && mine[q.id] !== "") sel.value = String(mine[q.id]);
+      sel.addEventListener("change", function () {
+        mine[q.id] = sel.value === "" ? "" : Number(sel.value);
+        changed();
+      });
+      row.append(sel);
+    } else if (q.type === "radio" || q.type === "multi") {
+      var multi = q.type === "multi";
+      var cur = multi ? (Array.isArray(mine[q.id]) ? mine[q.id].slice() : []) : mine[q.id];
+      var list = el("div", "dv-opts");
+      opts.forEach(function (o, k) {
+        var b = el("button", "dv-opt");
+        b.type = "button";
+        b.append(el("span", multi ? "dv-cb" : "dv-rd"), el("span", "dv-opt-t", o));
+        var paint = function () {
+          var on = multi ? cur.indexOf(k) >= 0 : cur === k;
+          b.classList.toggle("is-on", on);
+          b.setAttribute("aria-pressed", on ? "true" : "false");
+        };
+        paint();
+        b.addEventListener("click", function () {
+          if (multi) {
+            var at = cur.indexOf(k);
+            if (at >= 0) cur.splice(at, 1);
+            else cur.push(k);
+          } else cur = k;
+          mine[q.id] = multi ? cur.slice() : cur;
+          list.querySelectorAll(".dv-opt").forEach(function (x) {
+            x._paint();
+          });
+          changed();
+        });
+        b._paint = paint;
+        list.append(b);
+      });
+      row.append(list);
+    } else if (q.type === "tf") {
+      var tfBox = el("div", "dv-tf");
+      [[true, "dvTrue"], [false, "dvFalse"]].forEach(function (c) {
+        var b = el("button", "dv-tf-b" + (mine[q.id] === c[0] ? " is-on" : ""), t(c[1]));
+        b.type = "button";
+        b.addEventListener("click", function () {
+          mine[q.id] = c[0];
+          tfBox.querySelectorAll(".dv-tf-b").forEach(function (x) {
+            x.classList.remove("is-on");
+          });
+          b.classList.add("is-on");
+          changed();
+        });
+        tfBox.append(b);
+      });
+      row.append(tfBox);
+    } else {
+      var isCode = q.type === "code";
+      var inp = el(isCode ? "textarea" : "input", isCode ? "dv-code" : "dv-input");
+      if (!isCode) inp.type = "text";
+      else inp.rows = 5;
+      inp.placeholder = t("dvTypeHere");
+      inp.spellcheck = false;
+      inp.value = mine[q.id] || "";
+      inp.addEventListener("input", function () {
+        mine[q.id] = inp.value;
+        changed();
+      });
+      row.append(inp);
+    }
+    box.append(row);
+  });
+  // check: marks right / wrong (the right answers come with the private solution, like the correction)
+  var bar = el("div", "dv-qs-bar");
+  var chk = el("button", "pc-btn dv-check", t("dvCheck"));
+  chk.type = "button";
+  var score = el("span", "dv-score");
+  var good = el("button", "dv-showgood", t("dvShowGood"));
+  good.type = "button";
+  good.hidden = true;
+  var goodOn = false;
+  var goods = [];
+  var lastAns = null;
+  chk.addEventListener("click", function () {
+    chk.disabled = true;
+    loadSolution(ch.id, ex.id).then(
+      function () {
+        chk.disabled = false;
+        var ans = solAnswers[ch.id + "/" + ex.id];
+        lastAns = ans;
+        clearMarks();
+        if (!ans) {
+          score.textContent = t("dvNoAuto");
+          return;
+        }
+        var n = 0;
+        var m = 0;
+        qs.forEach(function (q) {
+          var r = dvRight(q, mine[q.id], ans[q.id]);
+          if (r === null) return;
+          m++;
+          if (r) n++;
+          rows[q.id].classList.add(r ? "is-ok" : "is-ko");
+        });
+        score.textContent = tf2(n, m);
+        good.hidden = n === m;
+      },
+      function () {
+        chk.disabled = false;
+        score.textContent = t("loadFail");
+      }
+    );
+  });
+  var tf2 = function (n, m) {
+    return tf("dvScore", { n: n, m: m });
+  };
+  good.addEventListener("click", function () {
+    if (!lastAns || goodOn) return;
+    goodOn = true;
+    good.hidden = true;
+    qs.forEach(function (q) {
+      var a = lastAns[q.id];
+      if (a === undefined || a === null || !rows[q.id].classList.contains("is-ko")) return;
+      var txt;
+      if (q.type === "tf") txt = a ? t("dvTrue") : t("dvFalse");
+      else if (q.type === "multi") txt = (Array.isArray(a) ? a : [a]).map(function (k) { return (q.options || [])[k]; }).join(" · ");
+      else if (q.type === "select" || q.type === "radio") txt = (q.options || [])[a];
+      else txt = Array.isArray(a) ? a[0] : a;
+      var g = el("p", "dv-good", "✓ " + txt);
+      goods.push(g);
+      rows[q.id].append(g);
+    });
+  });
+  bar.append(chk, score, good);
+  box.append(bar);
+  return box;
+}
+
 var runHost = null; // the right column of a practical devoir (wide screens), where its alerts go
 function exercisesPart(ch) {
   var box = el("div", "ch-ex");
@@ -5297,8 +5550,12 @@ function exercisesPart(ch) {
       if (selIdx < 0) selIdx = exs.length - 1; // everything is done: show the last one
     }
     var isDv = ch.kind === "devoir";
+    var paper = null;
     if (isDv) {
-      box.append(paperPart(ch, exs));
+      paper = paperPart(ch, exs);
+      if (ch.session !== "pratique") {
+        // theory devoir: the sheet on the left and the answers on the right (one at a time on narrow screens)
+      } else box.append(paper);
       if (ch.session === "pratique") {
         // wide screens: the chrono alert and the editor note sit in the right column, which replaces the notes
         if (runHost) {
@@ -5314,7 +5571,9 @@ function exercisesPart(ch) {
       return box;
     }
     if (isDv) {
-      det.append(el("h3", "pp-corr", t("ppCorr")));
+      var dhead = el("div", "dv-ans-head");
+      dhead.append(el("h3", "pp-corr", t("dvAnswers")), el("span", "dv-ans-of", tf("dvExOf", { i: selIdx + 1, n: exs.length })));
+      det.append(dhead);
       var tabs = el("div", "pp-exs");
       exs.forEach(function (e, i) {
         var st1 = st0[e.id];
@@ -5333,8 +5592,36 @@ function exercisesPart(ch) {
       det.append(tabs);
       if (exs[selIdx] && exs[selIdx].label) det.append(el("h4", "pp-part", exs[selIdx].label));
     }
+    var qf = dvQuestions(ch, exs[selIdx]);
+    if (qf) det.append(qf);
     det.append(exerciseCard(ch, exs[selIdx], selIdx));
-    box.append(det);
+    if (isDv) {
+      var pane = dvPane[ch.id] === "mine" ? "mine" : "task";
+      var split = el("div", "dv-split");
+      split.setAttribute("data-pane", pane);
+      var sw = el("div", "dv-sw");
+      var swb = [];
+      [["task", t("ppSheet")], ["editor", t("dvAnswers")]].forEach(function (v) {
+        var b = tabButton(v[0], v[1]);
+        var key = v[0] === "task" ? "task" : "mine";
+        b.setAttribute("aria-pressed", key === pane ? "true" : "false");
+        b.addEventListener("click", function () {
+          dvPane[ch.id] = key;
+          split.setAttribute("data-pane", key);
+          swb.forEach(function (x) {
+            x.b.setAttribute("aria-pressed", x.k === key ? "true" : "false");
+          });
+        });
+        swb.push({ b: b, k: key });
+        sw.append(b);
+      });
+      var dl = el("div", "dv-split-l");
+      dl.append(paper);
+      var dr = el("div", "dv-split-r");
+      dr.append(det);
+      split.append(dl, dr);
+      box.append(sw, split);
+    } else box.append(det);
   }
   return box;
 }
