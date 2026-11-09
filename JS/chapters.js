@@ -182,7 +182,6 @@ var STR = {
     liveReload: "Recharger",
     liveExpected: "Résultat attendu",
     liveMine: "Mon résultat",
-    thinkWarn: "Lance le chrono de réflexion pour débloquer la solution.",
     pgTask: "Exercice",
     answerPlaceholder: "Essaie d’abord : écris ta réponse ici pour débloquer la solution.",
     qPlaceholder: "Ta réponse à la question {n}…",
@@ -422,7 +421,6 @@ var STR = {
     liveReload: "أعد التحميل",
     liveExpected: "النتيجة المطلوبة",
     liveMine: "نتيجتي",
-    thinkWarn: "شغّل مؤقّت التفكير باش يتفتح الحلّ.",
     pgTask: "التمرين",
     answerPlaceholder: "جرّب الأول: اكتب جوابك هنا باش يتفتح الحل.",
     qPlaceholder: "جوابك على السؤال {n}…",
@@ -936,6 +934,19 @@ var SW_ICON = {
   play: "<svg " + SW_ICON_ATTR + '><path d="M7 4.5v15l12-7.5z"/></svg>',
   bulb: "<svg " + SW_ICON_ATTR + '><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg>',
 };
+// the orange "start the chrono" alert shown outside the editor (devoir page, exercises): same colour, icon and words everywhere
+function timerAlert(btn) {
+  var d = el("div", "tm-alert");
+  var i = el("span", "tm-alert-ico");
+  i.innerHTML = SW_ICON.clock; // static, trusted SVG
+  d.append(i, el("span", "tm-alert-t", t("tmWarn")));
+  if (btn) {
+    btn.className = "tm-alert-go";
+    btn.innerHTML = SW_ICON.play; // static, trusted SVG
+    d.append(btn);
+  }
+  return d;
+}
 // a switch button: an icon and a word (on phones only the pressed one keeps its word)
 function tabButton(key, label) {
   var b = el("button", "pg-vw");
@@ -1694,6 +1705,8 @@ function openPlayground(opts) {
       bar.textContent = "";
       var e = tmr.end();
       var left = tmr.left();
+      bar.hidden = false;
+      ov.classList.add("has-timebar");
       if (!e) {
         bar.className = "pg-timebar is-warn";
         var go = el("button", "pg-timebar-go");
@@ -1708,8 +1721,10 @@ function openPlayground(opts) {
         wico.innerHTML = SW_ICON.clock; // static, trusted SVG
         bar.append(wico, el("span", "pg-timebar-t", t("tmWarn")), go);
       } else if (left > 0) {
+        // started: it runs in the background, nothing more to show inside the editor
         bar.className = "pg-timebar is-run";
-        bar.append(el("span", "pg-timebar-k", t("tmLeft")), el("b", "pg-timebar-v", clock(left)));
+        bar.hidden = true;
+        ov.classList.remove("has-timebar");
       } else {
         bar.className = "pg-timebar is-over";
         bar.append(el("span", "pg-timebar-t", t("tmOver")));
@@ -4324,11 +4339,9 @@ function exerciseCard(ch, ex, index) {
       show.classList.toggle("is-start", notYet);
       show.style.setProperty("--tp", Math.min(100, ((needT - l) / needT) * 100) + "%");
     };
-    // soft orange reminder while the thinking timer has not been started
-    var thinkWarn = el("div", "ex-thinkwarn");
-    var twIco = el("span", "ex-thinkwarn-ico");
-    twIco.innerHTML = SW_ICON.bulb; // static, trusted SVG
-    thinkWarn.append(twIco, el("span", "ex-thinkwarn-t", t("thinkWarn")));
+    // the orange chrono alert while the thinking timer has not been started
+    var thinkWarn = timerAlert();
+    thinkWarn.classList.add("is-ex");
     var paintShow0 = paintShow;
     paintShow = function () {
       paintShow0();
@@ -5067,13 +5080,15 @@ function practiceRun(ch, exs) {
     }
     var row = el("div", "pp-run-row");
     if (!end) {
-      var go = el("button", "pp-timer-go", tf("ppStart", { t: clock(total) }));
+      var go = el("button");
       go.type = "button";
       go.addEventListener("click", function () {
         write(Date.now() + total * 1000);
         paint();
       });
-      row.append(go);
+      var ga = timerAlert(go);
+      go.append(el("span", "", tf("ppStart", { t: clock(total) })));
+      row.append(ga);
     } else {
       var lab = el("span", "pp-timer-lab", t("ppLeft"));
       var big = el("b", "pp-timer-t", clock(left));
