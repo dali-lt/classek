@@ -3222,7 +3222,10 @@ function renderDevoirs(host, sub) {
     go1.addEventListener("click", function () {
       openChapter(started.id);
     });
-    hero.append(left, go1);
+    var mark = el("img", "rs-mark");
+    mark.src = "Images/logo-icon.svg"; // the same big faded logo as the home "resume" box
+    mark.alt = "";
+    hero.append(mark, left, go1);
     host.append(hero);
   }
 

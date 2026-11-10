@@ -4112,7 +4112,9 @@ body:has(.av-modal) .ch-back.ch-back-float {
 .dv-num.n4 { background: #01092d; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .dv-num.n4 { background: #e6f0fc; color: #01092d; } }
 :root[data-theme="dark"] .dv-num.n4 { background: #e6f0fc; color: #01092d; }
-.dv-filters { display: flex; flex-wrap: wrap; gap: 10px; }
+.dv-filters { display: flex; flex-wrap: nowrap; gap: 10px; overflow-x: auto; scrollbar-width: none; padding: 4px 3px; margin: -4px -3px; }
+.dv-filters::-webkit-scrollbar { display: none; }
+.dv-filter { flex: 0 0 auto; white-space: nowrap; }
 .dv-filter {
   min-height: 44px;
   padding: 0 18px;
@@ -4767,3 +4769,10 @@ html:has(.modal-overlay.open) .s-menu-btn {
 .dv-next { background: #aee37b; color: #01092d; border-color: #aee37b; }
 .dv-next:hover { background: #9bd665; border-color: #9bd665; }
 .dv-select, .dv-input { border-radius: 999px; padding: 11px 16px; }
+
+/* the devoir "resume" box carries the same faded logo as the home one */
+.dv-hero { position: relative; overflow: hidden; }
+.dv-hero > *:not(.rs-mark) { position: relative; z-index: 1; }
+.dv-hero .rs-mark { position: absolute; inset-inline-end: -26px; top: 50%; width: 250px; height: auto; transform: translateY(-50%); opacity: 0.2; pointer-events: none; }
+html[dir="rtl"] .dv-hero .rs-mark { transform: translateY(-50%) scaleX(-1); }
+@media (max-width: 640px) { .dv-hero .rs-mark { width: 170px; } }
