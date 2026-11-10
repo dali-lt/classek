@@ -46,7 +46,7 @@ var STR = {
     ppZoomOut: "Réduire",
     ppCorr: "Réponses et correction",
     dvAnswers: "Mes réponses",
-    dvExOf: "Exercice {i} / {n}",
+    dvExOf: "Étape {i} / {n}",
     dvPick: "Choisis une réponse…",
     dvTrue: "Vrai",
     dvFalse: "Faux",
@@ -61,8 +61,8 @@ var STR = {
     dvTyText: "Réponse courte",
     dvTyCode: "Code",
     dvTyGrid: "Tableau à cocher",
-    dvPrev: "Exercice précédent",
-    dvNext: "Exercice suivant",
+    dvPrev: "Étape précédente",
+    dvNext: "Étape suivante",
     dvTypeHere: "Ta réponse…",
     ppExam: "Épreuve",
     ppHours: "Durée : {h} h",
@@ -111,7 +111,7 @@ var STR = {
     devoirsEmptyTitle: "Les devoirs arrivent bientôt",
     devoirsEmptyText: "Reviens bientôt : des sujets de Bac avec correction sont ajoutés.",
     dvResume: "Reprendre où tu t’es arrêté",
-    dvResumeLine: "Exercice {i} sur {n}",
+    dvResumeLine: "Étape {i} sur {n}",
     dvHowTitle: "Une correction qui se dévoile petit à petit",
     dvHowHint: "Tu cherches d’abord. Chaque étape s’ouvre seulement quand tu es prêt.",
     dvStep1: "Ta réponse",
@@ -131,8 +131,10 @@ var STR = {
     dvSessControl: "Session de contrôle",
     dvMeta: "{h} h",
     dvExCount: "{n} exercices",
+    dvStCount: "{n} étapes",
+    dvPctDone: "{p} % complété",
     dvPoints: "{n} points",
-    dvProgress: "Exercices",
+    dvProgress: "Progression",
     dvStDone: "Terminé",
     dvStProg: "En cours",
     dvStNew: "À faire",
@@ -305,7 +307,7 @@ var STR = {
     ppZoomOut: "تصغير",
     ppCorr: "الإجابات والتصحيح",
     dvAnswers: "إجاباتي",
-    dvExOf: "التمرين {i} / {n}",
+    dvExOf: "المرحلة {i} / {n}",
     dvPick: "اختر إجابة…",
     dvTrue: "صحيح",
     dvFalse: "خطأ",
@@ -320,8 +322,8 @@ var STR = {
     dvTyText: "إجابة قصيرة",
     dvTyCode: "كود",
     dvTyGrid: "جدول اختيار",
-    dvPrev: "التمرين السابق",
-    dvNext: "التمرين التالي",
+    dvPrev: "المرحلة السابقة",
+    dvNext: "المرحلة التالية",
     dvTypeHere: "إجابتك…",
     ppExam: "اختبار",
     ppHours: "المدة : {h} س",
@@ -370,7 +372,7 @@ var STR = {
     devoirsEmptyTitle: "الفروض جاية قريب",
     devoirsEmptyText: "ارجع قريب: تتزاد مواضيع باك مع التصحيح.",
     dvResume: "كمّل وين وقفت",
-    dvResumeLine: "التمرين {i} من {n}",
+    dvResumeLine: "المرحلة {i} من {n}",
     dvHowTitle: "تصحيح يتكشّف شوية شوية",
     dvHowHint: "تقلّب بروحك لول. كل مرحلة تتفتح كي تكون حاضر.",
     dvStep1: "جوابك",
@@ -390,8 +392,10 @@ var STR = {
     dvSessControl: "دورة المراقبة",
     dvMeta: "{h} س",
     dvExCount: "{n} تمارين",
+    dvStCount: "{n} مراحل",
+    dvPctDone: "{p}٪ منجز",
     dvPoints: "{n} نقطة",
-    dvProgress: "التمارين",
+    dvProgress: "التقدّم",
     dvStDone: "كمل",
     dvStProg: "جاري",
     dvStNew: "باش تعملو",
@@ -602,6 +606,7 @@ var S = {
   loading: false,
   failed: false,
   chapters: [],
+  dvMeta: {}, // chapterId -> { pct, cur, frac } of a theory devoir (saved with the answers)
   status: {}, // chapterId -> { exId: "done" | "mid" | "review" }: any of the three means finished
   notes: [], // all of the student's notes, newest first
   notesOk: true,
@@ -2328,8 +2333,15 @@ async function load() {
     if (S.loadedKey !== key) return;
     var pr = await sdk.getDocs(sdk.collection(ctx.db, "users", ctx.uid, "progress"));
     S.status = {};
+    S.dvMeta = {};
     pr.docs.forEach(function (d) {
       if (d.id !== "placement" && d.data().status) S.status[d.id] = d.data().status;
+      if (d.data().dvAnsJson) {
+        try {
+          window.localStorage.setItem("cl.dvAns." + d.id, d.data().dvAnsJson); // the cloud copy wins: same answers on every device
+        } catch (e3) {}
+      }
+      if (d.data().dvMeta) S.dvMeta[d.id] = d.data().dvMeta;
     });
   } catch (e) {
     console.warn("Couldn’t load the chapters:", e);
@@ -3123,9 +3135,18 @@ function renderSeries(host, sub) {
 function devoirStatus(ch) {
   var total = exTotal(ch);
   var done = doneCount(ch);
-  return total && done >= total ? "done" : done > 0 ? "prog" : "new";
+  var p = dvPct(ch);
+  return (total && done >= total) || p >= 100 ? "done" : done > 0 || p > 0 ? "prog" : "new";
 }
 
+function dvCurIdx(ch, done) {
+  var m = S.dvMeta[ch.id];
+  if (m && m.frac) {
+    var ks = Object.keys(m.frac).filter(function (k) { return m.frac[k] > 0; });
+    if (ks.length) return ks.length + (m.frac[m.cur] >= 1 ? 1 : 0);
+  }
+  return done + 1;
+}
 function devoirCard(ch) {
   var total = exTotal(ch);
   var done = doneCount(ch);
@@ -3141,13 +3162,14 @@ function devoirCard(ch) {
   h.setAttribute("dir", "auto");
   var meta = el("div", "dv-meta");
   if (ch.hours) meta.append(el("span", "", tf("dvMeta", { h: ch.hours })));
-  meta.append(el("span", "", tf("dvExCount", { n: total })));
+  meta.append(el("span", "", tf(ch.session === "pratique" ? "dvExCount" : "dvStCount", { n: total })));
   if (ch.points) meta.append(el("span", "", tf("dvPoints", { n: ch.points })));
   var foot = el("div", "sv-foot");
   var line = el("div", "sv-meta");
-  line.append(el("span", "", t("dvProgress")), el("span", "", done + " / " + total));
+  var pctV = dvPct(ch);
+  line.append(el("span", "", t("dvProgress")), el("span", "", pctV + " %"));
   var bar = el("span", "domain-bar sv-bar");
-  segBar(bar, total ? (done / total) * 100 : 0);
+  segBar(bar, pctV);
   foot.append(line, bar);
   var btn = el("button", "sv-btn");
   btn.type = "button";
@@ -3178,7 +3200,7 @@ function renderDevoirs(host, sub) {
     var chips = el("div", "sv-chips");
     var total = exTotal(started);
     var done = doneCount(started);
-    chips.append(el("span", "dv-hero-chip", tf("dvResumeLine", { i: Math.min(done + 1, total), n: total })));
+    chips.append(el("span", "dv-hero-chip", tf("dvResumeLine", { i: Math.min(dvCurIdx(started, done), total), n: total })));
     left.append(chips);
     var go1 = el("button", "dv-hero-btn", t("dvBtnCont"));
     go1.type = "button";
@@ -5325,6 +5347,46 @@ function dvAnsWrite(chId, obj) {
     window.localStorage.setItem("cl.dvAns." + chId, JSON.stringify(obj));
   } catch (e) {}
 }
+function dvFilled(q, v) {
+  if (v === undefined || v === null || v === "") return 0;
+  if (q.type === "grid") {
+    var n = (q.rows || []).length || 1;
+    var c = Array.isArray(v) ? v.filter(function (x) { return x !== null && x !== undefined && Number(x) >= 0; }).length : 0;
+    return Math.min(1, c / n);
+  }
+  if (Array.isArray(v)) return v.length ? 1 : 0;
+  if (typeof v === "string") return v.trim() ? 1 : 0;
+  return 1;
+}
+var dvSaveTimer = {};
+function dvSync(ch, ex, mine, all) {
+  var qs = ex.questions || [];
+  var f = 0;
+  qs.forEach(function (q) { f += dvFilled(q, mine[q.id]); });
+  var meta = S.dvMeta[ch.id] || { frac: {} };
+  meta = { frac: Object.assign({}, meta.frac), pct: 0, cur: ex.id };
+  meta.frac[ex.id] = qs.length ? Math.round((f / qs.length) * 100) / 100 : 0;
+  var tot = Number(ch.exerciseCount) || 1;
+  var sum = 0;
+  Object.keys(meta.frac).forEach(function (k) { sum += meta.frac[k]; });
+  meta.pct = Math.min(100, Math.round((sum / tot) * 100));
+  S.dvMeta[ch.id] = meta;
+  if (!ctx.sdk || !ctx.db || !ctx.uid) return;
+  clearTimeout(dvSaveTimer[ch.id]);
+  dvSaveTimer[ch.id] = setTimeout(function () {
+    var json = "{}";
+    try { json = JSON.stringify(dvAnsRead(ch.id)); } catch (e) {}
+    ctx.sdk
+      .setDoc(ctx.sdk.doc(ctx.db, "users", ctx.uid, "progress", ch.id), { dvAnsJson: json, dvMeta: S.dvMeta[ch.id], updatedAt: ctx.sdk.serverTimestamp() }, { merge: true })
+      .catch(function (e) { console.warn("Couldn’t save the answers:", e); });
+  }, 700);
+}
+function dvPct(ch) {
+  var m = S.dvMeta[ch.id];
+  if (m && typeof m.pct === "number") return m.pct;
+  var tot = exTotal(ch);
+  return tot ? Math.round((doneCount(ch) / tot) * 100) : 0;
+}
 function dvNorm(v) {
   return String(v == null ? "" : v).trim().toLowerCase().replace(/\s+/g, " ").replace(/,/g, ".");
 }
@@ -5355,6 +5417,7 @@ function dvQuestions(ch, ex) {
   var save = function () {
     all[ex.id] = mine;
     dvAnsWrite(ch.id, all);
+    dvSync(ch, ex, mine, all);
   };
   var box = el("div", "dv-qs");
   var rows = {};
@@ -5770,7 +5833,8 @@ function renderView(view, ch) {
   var htext = el("div", "sv-head-text");
   var total = Number(ch.exerciseCount) || 0;
   htext.append(el("h1", "sv-head-title", title || ""));
-  if (total && ch.session !== "pratique") htext.append(el("p", "sv-head-intro", tf("progress", { done: doneCount(ch), total: total })));
+  if (total && ch.kind === "devoir" && ch.session !== "pratique") htext.append(el("p", "sv-head-intro", tf("dvPctDone", { p: dvPct(ch) }) + " · " + tf("dvStCount", { n: total })));
+  else if (total && ch.session !== "pratique") htext.append(el("p", "sv-head-intro", tf("progress", { done: doneCount(ch), total: total })));
   hero.append(htext);
 
   backTargets.view = {
