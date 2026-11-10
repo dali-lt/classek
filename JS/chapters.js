@@ -4170,6 +4170,7 @@ function exerciseCard(ch, ex, index) {
     "ex-card ex-solo d-" + diff + (index % 2 ? " is-b" : " is-a") + (st ? " is-" + st : "") + (isOpenCard ? "" : " is-collapsed") + (locked ? " is-locked" : "")
   );
   card.id = "ex-" + ex.id;
+  if (ch.kind === "devoir" && Array.isArray(ex.questions) && ex.questions.length) card.classList.add("dv-flat");
   var pin = el("span", "ex-pin");
   pin.innerHTML = st === "done" ? ICON_CHECK_PIN : st === "mid" ? ICON_MID_PIN : st === "review" ? ICON_REVIEW_PIN : ""; // static, trusted SVG
   var panel = el("div", "ex-panel");
@@ -4274,13 +4275,17 @@ function exerciseCard(ch, ex, index) {
         card.replaceWith(exerciseCard(ch, ex, index));
       });
   }
+  // theory devoir with a field per question: the fields are the answers, no extra free box
+  var hasQ = ch.kind === "devoir" && Array.isArray(ex.questions) && ex.questions.length > 0;
   var boxes = [];
   var wraps = [];
   var refresh = function () {};
   var onType = function () {
     refresh();
   };
-  if (split) {
+  if (hasQ) {
+    // nothing here: the fields of the answers panel are the answers
+  } else if (split) {
     split.questions.forEach(function (q) {
       var item = el("div", "ex-q");
       var qh = el("div", "ex-q-head");
@@ -4423,12 +4428,12 @@ function exerciseCard(ch, ex, index) {
         }
       };
     }
-    var autoWrong = !st && !!answersLoaded[ch.id] && mostlyEmpty(boxes); // saved answers must have been read, else an empty box proves nothing
+    var autoWrong = !st && !hasQ && !!answersLoaded[ch.id] && mostlyEmpty(boxes); // saved answers must have been read, else an empty box proves nothing
     if (st) {
       var mine = el("div", "ex-eval is-" + st);
       mine.append(el("span", "ex-eval-k", t("evalMine")), el("b", "ex-eval-v", t(st)));
       sol.append(mine);
-      if (st === "review" && answersLoaded[ch.id] && mostlyEmpty(boxes)) sol.append(el("p", "ex-eval-ask", t("evalAuto")));
+      if (st === "review" && !hasQ && answersLoaded[ch.id] && mostlyEmpty(boxes)) sol.append(el("p", "ex-eval-ask", t("evalAuto")));
     } else if (autoWrong) {
       sol.append(el("p", "ex-eval-ask", t("evalAuto")));
       if (!autoMarked[key]) {
