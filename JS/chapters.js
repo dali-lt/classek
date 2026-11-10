@@ -612,6 +612,7 @@ var S = {
   loading: false,
   failed: false,
   chapters: [],
+  dvCloud: {}, // chapters whose dvMeta came from Firestore
   dvMeta: {}, // chapterId -> { pct, cur, frac } of a theory devoir (saved with the answers)
   status: {}, // chapterId -> { exId: "done" | "mid" | "review" }: any of the three means finished
   notes: [], // all of the student's notes, newest first
@@ -2340,6 +2341,7 @@ async function load() {
     var pr = await sdk.getDocs(sdk.collection(ctx.db, "users", ctx.uid, "progress"));
     S.status = {};
     S.dvMeta = {};
+    S.dvCloud = {};
     pr.docs.forEach(function (d) {
       if (d.id !== "placement" && d.data().status) S.status[d.id] = d.data().status;
       if (d.data().dvAnsJson) {
@@ -2347,7 +2349,10 @@ async function load() {
           window.localStorage.setItem("cl.dvAns." + d.id, d.data().dvAnsJson); // the cloud copy wins: same answers on every device
         } catch (e3) {}
       }
-      if (d.data().dvMeta) S.dvMeta[d.id] = d.data().dvMeta;
+      if (d.data().dvMeta) {
+        S.dvMeta[d.id] = d.data().dvMeta;
+        S.dvCloud[d.id] = true;
+      }
     });
   } catch (e) {
     console.warn("Couldn’t load the chapters:", e);
@@ -5383,6 +5388,33 @@ function dvSync(ch, ex, mine, all) {
   dvPending[ch.id] = true;
   dvSaveTimer[ch.id] = setTimeout(function () { dvFlush(ch.id); }, 700);
 }
+/* answers typed before the cloud save existed (or while offline): count them and push them once when the devoir opens */
+function dvBackfill(ch, exs) {
+  var all = dvAnsRead(ch.id);
+  var meta = dvMetaOf(ch.id) || { frac: {} };
+  var frac = Object.assign({}, meta.frac);
+  var any = false;
+  exs.forEach(function (ex) {
+    var qs = ex.questions || [];
+    if (!qs.length) return;
+    var mine = all[ex.id] || {};
+    var f = 0;
+    qs.forEach(function (q) { f += dvFilled(q, mine[q.id]); });
+    var v = Math.round((f / qs.length) * 100) / 100;
+    if (v > 0) any = true;
+    if (v !== frac[ex.id]) frac[ex.id] = v;
+  });
+  if (!any) return;
+  var sum = 0;
+  Object.keys(frac).forEach(function (k) { sum += frac[k]; });
+  var pct = Math.min(100, Math.round((sum / (Number(ch.exerciseCount) || 1)) * 100));
+  var same = JSON.stringify(frac) === JSON.stringify(meta.frac || {}) && meta.pct === pct;
+  if (same && S.dvMeta[ch.id] && S.dvCloud && S.dvCloud[ch.id]) return;
+  S.dvMeta[ch.id] = { frac: frac, pct: pct, cur: meta.cur || exs[0].id };
+  try { window.localStorage.setItem("cl.dvMeta." + ch.id, JSON.stringify(S.dvMeta[ch.id])); } catch (e) {}
+  dvPending[ch.id] = true;
+  window.setTimeout(function () { dvFlush(ch.id); }, 300);
+}
 var dvPending = {};
 var dvState = { s: "", why: "" };
 function dvShowState() {
@@ -5747,6 +5779,7 @@ function exercisesPart(ch) {
       return box;
     }
     if (isDv) {
+      dvBackfill(ch, exs);
       var dhead = el("div", "dv-ans-head");
       var goTo = function (k) {
         openEx[ch.id] = exs[k].id;
