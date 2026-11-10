@@ -4740,3 +4740,8 @@ html:has(.modal-overlay.open) .s-menu-btn {
 .ex-card.dv-flat .ex-pin, .ex-card.dv-flat .ex-panel > .ex-head:not(:has(.ex-state, .ex-hints-used)) { display: none !important; }
 .ex-card.dv-flat .ex-panel > .ex-head { background: none; padding: 0 0 8px; }
 .dv-sw { align-self: flex-start; width: fit-content; max-width: 100%; }
+
+.dv-saved { font-size: 12px; font-weight: 700; color: #6b7a99; white-space: nowrap; }
+.dv-saved.is-ok { color: #2f8f3a; }
+.dv-saved.is-err { color: #d23a3a; }
+.dv-saved:empty { display: none; }

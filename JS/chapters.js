@@ -132,6 +132,9 @@ var STR = {
     dvMeta: "{h} h",
     dvExCount: "{n} exercices",
     dvStCount: "{n} étapes",
+    dvSaved: "Enregistré",
+    dvSaving: "Enregistrement…",
+    dvSaveErr: "Non enregistré",
     dvPctDone: "{p} % complété",
     dvPoints: "{n} points",
     dvProgress: "Progression",
@@ -393,6 +396,9 @@ var STR = {
     dvMeta: "{h} س",
     dvExCount: "{n} تمارين",
     dvStCount: "{n} مراحل",
+    dvSaved: "تم الحفظ",
+    dvSaving: "جارٍ الحفظ…",
+    dvSaveErr: "لم يتم الحفظ",
     dvPctDone: "{p}٪ منجز",
     dvPoints: "{n} نقطة",
     dvProgress: "التقدّم",
@@ -5378,15 +5384,31 @@ function dvSync(ch, ex, mine, all) {
   dvSaveTimer[ch.id] = setTimeout(function () { dvFlush(ch.id); }, 700);
 }
 var dvPending = {};
+var dvState = { s: "", why: "" };
+function dvShowState() {
+  document.querySelectorAll(".dv-saved").forEach(function (n) {
+    n.className = "dv-saved" + (dvState.s ? " is-" + dvState.s : "");
+    n.textContent = dvState.s ? t({ saving: "dvSaving", ok: "dvSaved", err: "dvSaveErr" }[dvState.s]) : "";
+    n.title = dvState.why || "";
+  });
+}
 function dvFlush(chId) {
   if (!dvPending[chId] || !ctx || !ctx.sdk || !ctx.db || !ctx.uid) return;
   dvPending[chId] = false;
   var json = "{}";
   try { json = JSON.stringify(dvAnsRead(chId)); } catch (e) {}
+  dvState = { s: "saving", why: "" };
+  dvShowState();
   ctx.sdk
     .setDoc(ctx.sdk.doc(ctx.db, "users", ctx.uid, "progress", chId), { dvAnsJson: json, dvMeta: S.dvMeta[chId], updatedAt: ctx.sdk.serverTimestamp() }, { merge: true })
+    .then(function () {
+      dvState = { s: "ok", why: "" };
+      dvShowState();
+    })
     .catch(function (e) {
       dvPending[chId] = true;
+      dvState = { s: "err", why: String((e && (e.code || e.message)) || e) };
+      dvShowState();
       console.warn("Couldn’t save the answers:", e);
     });
 }
@@ -5755,7 +5777,9 @@ function exercisesPart(ch) {
         nv.append(pv, el("span", "dv-nav-n", tf("dvExOf", { i: selIdx + 1, n: exs.length })), nx);
         return nv;
       };
-      dhead.append(el("h3", "pp-corr", t("dvAnswers")), navBox());
+      var svd = el("span", "dv-saved");
+      dhead.append(el("h3", "pp-corr", t("dvAnswers")), svd, navBox());
+      window.requestAnimationFrame(dvShowState);
       det.append(dhead);
       var tabs = el("div", "pp-exs");
       exs.forEach(function (e, i) {
