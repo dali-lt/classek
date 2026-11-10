@@ -4710,8 +4710,7 @@ html:has(.modal-overlay.open) .s-menu-btn {
 .dv-nav-b:hover:not(:disabled) { background: #01092d; color: #fff; }
 .dv-nav-b:disabled { opacity: 0.35; cursor: default; }
 .dv-nav-n { font-weight: 700; font-size: 13px; color: var(--mut, #5a6785); min-width: 74px; text-align: center; }
-.dv-next { display: block; width: 100%; margin-top: 12px; padding: 12px 16px; border: 0; border-radius: 14px; background: #01092d; color: #fff; font: inherit; font-weight: 800; font-size: 14px; cursor: pointer; }
-.dv-next:hover { background: #0a1a55; }
+
 .dv-grid { display: flex; flex-direction: column; gap: 6px; }
 .dv-gr-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 7px 8px; border: 1.5px solid var(--line, #dbe5f3); border-radius: 12px; background: #fff; }
 .dv-gr-row.is-ok { border-color: #6cc24a; background: #f3fbe9; }
@@ -4745,3 +4744,18 @@ html:has(.modal-overlay.open) .s-menu-btn {
 .dv-saved.is-ok { color: #2f8f3a; }
 .dv-saved.is-err { color: #d23a3a; }
 .dv-saved:empty { display: none; }
+
+/* footer row: "Vérifier" (outline) next to "Étape suivante" (dark) */
+.dv-foot { display: flex; gap: 10px; margin-top: 12px; }
+.dv-btn { flex: 1 1 0; min-height: 48px; padding: 12px 14px; border-radius: 14px; font: inherit; font-weight: 800; font-size: 14px; cursor: pointer; border: 2px solid transparent; text-align: center; }
+.dv-btn.is-ghost { background: #fff; color: #0464de; border-color: #0464de; }
+.dv-btn.is-ghost:hover { background: #eef5ff; }
+.dv-btn.is-ghost:disabled { opacity: .6; cursor: default; }
+.dv-next { background: #01092d; color: #fff; border-color: #01092d; }
+.dv-next:hover { background: #0a1a55; }
+.dv-short { display: none; }
+@media (max-width: 520px) { .dv-full { display: none; } .dv-short { display: inline; } }
+/* "Afficher la solution" becomes a small text link under the result */
+.ex-card.dv-flat .ex-actions { margin: 2px 0 0; }
+.ex-card.dv-flat .ex-actions .pc-btn { background: none; border: 0; box-shadow: none; padding: 0; min-height: 0; color: #0a5be0; font-weight: 700; font-size: 14px; text-decoration: underline; }
+.dv-qs { margin-bottom: 6px; }

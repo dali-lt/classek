@@ -51,6 +51,8 @@ var STR = {
     dvTrue: "Vrai",
     dvFalse: "Faux",
     dvCheck: "Vérifier mes réponses",
+    dvCheckShort: "Vérifier",
+    dvNextShort: "Suivante",
     dvShowGood: "Voir les bonnes réponses",
     dvScore: "{n} / {m} bonne(s) réponse(s)",
     dvNoAuto: "Pas de correction automatique ici.",
@@ -315,6 +317,8 @@ var STR = {
     dvTrue: "صحيح",
     dvFalse: "خطأ",
     dvCheck: "تحقّق من إجاباتي",
+    dvCheckShort: "تحقّق",
+    dvNextShort: "التالية",
     dvShowGood: "أظهر الإجابات الصحيحة",
     dvScore: "{n} / {m} إجابة صحيحة",
     dvNoAuto: "لا يوجد تصحيح آلي هنا.",
@@ -5637,7 +5641,8 @@ function dvQuestions(ch, ex) {
   });
   // check: marks right / wrong (the right answers come with the private solution, like the correction)
   var bar = el("div", "dv-qs-bar");
-  var chk = el("button", "pc-btn dv-check", t("dvCheck"));
+  var chk = el("button", "dv-btn is-ghost dv-check");
+  chk.append(el("span", "dv-full", t("dvCheck")), el("span", "dv-short", t("dvCheckShort")));
   chk.type = "button";
   var score = el("span", "dv-score");
   var good = el("button", "dv-showgood", t("dvShowGood"));
@@ -5719,8 +5724,9 @@ function dvQuestions(ch, ex) {
       rows[q.id].append(g);
     });
   });
-  bar.append(chk, score, good);
+  bar.append(score, good);
   box.append(bar);
+  box.chk = chk; // the button lives in the footer row, next to "next step"
   return box;
 }
 
@@ -5835,8 +5841,15 @@ function exercisesPart(ch) {
     var qf = dvQuestions(ch, exs[selIdx]);
     if (qf) det.append(qf);
     det.append(exerciseCard(ch, exs[selIdx], selIdx));
+    var foot = null;
+    if (qf && qf.chk) {
+      foot = el("div", "dv-foot");
+      foot.append(qf.chk);
+      det.append(foot);
+    }
     if (isDv && selIdx < exs.length - 1) {
-      var nextBtn = el("button", "dv-next", t("dvNext") + " →");
+      var nextBtn = el("button", "dv-btn dv-next");
+      nextBtn.append(el("span", "dv-full", t("dvNext") + " →"), el("span", "dv-short", t("dvNextShort") + " →"));
       nextBtn.type = "button";
       nextBtn.addEventListener("click", function () {
         openEx[ch.id] = exs[selIdx + 1].id;
@@ -5846,7 +5859,8 @@ function exercisesPart(ch) {
           if (rp) rp.scrollTop = 0;
         });
       });
-      det.append(nextBtn);
+      if (foot) foot.append(nextBtn);
+      else det.append(nextBtn);
     }
     if (isDv) {
       var pane = dvPane[ch.id] === "mine" ? "mine" : "task";
