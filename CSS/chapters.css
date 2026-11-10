@@ -4759,3 +4759,11 @@ html:has(.modal-overlay.open) .s-menu-btn {
 .ex-card.dv-flat .ex-actions { margin: 2px 0 0; }
 .ex-card.dv-flat .ex-actions .pc-btn { background: none; border: 0; box-shadow: none; padding: 0; min-height: 0; color: #0a5be0; font-weight: 700; font-size: 14px; text-decoration: underline; }
 .dv-qs { margin-bottom: 6px; }
+
+/* option A: blue "Vérifier" + lime "Étape suivante", every control a pill */
+.dv-btn { border-radius: 999px; min-height: 50px; }
+.dv-btn.is-ghost { background: #0464de; color: #fff; border-color: #0464de; }
+.dv-btn.is-ghost:hover { background: #0553b8; border-color: #0553b8; }
+.dv-next { background: #aee37b; color: #01092d; border-color: #aee37b; }
+.dv-next:hover { background: #9bd665; border-color: #9bd665; }
+.dv-select, .dv-input { border-radius: 999px; padding: 11px 16px; }

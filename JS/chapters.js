@@ -5233,7 +5233,8 @@ function paperPart(ch, exs) {
   ed.addEventListener("click", function () {
     openFreeEditor(ch, title);
   });
-  bar.append(pageLab, zOut, zIn, pr, ed);
+  bar.append(pageLab, zOut, zIn, pr);
+  if (ch.session === "pratique") bar.append(ed); // a theory paper is answered in the fields on the right: no editor
 
   var view = el("div", "pp-view");
   view.tabIndex = 0;
