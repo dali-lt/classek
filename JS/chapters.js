@@ -3140,7 +3140,7 @@ function devoirStatus(ch) {
 }
 
 function dvCurIdx(ch, done) {
-  var m = S.dvMeta[ch.id];
+  var m = dvMetaOf(ch.id);
   if (m && m.frac) {
     var ks = Object.keys(m.frac).filter(function (k) { return m.frac[k] > 0; });
     if (ks.length) return ks.length + (m.frac[m.cur] >= 1 ? 1 : 0);
@@ -5363,7 +5363,7 @@ function dvSync(ch, ex, mine, all) {
   var qs = ex.questions || [];
   var f = 0;
   qs.forEach(function (q) { f += dvFilled(q, mine[q.id]); });
-  var meta = S.dvMeta[ch.id] || { frac: {} };
+  var meta = dvMetaOf(ch.id) || { frac: {} };
   meta = { frac: Object.assign({}, meta.frac), pct: 0, cur: ex.id };
   meta.frac[ex.id] = qs.length ? Math.round((f / qs.length) * 100) / 100 : 0;
   var tot = Number(ch.exerciseCount) || 1;
@@ -5371,18 +5371,39 @@ function dvSync(ch, ex, mine, all) {
   Object.keys(meta.frac).forEach(function (k) { sum += meta.frac[k]; });
   meta.pct = Math.min(100, Math.round((sum / tot) * 100));
   S.dvMeta[ch.id] = meta;
+  try { window.localStorage.setItem("cl.dvMeta." + ch.id, JSON.stringify(meta)); } catch (e) {}
   if (!ctx.sdk || !ctx.db || !ctx.uid) return;
   clearTimeout(dvSaveTimer[ch.id]);
-  dvSaveTimer[ch.id] = setTimeout(function () {
-    var json = "{}";
-    try { json = JSON.stringify(dvAnsRead(ch.id)); } catch (e) {}
-    ctx.sdk
-      .setDoc(ctx.sdk.doc(ctx.db, "users", ctx.uid, "progress", ch.id), { dvAnsJson: json, dvMeta: S.dvMeta[ch.id], updatedAt: ctx.sdk.serverTimestamp() }, { merge: true })
-      .catch(function (e) { console.warn("Couldn’t save the answers:", e); });
-  }, 700);
+  dvPending[ch.id] = true;
+  dvSaveTimer[ch.id] = setTimeout(function () { dvFlush(ch.id); }, 700);
+}
+var dvPending = {};
+function dvFlush(chId) {
+  if (!dvPending[chId] || !ctx || !ctx.sdk || !ctx.db || !ctx.uid) return;
+  dvPending[chId] = false;
+  var json = "{}";
+  try { json = JSON.stringify(dvAnsRead(chId)); } catch (e) {}
+  ctx.sdk
+    .setDoc(ctx.sdk.doc(ctx.db, "users", ctx.uid, "progress", chId), { dvAnsJson: json, dvMeta: S.dvMeta[chId], updatedAt: ctx.sdk.serverTimestamp() }, { merge: true })
+    .catch(function (e) {
+      dvPending[chId] = true;
+      console.warn("Couldn’t save the answers:", e);
+    });
+}
+function dvFlushAll() {
+  Object.keys(dvPending).forEach(dvFlush);
+}
+window.addEventListener("pagehide", dvFlushAll);
+document.addEventListener("visibilitychange", function () { if (document.visibilityState === "hidden") dvFlushAll(); });
+function dvMetaOf(chId) {
+  var m = S.dvMeta[chId];
+  if (!m) {
+    try { m = JSON.parse(window.localStorage.getItem("cl.dvMeta." + chId) || "null"); } catch (e) { m = null; }
+  }
+  return m;
 }
 function dvPct(ch) {
-  var m = S.dvMeta[ch.id];
+  var m = dvMetaOf(ch.id);
   if (m && typeof m.pct === "number") return m.pct;
   var tot = exTotal(ch);
   return tot ? Math.round((doneCount(ch) / tot) * 100) : 0;
