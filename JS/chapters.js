@@ -6138,12 +6138,24 @@ function paintMe() {
   face.append(m.avatar);
   ring.append(svg, face);
   if (m.level) ring.append(el("span", "me-lvl", m.level));
+  var pctBadge = el("span", "me-pct-badge", pct + "%"); // the total, on the ring (the arcs keep showing STI and Programmation apart)
+  pctBadge.title = t("mePct");
+  ring.append(pctBadge);
 
   var hello = t("hello") + (m.first ? (ctx.getLang() === "ar" ? " " : ", ") + m.first : "");
-  var pctRow = el("div", "me-pct");
-  pctRow.append(el("b", "", pct + "%"), el("span", "", t("mePct")));
-  var bar = el("span", "me-bar");
-  segBar(bar, pct);
+  var sub = el("p", "me-sub", t("meSub"));
+  var note = el("p", "me-note", t("meNote"));
+  note.hidden = true;
+  var why = el("button", "me-info", "i");
+  why.type = "button";
+  why.title = t("meNote");
+  why.setAttribute("aria-label", t("meNote"));
+  why.setAttribute("aria-expanded", "false");
+  why.addEventListener("click", function () {
+    note.hidden = !note.hidden;
+    why.setAttribute("aria-expanded", String(!note.hidden));
+  });
+  sub.append(why);
   var stats = el("div", "me-stats");
   [
     [sum.done, "stDone"],
@@ -6154,7 +6166,7 @@ function paintMe() {
     cell.append(el("b", "", String(x[0])), el("span", "", t(x[1])));
     stats.append(cell);
   });
-  box.append(ring, el("h2", "me-hello", hello), el("p", "me-sub", t("meSub")), pctRow, bar, stats, el("p", "me-note", t("meNote")));
+  box.append(ring, el("h2", "me-hello", hello), sub, stats, note);
 }
 
 function paintResume() {
