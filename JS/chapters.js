@@ -11,7 +11,8 @@
 
 import { lintWeb } from "./weblint.js?v=2";
 import { openAlgoViz, openAlgoLibrary, libraryLabel, algoTitle, hasAlgoViz, kindForCode, registerAnimations } from "./algoviz.js?v=67";
-import { assembleWeb, fileExplorer, fsParse, fsToDraft, fsClone, fsApply, langOfName } from "./webfiles.js?v=2";
+import { assembleWeb, fileExplorer, fsParse, fsToDraft, fsClone, fsApply, langOfName } from "./webfiles.js?v=3";
+import { mediaStore, applyMedia, snippetOf } from "./webmedia.js?v=1";
 
 var STR = {
   fr: {
@@ -1689,13 +1690,17 @@ function openPlayground(opts) {
       return opts.title || "Ma page";
     }));
   }
+  var mstore = opts.mediaScope ? mediaStore(opts.mediaScope) : null; // the images, videos and sounds of the student
   var live = liveFrame(
     function () {
       if (!multi) return ta.value;
-      return assembleWeb(
-        pfiles.map(function (f) {
-          return { name: f.name, code: f.ta.value };
-        })
+      return applyMedia(
+        assembleWeb(
+          pfiles.map(function (f) {
+            return { name: f.name, code: f.ta.value };
+          })
+        ),
+        mstore ? mstore.items() : null
       );
     },
     opts.expected || opts.statement ? t("liveMine") : undefined
@@ -1828,6 +1833,10 @@ function openPlayground(opts) {
     });
   }
   pfiles.forEach(wire);
+  if (mstore)
+    mstore.onChange(function () {
+      live.update();
+    });
   if (multi && opts.fs) {
     var pm = fsClone(opts.fs);
     var pfileById = function (id) {
@@ -1838,6 +1847,13 @@ function openPlayground(opts) {
       model: pm,
       lang: ctx && ctx.getLang ? ctx.getLang() : "fr",
       canEdit: opts.canEdit,
+      media: mstore,
+      onInsert: function (it) {
+        var c = win.current();
+        if (!c || !c.ta) return;
+        c.ta.focus();
+        insertSym(c.ta, snippetOf(it)); // the tag of the file, where the caret is
+      },
       current: function () {
         var c = win.current();
         return c ? c.id : 0;
@@ -4068,9 +4084,17 @@ function answerBox(ch, ex, boxId, placeholder, onInput, rows, asCode) {
       if (fsFx) fsFx.refresh();
       mw.paint();
     };
+    var mediaScope = "ex:" + ch.id + "/" + ex.id;
     fsFx = fileExplorer({
       model: fsm,
       lang: ctx && ctx.getLang ? ctx.getLang() : "fr",
+      media: mediaStore(mediaScope),
+      onInsert: function (it) {
+        var c = mw.current();
+        if (!c || !c.ta) return;
+        c.ta.focus();
+        insertSym(c.ta, snippetOf(it));
+      },
       canEdit: function () {
         return !ta.readOnly; // once the exercise is evaluated the files can be read, not changed
       },
@@ -4095,6 +4119,7 @@ function answerBox(ch, ex, boxId, placeholder, onInput, rows, asCode) {
           return { id: f.id, name: f.name, lang: f.lang, value: f.ta.value };
         }),
         fs: fsClone(fsm),
+        mediaScope: mediaScope,
         canEdit: function () {
           return !ta.readOnly;
         },
@@ -5096,21 +5121,34 @@ function openFreeEditor(ch, title) {
     openPlayground({ code: "", title: title || "", tone: "bac" });
     return;
   }
-  // a practical exam: the three files of the exam, kept in this browser, the subject (the sheets themselves) | the result on the side
+  // a practical exam: the files of the exam (index.html, mesStyles.css, mesControles.js, and the ones the student makes), kept in this browser,
+  // the subject (the sheets themselves) | the result on the side
   var key = "cl.dvFiles." + ch.id;
   var saved = {};
   try {
     saved = JSON.parse(window.localStorage.getItem(key) || "{}") || {};
   } catch (e) {}
-  var defs = [
-    { id: "index.html", name: "index.html", lang: "html" },
-    { id: "mesStyles.css", name: "mesStyles.css", lang: "css" },
-    { id: "mesControles.js", name: "mesControles.js", lang: "js" },
-  ];
+  if (typeof saved["#fs"] !== "string" && typeof saved["index.html"] === "string") {
+    // saved by name before the explorer: 0 = index.html, 1 = mesStyles.css, 2 = mesControles.js
+    saved["0"] = saved["index.html"];
+    if (typeof saved["mesStyles.css"] === "string") saved["1"] = saved["mesStyles.css"];
+    if (typeof saved["mesControles.js"] === "string") saved["2"] = saved["mesControles.js"];
+  }
+  var fsm = fsParse(typeof saved["#fs"] === "string" ? saved["#fs"] : "", ["mesStyles.css", "mesControles.js"]);
+  var persist = function () {
+    try {
+      window.localStorage.setItem(key, JSON.stringify(saved));
+    } catch (e) {}
+  };
+  var fileList = [{ id: 0, name: "index.html", lang: "html", value: typeof saved["0"] === "string" ? saved["0"] : "" }].concat(
+    fsm.files.map(function (f) {
+      return { id: f.id, name: f.path, lang: langOfName(f.path), value: typeof saved[String(f.id)] === "string" ? saved[String(f.id)] : "" };
+    })
+  );
   openPlayground({
-    files: defs.map(function (d) {
-      return { id: d.id, name: d.name, lang: d.lang, value: typeof saved[d.id] === "string" ? saved[d.id] : "" };
-    }),
+    files: fileList,
+    fs: fsClone(fsm),
+    mediaScope: "dv:" + ch.id,
     title: title || "",
     tone: "bac",
     sheetsOf: ch.sheets ? ch : null,
@@ -5119,10 +5157,17 @@ function openFreeEditor(ch, title) {
     figures: ch.figures,
     statement: ch.sheets ? "" : ch.paper || "",
     onChange: function (v, id) {
-      saved[id] = v;
-      try {
-        window.localStorage.setItem(key, JSON.stringify(saved));
-      } catch (e) {}
+      saved[String(id)] = v;
+      persist();
+    },
+    onStructure: function (evt) {
+      fsApply(fsm, evt);
+      if (evt.t === "del")
+        evt.ids.forEach(function (id) {
+          delete saved[String(id)];
+        });
+      saved["#fs"] = fsToDraft(fsm);
+      persist();
     },
   });
 }

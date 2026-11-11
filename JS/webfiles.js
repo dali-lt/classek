@@ -362,6 +362,11 @@ var STR = {
     newDir: "Nouveau dossier",
     btnFile: "Fichier",
     btnDir: "Dossier",
+    btnMedia: "Média",
+    newMedia: "Importer une image, une vidéo ou un son",
+    medias: "Médias",
+    mediaNote: "Ces fichiers restent sur cet appareil. Écris leur nom dans ton code : src=\"logo.png\".",
+    insert: "Insérer dans le code",
     close: "Fermer",
     toggle: "Fichiers du projet",
     rename: "Renommer",
@@ -384,6 +389,10 @@ var STR = {
       dup: "Ce nom existe déjà.",
       limit: "Nombre maximal de fichiers atteint.",
       none: "Introuvable.",
+      type: "Seulement des images, vidéos ou sons (png, jpg, gif, webp, mp4, webm, mp3, wav, ogg).",
+      size: "Fichier trop lourd (5 Mo au maximum).",
+      total: "Trop de médias au total (30 Mo au maximum).",
+      count: "Nombre maximal de médias atteint (20).",
     },
   },
   ar: {
@@ -392,6 +401,11 @@ var STR = {
     newDir: "مجلد جديد",
     btnFile: "ملف",
     btnDir: "مجلد",
+    btnMedia: "وسائط",
+    newMedia: "استيراد صورة أو فيديو أو صوت",
+    medias: "الوسائط",
+    mediaNote: "تبقى هذه الملفات على هذا الجهاز. اكتب اسم الملف في الكود: src=\"logo.png\".",
+    insert: "إدراج في الكود",
     close: "إغلاق",
     toggle: "ملفات المشروع",
     rename: "إعادة تسمية",
@@ -414,6 +428,10 @@ var STR = {
       dup: "هذا الاسم موجود بالفعل.",
       limit: "وصلت إلى الحد الأقصى من الملفات.",
       none: "غير موجود.",
+      type: "صور أو فيديوهات أو أصوات فقط (png, jpg, gif, webp, mp4, webm, mp3, wav, ogg).",
+      size: "الملف كبير جداً (5 ميغابايت كحد أقصى).",
+      total: "حجم الوسائط كبير جداً (30 ميغابايت كحد أقصى).",
+      count: "وصلت إلى الحد الأقصى من الوسائط (20).",
     },
   },
 };
@@ -425,7 +443,7 @@ function ensureCss() {
   try {
     var link = document.createElement("link");
     link.rel = "stylesheet";
-    link.href = new URL("../CSS/webfiles.css?v=2", import.meta.url).href;
+    link.href = new URL("../CSS/webfiles.css?v=3", import.meta.url).href;
     document.head.append(link);
   } catch (e) {}
 }
@@ -467,6 +485,11 @@ var ICON = {
   dots: ["M5 12h.01M12 12h.01M19 12h.01"],
   dir: DIR_PATHS,
   file: FILE_PATHS,
+  upload: ["M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", "m17 8-5-5-5 5", "M12 3v12"],
+  image: ["M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z", "M9 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z", "m21 15-5-5L5 21"],
+  video: ["m23 7-7 5 7 5z", "M3 5h11a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"],
+  audio: ["M9 18V5l12-2v13", "M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6z", "M18 19a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"],
+  code: ["m16 18 6-6-6-6", "m8 6-6 6 6 6"],
 };
 
 // opts: { model, lang, canEdit(), current() -> id, onOpen(id), onChange(evt), icon(path) -> trusted svg text (optional) }
@@ -510,6 +533,35 @@ export function fileExplorer(opts) {
   var bFile = toolBtn("fx-new-file", "newFile", S.newFile, S.btnFile);
   var bDir = toolBtn("fx-new-dir", "newDir", S.newDir, S.btnDir);
   toolsRow.append(bFile, bDir);
+  var media = opts.media || null; // the images, videos and sounds of the student (see webmedia.js)
+  var pick = null;
+  if (media) {
+    var bMedia = toolBtn("fx-new-media", "upload", S.newMedia, S.btnMedia);
+    pick = h("input");
+    pick.type = "file";
+    pick.accept = "image/*,video/*,audio/*";
+    pick.multiple = true;
+    pick.hidden = true;
+    bMedia.addEventListener("click", function () {
+      if (canEdit()) pick.click();
+    });
+    pick.addEventListener("change", async function () {
+      var files = Array.prototype.slice.call(pick.files || []);
+      pick.value = "";
+      hideErr();
+      for (var i = 0; i < files.length; i++) {
+        var r = await media.add(files[i]);
+        if (r.error) {
+          showErr(r.error);
+          break;
+        }
+      }
+    });
+    toolsRow.append(bMedia, pick);
+    media.onChange(function () {
+      render();
+    });
+  }
   var tree = h("ul", "fx-tree");
   tree.setAttribute("role", "tree");
   var hint = h("p", "fx-hint");
@@ -859,6 +911,71 @@ export function fileExplorer(opts) {
         tree.append(li);
       });
     })("", 0);
+    if (media) renderMedia();
+  }
+  // the section "Médias": one row per file, a little picture, the name, and what to do with it
+  function renderMedia() {
+    var items = media.items();
+    if (!items.length) return;
+    var sep = h("li", "fx-sep", S.medias);
+    sep.setAttribute("role", "presentation");
+    tree.append(sep);
+    items.forEach(function (it) {
+      var li = row("media", it.name, 0);
+      var ico = h("span", "fx-ico fx-thumb");
+      if (it.kind === "image") {
+        var im = h("img");
+        im.src = it.url;
+        im.alt = "";
+        ico.append(im);
+      } else ico.append(svg(ICON[it.kind] || ICON.file));
+      var nm = h("span", "fx-text", it.name);
+      nm.setAttribute("dir", "ltr");
+      var sz = h("small", "fx-size", it.size >= 1048576 ? (it.size / 1048576).toFixed(1).replace(".", ",") + " Mo" : Math.max(1, Math.round(it.size / 1024)) + " Ko");
+      var info = h("span", "fx-name fx-media-info");
+      info.append(ico, nm, sz);
+      li.append(info);
+      if (opts.onInsert) {
+        var ins = h("button", "fx-more fx-ins");
+        ins.type = "button";
+        ins.title = S.insert;
+        ins.setAttribute("aria-label", S.insert + " : " + it.name);
+        ins.append(svg(ICON.code));
+        ins.addEventListener("click", function () {
+          opts.onInsert(it);
+          setOpen(false);
+        });
+        li.append(ins);
+      }
+      var del = h("button", "fx-more fx-del");
+      del.type = "button";
+      var armedNow = armed === "m:" + it.name;
+      del.title = armedNow ? S.sure : S.del;
+      del.setAttribute("aria-label", S.del + " : " + it.name);
+      del.classList.toggle("is-armed", armedNow);
+      if (armedNow) del.textContent = S.sure;
+      else del.append(svg(ICON.trash));
+      del.addEventListener("click", function () {
+        if (armed === "m:" + it.name) {
+          armed = "";
+          clearTimeout(armTimer);
+          media.remove(it.name);
+          return;
+        }
+        armed = "m:" + it.name;
+        clearTimeout(armTimer);
+        armTimer = setTimeout(function () {
+          armed = "";
+          render();
+        }, 3000);
+        render();
+      });
+      li.append(del);
+      tree.append(li);
+    });
+    var note = h("li", "fx-media-note", S.mediaNote);
+    note.setAttribute("role", "presentation");
+    tree.append(note);
   }
 
   // a click anywhere else closes the little menu, and a click outside the drawer closes the drawer
