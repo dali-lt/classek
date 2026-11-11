@@ -116,6 +116,12 @@ var STR = {
     dvResumeLine: "Étape {i} sur {n}",
     dvHowTitle: "Une correction qui se dévoile petit à petit",
     dvHowHint: "Tu cherches d’abord. Chaque étape s’ouvre seulement quand tu es prêt.",
+    dvFlow1: "Réponds",
+    dvFlow1t: "étape par étape",
+    dvFlow2: "Vérifie",
+    dvFlow2t: "✓ / ✗ et ton score",
+    dvFlow3: "Corrige",
+    dvFlow3t: "la solution, à la fin",
     dvStep1: "Ta réponse",
     dvStep1t: "Écris d’abord ce que tu sais, même incomplet.",
     dvStep2: "Indice",
@@ -382,6 +388,12 @@ var STR = {
     dvResumeLine: "المرحلة {i} من {n}",
     dvHowTitle: "تصحيح يتكشّف شوية شوية",
     dvHowHint: "تقلّب بروحك لول. كل مرحلة تتفتح كي تكون حاضر.",
+    dvFlow1: "جاوب",
+    dvFlow1t: "مرحلة بمرحلة",
+    dvFlow2: "تثبّت",
+    dvFlow2t: "✓ / ✗ والنتيجة",
+    dvFlow3: "صحّح",
+    dvFlow3t: "الحل في الآخر",
     dvStep1: "جوابك",
     dvStep1t: "اكتب لول اللي تعرفو، ولو ناقص.",
     dvStep2: "تلميح",
@@ -3229,19 +3241,38 @@ function renderDevoirs(host, sub) {
     host.append(hero);
   }
 
-  // how the correction works
-  var how = el("section", "sv-ladder dv-how");
-  var hh = el("div", "sv-ladder-head");
-  hh.append(el("h3", "", t("dvHowTitle")), el("p", "", t("dvHowHint")));
-  var row = el("div", "dv-steps");
-  for (var i = 1; i <= 4; i++) {
-    var it = el("div", "dv-step");
-    var info = el("div", "");
-    info.append(el("b", "", t("dvStep" + i)), el("span", "", t("dvStep" + i + "t")));
-    it.append(el("span", "dv-num n" + i, String(i)), info);
-    row.append(it);
+  // how a devoir works: three steps on a winding road, like the difficulty ladder
+  var FLOW_ICON = [
+    '<path d="M12 20h9"/><path d="M16.4 3.6a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+    '<circle cx="12" cy="12" r="9.5"/><path d="m8 12.3 2.8 2.8L16.3 9.5"/>',
+    '<path d="M9 18h6M10 21.5h4"/><path d="M12 2.5a6.5 6.5 0 0 0-3.9 11.7c.6.5.9 1.2.9 1.8v.5h6V16c0-.6.3-1.3.9-1.8A6.5 6.5 0 0 0 12 2.5z"/>'
+  ];
+  var NS = "http://www.w3.org/2000/svg";
+  var road = function (cls, vb, d) {
+    var sv = document.createElementNS(NS, "svg");
+    sv.setAttribute("class", cls);
+    sv.setAttribute("viewBox", vb);
+    sv.setAttribute("preserveAspectRatio", "none");
+    sv.setAttribute("aria-hidden", "true");
+    var pa = document.createElementNS(NS, "path");
+    pa.setAttribute("d", d);
+    sv.append(pa);
+    return sv;
+  };
+  var how = el("section", "dv-flow");
+  how.append(
+    road("dv-road dv-road-h", "0 0 600 58", "M100 29 C 160 2, 240 56, 300 29 C 360 2, 440 56, 500 29"),
+    road("dv-road dv-road-v", "0 0 52 248", "M26 26 C 64 46, -8 104, 26 124 C 60 144, -8 202, 26 222")
+  );
+  for (var i = 1; i <= 3; i++) {
+    var it = el("div", "dv-fn");
+    var ic = el("span", "dv-fic f" + i);
+    ic.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">' + FLOW_ICON[i - 1] + "</svg>"; // static, trusted SVG
+    var info = el("div", "dv-ftxt");
+    info.append(el("b", "", t("dvFlow" + i)), el("small", "", t("dvFlow" + i + "t")));
+    it.append(ic, info);
+    how.append(it);
   }
-  how.append(hh, row);
   host.append(how);
 
   // filters: the same four everywhere, in every subject
