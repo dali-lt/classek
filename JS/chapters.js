@@ -134,6 +134,9 @@ var STR = {
     dvMain: "Principale",
     dvControl: "Contrôle",
     dvPrat: "Pratique",
+    shMain: "Session principale",
+    shControl: "Devoir de contrôle",
+    shPrat: "Épreuve pratique",
     dvNone: "Aucun devoir dans cette catégorie pour le moment.",
     dvSessMain: "Session principale",
     dvSessControl: "Session de contrôle",
@@ -406,6 +409,9 @@ var STR = {
     dvMain: "رئيسية",
     dvControl: "مراقبة",
     dvPrat: "تطبيقي",
+    shMain: "الدورة الرئيسية",
+    shControl: "فرض مراقبة",
+    shPrat: "اختبار تطبيقي",
     dvNone: "لا توجد فروض في هذا الصنف حاليا.",
     dvSessMain: "الدورة الرئيسية",
     dvSessControl: "دورة المراقبة",
@@ -3903,7 +3909,7 @@ function answerLang(ch, ex) {
 // Only the instruction counts: a writing verb (Écrivez, Développez, Complétez, Traduisez, Corrigez, Proposez...) followed by something
 // that is code (fonction, procédure, module, algorithme, version, lignes, nom(...)...). The words "fonction" or "algorithme" alone,
 // as in "Que calcule cette fonction ?", only name the code being studied, and the code blocks written inside the question are ignored.
-var CODE_VERB = /^(?:\d+\)\s*)?(écrivez|ecrivez|écris|ecris|développez|developpez|complétez|completez|traduisez|implémentez|implementez|programmez|codez|réécrivez|reecrivez|rédigez|redigez|corrigez|proposez)\b/i;
+var CODE_VERB = /^(?:(?:\d+|[a-z])[.)]\s*)?(écrivez|ecrivez|écris|ecris|écrire|ecrire|développez|developpez|développer|developper|complétez|completez|compléter|completer|traduisez|traduire|implémentez|implementez|implémenter|implementer|programmez|programmer|codez|coder|réécrivez|reecrivez|réécrire|reecrire|rédigez|redigez|rédiger|rediger|corrigez|corriger|proposez|proposer)\b/i;
 var CODE_OBJECT = /(fonction|proc[eé]dure|module|algorithme|version|programme|\bcode\b|lignes?\b|boucle|instruction|python|\bdef\b|correction|\b[A-Za-z_][A-Za-z_0-9]*\s*\()/i;
 function asksForCode(text) {
   var t = String(text || "").replace(/```[\s\S]*?```/g, "\n");
@@ -3913,7 +3919,8 @@ function asksForCode(text) {
   });
 }
 function answerBox(ch, ex, boxId, placeholder, onInput, rows, asCode) {
-  var progCode = !!asCode && (ex.lang === "algo" || ex.lang === "python");
+  // an exercise of Programmation that asks to write code gets the code window, in the language it names (else the one the student uses)
+  var progCode = !!asCode && (ex.lang === "algo" || ex.lang === "python" || (!ex.lang && ch.subject === "prog"));
   var dk = ch.id + "/" + ex.id + "#" + boxId;
   var ta = el("textarea", "ex-answer");
   ta.rows = rows || 2;
@@ -5057,17 +5064,25 @@ function siteLogo() {
   i.decoding = "async";
   return i;
 }
+// the head of every sheet: the logo on one side; on the other the year, the kind of paper and the subject
+function sheetHead(ch) {
+  var h = el("div", "pp-sh");
+  h.append(siteLogo());
+  var r = el("div", "pp-sh-r");
+  var yr = ch.year || (/\b(20\d\d)\b/.exec((ch.sheetHeader || "") + " " + titleOf(ch)) || [])[1]; // else the year written in the title
+  if (yr) r.append(el("b", "pp-sh-year", String(yr)));
+  var kind = ch.session === "pratique" ? "shPrat" : ch.session === "controle" ? "shControl" : "shMain";
+  r.append(el("span", "pp-sh-pill", t(kind)), el("span", "pp-sh-pill is-sub", ch.subject === "sti" ? "STI" : t("s_" + ch.subject)));
+  h.append(r);
+  return h;
+}
 // the sheets of a devoir written page by page (field "sheets"), put in a container
 function fillSheets(ch, box, title) {
   box.textContent = "";
   var n = ch.sheets.length;
   ch.sheets.forEach(function (src, k) {
     var sh = el("div", "pp-sheet is-flow");
-    var h = el("div", "pp-sh");
-    var l = el("span", "");
-    l.append(siteLogo(), document.createTextNode(" · " + t("s_" + ch.subject)));
-    h.append(l, el("span", "", ch.sheetHeader || title || ""));
-    sh.append(h);
+    sh.append(sheetHead(ch));
     if (k === 0 && ch.examHead) sh.append(examHeadBox(ch.examHead));
     sh.append(md(src, { rich: true, noRun: true, figures: ch.figures }));
     sh.append(el("div", "pp-foot", tf("ppPageOf", { n: k + 1, total: n })));
@@ -5308,11 +5323,7 @@ function paperPart(ch, exs) {
   var fixedSheets = Array.isArray(ch.sheets) && ch.sheets.length;
   function sheet() {
     var sh = el("div", "pp-sheet");
-    var h = el("div", "pp-sh");
-    var l = el("span", "");
-    l.append(siteLogo(), document.createTextNode(" · " + t("s_" + ch.subject)));
-    h.append(l, el("span", "", ch.sheetHeader || (title || "") + (ch.hours ? " · " + ch.hours + " h" : "") + (ch.points ? " · " + ch.points + " pts" : "")));
-    sh.append(h);
+    sh.append(sheetHead(ch));
     pages.append(sh);
     return sh;
   }

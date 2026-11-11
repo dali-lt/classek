@@ -4811,3 +4811,10 @@ html[dir="rtl"] .dv-road-h { transform: scaleX(-1); }
 .me-info { display: inline-grid; place-items: center; width: 17px; height: 17px; margin-inline-start: 7px; padding: 0; border: 1.5px solid var(--color-text-muted); border-radius: 50%; background: none; color: var(--color-text-muted); font: italic 700 11px/1 Georgia, serif; vertical-align: middle; cursor: pointer; }
 .me-info:hover, .me-info[aria-expanded="true"] { background: var(--color-primary); border-color: var(--color-primary); color: #fff; }
 .me-note[hidden] { display: none; }
+
+/* sheet head: logo | year, kind of paper, subject */
+.pp-sh { align-items: center; }
+.pp-sh-r { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.pp-sh-year { color: #01092d; font-size: 11px; font-weight: 800; margin-inline-end: 2px; }
+.pp-sh-pill { padding: 2px 9px; border-radius: 999px; background: #eaf1fd; color: #0464de; font-size: 9px; font-weight: 800; white-space: nowrap; }
+.pp-sh-pill.is-sub { background: #e6f6d6; color: #2b5214; }
