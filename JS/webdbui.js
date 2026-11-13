@@ -6,6 +6,7 @@ var STR = {
   fr: {
     title: "Base de données",
     toggle: "Base de données",
+    sideToggle: "Afficher / masquer la liste des tables",
     close: "Fermer",
     tables: "Tables",
     newTable: "Nouvelle table",
@@ -52,6 +53,7 @@ var STR = {
   ar: {
     title: "قاعدة البيانات",
     toggle: "قاعدة البيانات",
+    sideToggle: "إظهار / إخفاء قائمة الجداول",
     close: "إغلاق",
     tables: "الجداول",
     newTable: "جدول جديد",
@@ -97,7 +99,168 @@ var STR = {
   },
 };
 
-var TYPES = ["INT", "VARCHAR(50)", "VARCHAR(255)", "TEXT", "FLOAT", "DOUBLE", "DATE", "DATETIME", "TINYINT(1)"];
+// [value, what the student reads]
+var TYPES = [
+  ["INT", "INT · entier"],
+  ["CHAR(1)", "CHAR(1) · caractère"],
+  ["CHAR(3)", "CHAR(3) · chaîne de 3"],
+  ["CHAR(5)", "CHAR(5) · chaîne de 5"],
+  ["VARCHAR(50)", "VARCHAR(50) · chaîne"],
+  ["VARCHAR(100)", "VARCHAR(100) · chaîne"],
+  ["VARCHAR(200)", "VARCHAR(200) · chaîne"],
+  ["TEXT", "TEXT · texte long"],
+  ["FLOAT", "FLOAT · réel"],
+  ["DOUBLE", "DOUBLE · réel"],
+  ["DATE", "DATE"],
+  ["DATETIME", "DATETIME"],
+  ["TINYINT(1)", "TINYINT(1) · oui/non"],
+];
+var ICO = {
+  key: '<circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3 20 3M16 7l3 3"/>',
+  link: '<path d="M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07L11.3 4.6"/><path d="M14 11a5 5 0 0 0-7.07 0L4.1 13.83a5 5 0 0 0 7.07 7.07l1.5-1.5"/>',
+  table: '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 10h18M9 10v10"/>',
+  side: '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/>',
+  chev: '<path d="m6 9 6 6 6-6"/>',
+};
+function icoHtml(name, size) {
+  return '<svg viewBox="0 0 24 24" width="' + (size || 15) + '" height="' + (size || 15) + '" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICO[name] + "</svg>";
+}
+function ico(name, cls, size) {
+  var n = h("span", "dbp-ico " + (cls || ""));
+  n.innerHTML = icoHtml(name, size); // static, trusted SVG
+  return n;
+}
+
+// a list of the site (the browser's own list cannot be styled): { el, get(), set(v) }
+var openDd = null;
+function dropdown(items, value, onChange, lead) {
+  var cur = value;
+  var wrap = h("div", "dbp-dd");
+  var b = h("button", "dbp-dd-b");
+  b.type = "button";
+  b.setAttribute("aria-haspopup", "listbox");
+  b.setAttribute("aria-expanded", "false");
+  var lab = h("span", "dbp-dd-l");
+  b.append(lead ? lead : document.createTextNode(""), lab);
+  var chev = h("span", "dbp-dd-c");
+  chev.innerHTML = icoHtml("chev", 14); // static, trusted SVG
+  b.append(chev);
+  var list = h("ul", "dbp-dd-list");
+  list.setAttribute("role", "listbox");
+  list.hidden = true;
+  var opts = [];
+  var act = -1;
+  items.forEach(function (it, i) {
+    var li = h("li", "dbp-dd-o", it[1]);
+    li.setAttribute("role", "option");
+    li.addEventListener("pointerdown", function (e) {
+      e.preventDefault();
+    });
+    li.addEventListener("click", function () {
+      pick(i);
+    });
+    opts.push(li);
+    list.append(li);
+  });
+  function paint() {
+    var i = items.findIndex(function (x) {
+      return x[0] === cur;
+    });
+    lab.textContent = i >= 0 ? items[i][1] : "";
+    opts.forEach(function (o, k) {
+      o.setAttribute("aria-selected", k === i ? "true" : "false");
+      o.classList.toggle("is-act", k === act);
+    });
+  }
+  function pick(i) {
+    cur = items[i][0];
+    paint();
+    close();
+    b.focus();
+    if (onChange) onChange(cur);
+  }
+  function place() {
+    var r = b.getBoundingClientRect();
+    list.style.minWidth = r.width + "px";
+    var below = window.innerHeight - r.bottom;
+    var maxH = Math.max(120, Math.min(260, Math.max(below, r.top) - 12));
+    list.style.maxHeight = maxH + "px";
+    list.style.left = Math.max(8, Math.min(r.left, window.innerWidth - 8 - Math.max(r.width, 200))) + "px";
+    if (below >= Math.min(maxH, 180) || below >= r.top) {
+      list.style.top = r.bottom + 4 + "px";
+      list.style.bottom = "auto";
+    } else {
+      list.style.bottom = window.innerHeight - r.top + 4 + "px";
+      list.style.top = "auto";
+    }
+  }
+  function onDoc(e) {
+    if (!wrap.contains(e.target) && !list.contains(e.target)) close();
+  }
+  function onScroll(e) {
+    if (!list.contains(e.target)) close();
+  }
+  function open() {
+    if (openDd && openDd !== close) openDd();
+    list.hidden = false;
+    b.setAttribute("aria-expanded", "true");
+    document.body.append(list); // out of the clipped panel
+    list.classList.add("dbp-dd-float");
+    act = items.findIndex(function (x) {
+      return x[0] === cur;
+    });
+    paint();
+    place();
+    var a = opts[act];
+    if (a && a.scrollIntoView) a.scrollIntoView({ block: "nearest" });
+    openDd = close;
+    document.addEventListener("pointerdown", onDoc, true);
+    window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("resize", close);
+  }
+  function close() {
+    if (list.hidden) return;
+    list.hidden = true;
+    b.setAttribute("aria-expanded", "false");
+    wrap.append(list);
+    list.classList.remove("dbp-dd-float");
+    if (openDd === close) openDd = null;
+    document.removeEventListener("pointerdown", onDoc, true);
+    window.removeEventListener("scroll", onScroll, true);
+    window.removeEventListener("resize", close);
+  }
+  b.addEventListener("click", function () {
+    if (list.hidden) open();
+    else close();
+  });
+  b.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && !list.hidden) {
+      e.stopPropagation();
+      close();
+      return;
+    }
+    var k = e.key;
+    if (k !== "ArrowDown" && k !== "ArrowUp" && k !== "Enter" && k !== " ") return;
+    e.preventDefault();
+    if (list.hidden) return open();
+    if (k === "Enter" || k === " ") return act >= 0 ? pick(act) : close();
+    act = Math.max(0, Math.min(items.length - 1, act + (k === "ArrowDown" ? 1 : -1)));
+    paint();
+    if (opts[act].scrollIntoView) opts[act].scrollIntoView({ block: "nearest" });
+  });
+  wrap.append(b, list);
+  paint();
+  return {
+    el: wrap,
+    get: function () {
+      return cur;
+    },
+    set: function (v) {
+      cur = v;
+      paint();
+    },
+  };
+}
 var PAGE = 15;
 var SVGNS = "http://www.w3.org/2000/svg";
 
@@ -124,7 +287,7 @@ function ensureCss() {
   cssDone = true;
   var l = document.createElement("link");
   l.rel = "stylesheet";
-  l.href = new URL("../CSS/webdb.css?v=1", import.meta.url).href;
+  l.href = new URL("../CSS/webdb.css?v=4", import.meta.url).href;
   document.head.append(l);
 }
 
@@ -145,6 +308,7 @@ export function dbPanel(opts) {
   var lastSql = "";
   var sqlOut = null; // { error } | { res }
   var winEl = null;
+  var sideOff = false;
 
   var root = h("section", "dbp");
   root.setAttribute("aria-label", S.title);
@@ -157,7 +321,17 @@ export function dbPanel(opts) {
   });
   close.setAttribute("aria-label", S.close);
   close.title = S.close;
-  head.append(title, close);
+  var sideBtn = btn("dbp-x dbp-sidebtn", "", function () {
+    sideOff = !sideOff;
+    body.classList.toggle("is-noside", sideOff);
+    sideBtn.setAttribute("aria-expanded", sideOff ? "false" : "true");
+    sideBtn.classList.toggle("is-off", sideOff);
+  });
+  sideBtn.innerHTML = icoHtml("side", 16); // static, trusted SVG
+  sideBtn.title = S.sideToggle;
+  sideBtn.setAttribute("aria-label", S.sideToggle);
+  sideBtn.setAttribute("aria-expanded", "true");
+  head.append(sideBtn, title, close);
   var body = h("div", "dbp-body");
   root.append(head, body);
 
@@ -314,6 +488,12 @@ export function dbPanel(opts) {
       var row = h("tr");
       if (extra) row.append(extra(i));
       r.forEach(function (v) {
+        if (v && v.nodeType) {
+          var tdn = h("td");
+          tdn.append(v);
+          row.append(tdn);
+          return;
+        }
         var s = show(v);
         row.append(s === null ? h("td", "is-null", "NULL") : h("td", "", s));
       });
@@ -432,7 +612,11 @@ export function dbPanel(opts) {
       var fk = st.fks.filter(function (f) {
         return f.cols.indexOf(c.name) >= 0;
       })[0];
-      return [c.name, c.type, c.notnull ? "NON" : "OUI", c.pk ? "PRIMARY" : "", c.ai ? "AUTO_INCREMENT" : "", fk ? "→ " + fk.ref + "." + fk.refCols[fk.cols.indexOf(c.name)] : ""];
+      var kc = h("span", "dbp-cell");
+      if (c.pk) kc.append(ico("key", "is-pk"), document.createTextNode("PRIMARY"));
+      var rc = h("span", "dbp-cell");
+      if (fk) rc.append(ico("link", "is-fk"), document.createTextNode(fk.ref + "." + fk.refCols[fk.cols.indexOf(c.name)]));
+      return [c.name, c.type, c.notnull ? "NON" : "OUI", kc, c.ai ? "AUTO_INCREMENT" : "", rc];
     });
     box.append(grid(["Colonne", "Type", "Null", "Clé", "Extra", "Relation"], rows));
     box.append(h("h4", "dbp-h", S.relations));
@@ -440,7 +624,9 @@ export function dbPanel(opts) {
     else {
       var ul = h("ul", "dbp-rel");
       st.fks.forEach(function (f) {
-        ul.append(h("li", "", f.cols.join(", ") + " → " + f.ref + "(" + f.refCols.join(", ") + ")"));
+        var li = h("li", "dbp-relrow");
+        li.append(ico("link", "is-fk"), document.createTextNode(f.cols.join(", ") + " → " + f.ref + "(" + f.refCols.join(", ") + ")"));
+        ul.append(li);
       });
       box.append(ul);
     }
@@ -481,7 +667,7 @@ export function dbPanel(opts) {
     return box;
   }
 
-  // the tables and their links, drawn
+  // the tables and their links, drawn: the tables that point to others on the left, the ones they point to on the right
   function designer() {
     var box = h("div", "dbp-pane dbp-design");
     var models = eng.models();
@@ -489,30 +675,58 @@ export function dbPanel(opts) {
       box.append(h("p", "dbp-msg", S.empty));
       return box;
     }
-    var W = 168;
-    var LH = 18;
-    var HH = 26;
-    var GAP = 44;
-    var per = 2;
+    var W = 232;
+    var LH = 28;
+    var HH = 42;
+    var GAPX = 76;
+    var GAPY = 30;
+    var byName = {};
+    models.forEach(function (m) {
+      byName[m.name.toLowerCase()] = m;
+    });
+    var depthOf = {};
+    function depth(m, seen) {
+      var key = m.name.toLowerCase();
+      if (depthOf[key] !== undefined) return depthOf[key];
+      if (seen[key]) return 0;
+      seen[key] = true;
+      var d = 0;
+      m.fks.forEach(function (f) {
+        var p = byName[f.ref.toLowerCase()];
+        if (p && p !== m) d = Math.max(d, 1 + depth(p, seen));
+      });
+      depthOf[key] = d;
+      return d;
+    }
+    var maxD = 0;
+    models.forEach(function (m) {
+      maxD = Math.max(maxD, depth(m, {}));
+    });
+    var colsList = [];
+    models.forEach(function (m) {
+      var c = maxD - depthOf[m.name.toLowerCase()]; // the tables nobody points to... are on the left
+      (colsList[c] = colsList[c] || []).push(m);
+    });
+    colsList = colsList.filter(Boolean);
     var pos = {};
-    var rowY = [];
-    models.forEach(function (m, i) {
-      var c = i % per;
-      var r = Math.floor(i / per);
-      var ht = HH + m.cols.length * LH + 8;
-      rowY[r] = Math.max(rowY[r] || 0, ht);
+    var width = 0;
+    var height = 0;
+    colsList.forEach(function (list, ci) {
+      var y = 16;
+      list.forEach(function (m) {
+        var ht = HH + m.cols.length * LH + 8;
+        pos[m.name.toLowerCase()] = { x: 16 + ci * (W + GAPX), y: y, m: m, ht: ht };
+        y += ht + GAPY;
+      });
+      height = Math.max(height, y - GAPY + 16);
     });
-    var yAcc = [0];
-    for (var k = 1; k < rowY.length; k++) yAcc[k] = yAcc[k - 1] + rowY[k - 1] + GAP;
-    models.forEach(function (m, i) {
-      pos[m.name.toLowerCase()] = { x: 12 + (i % per) * (W + GAP), y: 12 + yAcc[Math.floor(i / per)], m: m };
-    });
-    var width = 24 + Math.min(per, models.length) * (W + GAP) - GAP;
-    var height = 24 + yAcc[yAcc.length - 1] + rowY[rowY.length - 1];
+    width = 32 + colsList.length * W + (colsList.length - 1) * GAPX;
     var svg = document.createElementNS(SVGNS, "svg");
     svg.setAttribute("viewBox", "0 0 " + width + " " + height);
-    svg.setAttribute("width", width);
-    svg.setAttribute("height", height);
+    svg.style.width = "100%";
+    svg.style.maxWidth = width + "px";
+    svg.style.minWidth = Math.min(width, 480) + "px";
+    svg.style.height = "auto";
     svg.setAttribute("role", "img");
     function mk(tag, attrs, text) {
       var n = document.createElementNS(SVGNS, tag);
@@ -522,44 +736,73 @@ export function dbPanel(opts) {
       if (text !== undefined) n.textContent = text;
       return n;
     }
-    // links first (under the boxes)
+    // an icon of the site inside the drawing
+    function icoSvg(name, x, y, size, cls) {
+      var g = mk("svg", { x: x, y: y, width: size, height: size, viewBox: "0 0 24 24", class: "dbp-sico " + cls });
+      var tmp = document.createElementNS(SVGNS, "g");
+      tmp.innerHTML = ICO[name]; // static, trusted SVG
+      while (tmp.firstChild) g.append(tmp.firstChild);
+      return g;
+    }
+    function typeOf(def) {
+      var m = /^\s*([A-Za-z]+)\s*(\([^)]*\))?/.exec(def || "");
+      return m ? m[1].toUpperCase() + (m[2] ? m[2].replace(/\s+/g, "") : "") : "";
+    }
+    var rowY = function (p, name) {
+      var i = Math.max(
+        0,
+        p.m.cols.map(function (c) {
+          return c.name;
+        }).indexOf(name)
+      );
+      return p.y + HH + i * LH + LH / 2;
+    };
+    // the links first, under the cards
     models.forEach(function (m) {
       var from = pos[m.name.toLowerCase()];
       m.fks.forEach(function (f) {
         var to = pos[f.ref.toLowerCase()];
         if (!to) return;
-        var ci = Math.max(0, m.cols.map(function (c) { return c.name; }).indexOf(f.cols[0]));
-        var cj = Math.max(0, to.m.cols.map(function (c) { return c.name; }).indexOf(f.refCols[0]));
-        var y1 = from.y + HH + ci * LH + LH / 2;
-        var y2 = to.y + HH + cj * LH + LH / 2;
-        var right = to.x > from.x;
-        var left = to.x < from.x;
-        var x1 = right ? from.x + W : from.x;
-        var x2 = right ? to.x : to.x + W;
-        if (!right && !left) {
+        var y1 = rowY(from, f.cols[0]);
+        var y2 = rowY(to, f.refCols[0]);
+        var x1;
+        var x2;
+        var d;
+        if (to.x > from.x) {
+          x1 = from.x + W;
+          x2 = to.x;
+          var mx = (x1 + x2) / 2;
+          d = "M" + x1 + " " + y1 + " C" + mx + " " + y1 + " " + mx + " " + y2 + " " + x2 + " " + y2;
+        } else if (to.x < from.x) {
+          x1 = from.x;
+          x2 = to.x + W;
+          var mx2 = (x1 + x2) / 2;
+          d = "M" + x1 + " " + y1 + " C" + mx2 + " " + y1 + " " + mx2 + " " + y2 + " " + x2 + " " + y2;
+        } else {
           x1 = from.x + W;
           x2 = to.x + W;
-          svg.append(mk("path", { d: "M" + x1 + " " + y1 + " C" + (x1 + 30) + " " + y1 + " " + (x2 + 30) + " " + y2 + " " + x2 + " " + y2, class: "dbp-link" }));
-        } else {
-          var mx = (x1 + x2) / 2;
-          svg.append(mk("path", { d: "M" + x1 + " " + y1 + " C" + mx + " " + y1 + " " + mx + " " + y2 + " " + x2 + " " + y2, class: "dbp-link" }));
+          d = "M" + x1 + " " + y1 + " C" + (x1 + 48) + " " + y1 + " " + (x2 + 48) + " " + y2 + " " + x2 + " " + y2;
         }
-        svg.append(mk("circle", { cx: x1, cy: y1, r: 3.5, class: "dbp-dot" }), mk("circle", { cx: x2, cy: y2, r: 3.5, class: "dbp-dot is-one" }));
+        svg.append(mk("path", { d: d, class: "dbp-link" }), mk("circle", { cx: x1, cy: y1, r: 4.5, class: "dbp-dot" }), mk("circle", { cx: x2, cy: y2, r: 4.5, class: "dbp-dot" }));
       });
     });
     Object.keys(pos).forEach(function (key) {
       var p = pos[key];
-      var ht = HH + p.m.cols.length * LH + 8;
       var g = mk("g", { transform: "translate(" + p.x + "," + p.y + ")" });
-      g.append(mk("rect", { width: W, height: ht, rx: 10, class: "dbp-box" }));
-      g.append(mk("path", { d: "M0 " + HH + "V10a10 10 0 0 1 10-10h" + (W - 20) + "a10 10 0 0 1 10 10V" + HH + "Z", class: "dbp-boxh" }));
-      g.append(mk("text", { x: 10, y: 17, class: "dbp-boxt" }, p.m.name));
+      g.append(mk("rect", { width: W, height: p.ht, rx: 16, class: "dbp-box" }));
+      g.append(icoSvg("table", 14, 12, 18, "is-tbl"));
+      g.append(mk("text", { x: 40, y: 27, class: "dbp-boxt" }, p.m.name));
+      g.append(mk("line", { x1: 12, x2: W - 12, y1: HH - 2, y2: HH - 2, class: "dbp-sep" }));
       p.m.cols.forEach(function (c, i) {
         var isPk = p.m.pk.indexOf(c.name) >= 0;
         var isFk = p.m.fks.some(function (f) {
           return f.cols.indexOf(c.name) >= 0;
         });
-        g.append(mk("text", { x: 10, y: HH + i * LH + 13, class: "dbp-boxc" + (isPk ? " is-pk" : "") }, (isPk ? "🔑 " : isFk ? "🔗 " : "") + c.name));
+        var cy = HH + i * LH + LH / 2;
+        if (isPk) g.append(icoSvg("key", 14, cy - 7.5, 15, "is-pk"));
+        else if (isFk) g.append(icoSvg("link", 14, cy - 7.5, 15, "is-fk"));
+        g.append(mk("text", { x: 36, y: cy + 4, class: "dbp-boxc" + (isPk ? " is-pk" : "") }, c.name));
+        g.append(mk("text", { x: W - 14, y: cy + 4, class: "dbp-boxty", "text-anchor": "end" }, typeOf(c.def)));
       });
       svg.append(g);
     });
@@ -593,35 +836,28 @@ export function dbPanel(opts) {
       n.placeholder = S.colName;
       n.maxLength = 40;
       n.setAttribute("dir", "ltr");
-      var ty = h("select");
-      TYPES.forEach(function (x) {
-        var o = h("option", "", x);
-        o.value = x;
-        ty.append(o);
-      });
-      function chk(label) {
+      var ty = dropdown(TYPES, "INT");
+      function chk(label, icon) {
         var l = h("label", "dbp-chk");
         var c = h("input");
         c.type = "checkbox";
-        l.append(c, h("span", "", label));
+        l.append(c);
+        if (icon) l.append(ico(icon, icon === "key" ? "is-pk" : "is-fk", 14));
+        l.append(h("span", "", label));
         return { l: l, c: c };
       }
       var cn = chk(S.nul);
-      var cp = chk(S.pk);
+      var cp = chk(S.pk, "key");
       var ca = chk(S.ai);
-      var fk = h("select", "dbp-fk");
-      var o0 = h("option", "", S.fk + " " + S.none);
-      o0.value = "";
-      fk.append(o0);
+      var fkItems = [["", S.fk + " " + S.none]];
       others.forEach(function (tn) {
         eng.structure(tn).cols.forEach(function (c) {
-          if (!c.pk) return; // a link goes to a key
-          var o = h("option", "", tn + "." + c.name);
-          o.value = tn + "." + c.name;
-          fk.append(o);
+          if (c.pk) fkItems.push([tn + "." + c.name, tn + "." + c.name]); // a link goes to a key
         });
       });
-      r.append(n, ty, cn.l, cp.l, ca.l, fk);
+      var fk = dropdown(fkItems, "", null, ico("link", "is-fk", 14));
+      fk.el.classList.add("dbp-fk");
+      r.append(n, ty.el, cn.l, cp.l, ca.l, fk.el);
       colsBox.append(r);
       rowsData.push({ n: n, ty: ty, nul: cn.c, pk: cp.c, ai: ca.c, fk: fk });
     }
@@ -642,11 +878,11 @@ export function dbPanel(opts) {
         rowsData.forEach(function (r) {
           var cn = r.n.value.trim().replace(/[^A-Za-z0-9_]/g, "_");
           if (!cn) return;
-          var isInt = /^(INT|TINYINT)/.test(r.ty.value);
-          model.cols.push({ name: cn, def: r.ty.value + (r.nul.checked || r.pk.checked ? (r.pk.checked ? " NOT NULL" : "") : " NOT NULL"), ai: r.ai.checked && isInt });
+          var isInt = /^(INT|TINYINT)/.test(r.ty.get());
+          model.cols.push({ name: cn, def: r.ty.get() + (r.nul.checked || r.pk.checked ? (r.pk.checked ? " NOT NULL" : "") : " NOT NULL"), ai: r.ai.checked && isInt });
           if (r.pk.checked) model.pk.push(cn);
-          if (r.fk.value) {
-            var p = r.fk.value.split(".");
+          if (r.fk.get()) {
+            var p = r.fk.get().split(".");
             model.fks.push({ cols: [cn], ref: p[0], refCols: [p[1]], tail: "" });
           }
         });

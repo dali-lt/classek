@@ -14,7 +14,7 @@ import { openAlgoViz, openAlgoLibrary, libraryLabel, algoTitle, hasAlgoViz, kind
 import { assembleWeb, fileExplorer, fsParse, fsToDraft, fsClone, fsApply, langOfName } from "./webfiles.js?v=3";
 import { mediaStore, applyMedia, snippetOf } from "./webmedia.js?v=1";
 import { loadSql, createEngine } from "./webdb.js?v=1";
-import { dbPanel } from "./webdbui.js?v=1";
+import { dbPanel } from "./webdbui.js?v=4";
 
 var STR = {
   fr: {
