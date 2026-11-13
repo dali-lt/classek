@@ -13,6 +13,8 @@ import { lintWeb } from "./weblint.js?v=2";
 import { openAlgoViz, openAlgoLibrary, libraryLabel, algoTitle, hasAlgoViz, kindForCode, registerAnimations } from "./algoviz.js?v=67";
 import { assembleWeb, fileExplorer, fsParse, fsToDraft, fsClone, fsApply, langOfName } from "./webfiles.js?v=3";
 import { mediaStore, applyMedia, snippetOf } from "./webmedia.js?v=1";
+import { loadSql, createEngine } from "./webdb.js?v=1";
+import { dbPanel } from "./webdbui.js?v=1";
 
 var STR = {
   fr: {
@@ -1406,7 +1408,7 @@ function codeWindow(lang, opts) {
 }
 // the page the student's code makes, in a sandboxed frame (its scripts cannot reach this page)
 var liveSeq = 0;
-function liveFrame(getCode, title) {
+function liveFrame(getCode, title, dbh) {
   var wrap = el("div", "live-frame pg-win");
   var bar = el("div", "live-bar pg-bar");
   bar.append(dots());
@@ -1432,6 +1434,29 @@ function liveFrame(getCode, title) {
       return;
     }
     if (frame && e.source === frame.contentWindow && e.data === token + gen) acked = gen;
+    // the page of the student asks its database (window.db.query / window.db.run): answered here, from the engine
+    var d = e.data;
+    if (dbh && d && typeof d === "object" && d.clDb && frame && e.source === frame.contentWindow) {
+      var src = e.source;
+      var reply = function (o) {
+        try {
+          src.postMessage(Object.assign({ clDb: 1, id: d.id }, o), "*");
+        } catch (x) {}
+      };
+      dbh.get().then(
+        function (eng) {
+          try {
+            var r = eng.query(String(d.sql || ""));
+            reply({ res: d.clDb === "query" ? { rows: r.rows } : { affected: r.affected, lastId: r.lastId } });
+          } catch (x) {
+            reply({ err: friendlyDb(x) });
+          }
+        },
+        function () {
+          reply({ err: "Base de données indisponible." });
+        }
+      );
+    }
   }
   window.addEventListener("message", onMsg);
   // every paint builds a brand new frame: some browsers leave a frame blank when its page is replaced while it is shown,
@@ -1450,6 +1475,7 @@ function liveFrame(getCode, title) {
       nf.className = "live-iframe";
       nf.setAttribute("sandbox", "allow-scripts allow-modals");
       nf.setAttribute("title", t("liveTitle"));
+      if (dbh) code = withDbBridge(code);
       nf.srcdoc = (/<!doctype/i.test(code) ? "" : "<!doctype html>") + code + "\n<script>try{parent.postMessage(" + JSON.stringify(token + mine) + ',"*")}catch(e){}</scr' + "ipt>";
     }
     if (frame && frame.parentNode) {
@@ -1488,6 +1514,54 @@ function liveFrame(getCode, title) {
       timer = setTimeout(paint, 250);
     },
   };
+}
+// window.db for the page in the result frame: query(sql) -> Promise of the rows, run(sql) -> Promise of { affected, lastId }
+var DB_BRIDGE =
+  "<script>(function(){var n=0,p={};window.addEventListener('message',function(e){var d=e.data;if(d&&d.clDb&&p[d.id]){var x=p[d.id];delete p[d.id];if(d.err)x.j(new Error(d.err));else x.r(d.res)}});function c(o,s){return new Promise(function(r,j){var i=++n;p[i]={r:r,j:j};parent.postMessage({clDb:o,id:i,sql:String(s)},'*')})}window.db={query:function(s){return c('query',s).then(function(r){return r.rows})},run:function(s){return c('run',s)}}})()</scr" + "ipt>";
+function withDbBridge(code) {
+  var m = /<head[^>]*>/i.exec(code) || /<html[^>]*>/i.exec(code) || /<!doctype[^>]*>/i.exec(code);
+  if (!m) return DB_BRIDGE + code;
+  var at = m.index + m[0].length;
+  return code.slice(0, at) + DB_BRIDGE + code.slice(at);
+}
+function friendlyDb(e) {
+  return String((e && e.message) || e || "").replace(/^Error:\s*/, "");
+}
+// the database of one scope: the engine starts when it is first needed; the text of the base is kept in this browser and in the account
+var dbHandles = {};
+function dbHandle(scope, workId) {
+  if (dbHandles[scope]) return dbHandles[scope];
+  var key = "cl.db." + scope;
+  var timer = 0;
+  var p = null;
+  var h = {
+    get: function () {
+      if (p) return p;
+      p = loadSql().then(function (SQL) {
+        var dump = "";
+        try {
+          dump = window.localStorage.getItem(key) || "";
+        } catch (e) {}
+        var eng = createEngine(SQL, dump);
+        eng.onChange(function () {
+          clearTimeout(timer);
+          timer = setTimeout(function () {
+            try {
+              window.localStorage.setItem(key, eng.toDump());
+            } catch (e) {}
+            if (workId) workTouch(workId);
+          }, 500);
+        });
+        return eng;
+      });
+      p.catch(function () {
+        p = null;
+      });
+      return p;
+    },
+  };
+  dbHandles[scope] = h;
+  return h;
 }
 var WEB_SYMBOLS = [["<", "<"], [">", ">"], ["</", "</"], ["\"", "\""], ["=", "="], ["/>", "/>"]];
 function webTools(ta, getTitle) {
@@ -1691,6 +1765,7 @@ function openPlayground(opts) {
     }));
   }
   var mstore = opts.mediaScope ? mediaStore(opts.mediaScope) : null; // the images, videos and sounds of the student
+  var dbh = opts.dbScope ? dbHandle(opts.dbScope, opts.workId) : null; // the database of the practical exam
   var live = liveFrame(
     function () {
       if (!multi) return ta.value;
@@ -1703,7 +1778,8 @@ function openPlayground(opts) {
         mstore ? mstore.items() : null
       );
     },
-    opts.expected || opts.statement ? t("liveMine") : undefined
+    opts.expected || opts.statement ? t("liveMine") : undefined,
+    dbh
   );
   var expFrame = opts.expected
     ? liveFrame(function () {
@@ -1887,6 +1963,11 @@ function openPlayground(opts) {
     });
     fxm.mount(win.win);
     win.bar.append(fxm.button);
+  }
+  if (dbh) {
+    var dbp = dbPanel({ lang: ctx && ctx.getLang ? ctx.getLang() : "fr", getEngine: dbh.get });
+    dbp.mount(win.win);
+    win.bar.append(dbp.button);
   }
   x.addEventListener("click", shut);
   ov.addEventListener("mousedown", function (e) {
@@ -2392,6 +2473,11 @@ async function load() {
         S.dvCloud[d.id] = true;
       }
     });
+    try {
+      await workPull(sdk);
+    } catch (e4) {
+      console.warn("Couldn’t load the saved work:", e4); // rules not published yet: the work stays on this device
+    }
   } catch (e) {
     console.warn("Couldn’t load the chapters:", e);
     S.failed = true;
@@ -5139,6 +5225,7 @@ function openFreeEditor(ch, title) {
     try {
       window.localStorage.setItem(key, JSON.stringify(saved));
     } catch (e) {}
+    workTouch(ch.id);
   };
   var fileList = [{ id: 0, name: "index.html", lang: "html", value: typeof saved["0"] === "string" ? saved["0"] : "" }].concat(
     fsm.files.map(function (f) {
@@ -5149,6 +5236,8 @@ function openFreeEditor(ch, title) {
     files: fileList,
     fs: fsClone(fsm),
     mediaScope: "dv:" + ch.id,
+    dbScope: "dv:" + ch.id,
+    workId: ch.id,
     title: title || "",
     tone: "bac",
     sheetsOf: ch.sheets ? ch : null,
@@ -5539,7 +5628,67 @@ function dvFlush(chId) {
       console.warn("Couldn’t save the answers:", e);
     });
 }
+/* the work of a practical exam (the files of the editor and the database) follows the student from one device to another:
+   one document users/{uid}/work/{chapterId} = { files, sql, ts }. The newest ts wins. The pictures, videos and sounds stay on the device. */
+var WORK_MAX = 700000;
+var workTimer = {};
+var workPending = {};
+function workLocal(id) {
+  var o = { files: "", sql: "", ts: 0 };
+  try {
+    o.files = window.localStorage.getItem("cl.dvFiles." + id) || "";
+    o.sql = window.localStorage.getItem("cl.db.dv:" + id) || "";
+    o.ts = parseInt(window.localStorage.getItem("cl.work.ts." + id), 10) || 0;
+  } catch (e) {}
+  return o;
+}
+async function workPull(sdk) {
+  if (!ctx || !ctx.db || !ctx.uid) return;
+  var snap = await sdk.getDocs(sdk.collection(ctx.db, "users", ctx.uid, "work"));
+  snap.docs.forEach(function (d) {
+    var c = d.data();
+    var loc = workLocal(d.id);
+    if (typeof c.ts !== "number") return;
+    if (c.ts > loc.ts) {
+      try {
+        window.localStorage.setItem("cl.dvFiles." + d.id, c.files || "");
+        window.localStorage.setItem("cl.db.dv:" + d.id, c.sql || "");
+        window.localStorage.setItem("cl.work.ts." + d.id, String(c.ts));
+      } catch (e) {}
+      if (dbHandles["dv:" + d.id]) delete dbHandles["dv:" + d.id]; // the next opening reads the new text
+    } else if (loc.ts > c.ts) workTouch(d.id, loc.ts); // this device is newer (it worked offline): push it
+  });
+}
+// something changed in the work: keep the time and send it a moment later
+function workTouch(id, ts) {
+  try {
+    window.localStorage.setItem("cl.work.ts." + id, String(ts || Date.now()));
+  } catch (e) {}
+  if (!ctx || !ctx.sdk || !ctx.db || !ctx.uid) return;
+  workPending[id] = true;
+  clearTimeout(workTimer[id]);
+  workTimer[id] = setTimeout(function () {
+    workPush(id);
+  }, 1500);
+}
+function workPush(id) {
+  if (!workPending[id] || !ctx || !ctx.sdk || !ctx.db || !ctx.uid) return;
+  var w = workLocal(id);
+  if (w.files.length + w.sql.length > WORK_MAX) {
+    dvState = { s: "err", why: "work too big" };
+    dvShowState();
+    return;
+  }
+  workPending[id] = false;
+  ctx.sdk
+    .setDoc(ctx.sdk.doc(ctx.db, "users", ctx.uid, "work", id), { files: w.files, sql: w.sql, ts: w.ts || Date.now(), updatedAt: ctx.sdk.serverTimestamp() })
+    .catch(function (e) {
+      workPending[id] = true;
+      console.warn("Couldn’t save the work:", e);
+    });
+}
 function dvFlushAll() {
+  Object.keys(workPending).forEach(workPush);
   Object.keys(dvPending).forEach(dvFlush);
 }
 window.addEventListener("pagehide", dvFlushAll);
