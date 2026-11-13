@@ -132,3 +132,35 @@
   .dbp-note { display: none; }
   .dbp-f input { width: 100px; }
 }
+
+/* diagram: hover a table to follow its links */
+.dbp-card { cursor: default; }
+.dbp-svgwrap svg.is-dim .dbp-link, .dbp-svgwrap svg.is-dim .dbp-dot { opacity: .16; transition: opacity .15s; }
+.dbp-svgwrap svg.is-dim .dbp-link.is-hot, .dbp-svgwrap svg.is-dim .dbp-dot.is-hot { opacity: 1; }
+.dbp-svgwrap svg.is-dim .dbp-link.is-hot { stroke-width: 2.8; }
+
+/* small round buttons of a line / a column */
+.dbp-td-x { white-space: nowrap; }
+.dbp-ib { display: inline-flex; align-items: center; justify-content: center; min-width: 28px; height: 28px; padding: 0 6px; margin-inline-end: 2px; border: 0; border-radius: 999px; background: transparent; color: #9fc2ff; font-weight: 800; font-size: 11.5px; cursor: pointer; }
+.dbp-ib:hover, .dbp-ib.is-on { background: rgba(255,255,255,.14); color: #fff; }
+.dbp-ib.is-del { color: #ff9aae; }
+.dbp-ib.is-del:hover { background: rgba(230,77,107,.2); }
+.dbp-ib.is-del.is-armed { background: #e64d6b; color: #fff; }
+.dbp-ib:focus-visible { outline: 2px solid #aee37b; outline-offset: 1px; }
+.dbp-a.is-add { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; }
+.dbp-ins.is-edit { border: 1px solid rgba(174,227,123,.45); }
+.dbp-lock { flex: 1 0 100%; display: flex; align-items: center; gap: 8px; margin: 4px 0 0; padding: 8px 10px; border-radius: 10px; background: rgba(127,180,255,.12); color: #cfe0ff; font-size: 12px; }
+.dbp-lock .dbp-ico { color: #7fb4ff; }
+.dbp-help { margin: 8px 0 0; padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,.05); color: rgba(207,224,255,.8); font-size: 12px; line-height: 1.5; }
+.dbp-dd.is-off .dbp-dd-b { opacity: .5; cursor: not-allowed; }
+.dbp-col input:disabled { opacity: .5; cursor: not-allowed; }
+
+/* checkboxes of the site */
+.dbp-chk { position: relative; display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 700; color: #cfe0ff; cursor: pointer; user-select: none; }
+.dbp-chk input { position: absolute; opacity: 0; width: 18px; height: 18px; margin: 0; cursor: pointer; }
+.dbp-cb { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 18px; height: 18px; border-radius: 6px; border: 1.5px solid rgba(255,255,255,.35); background: rgba(0,0,0,.25); color: transparent; transition: background .12s, border-color .12s, color .12s; }
+.dbp-chk:hover .dbp-cb { border-color: #aee37b; }
+.dbp-chk input:checked + .dbp-cb { background: #aee37b; border-color: #aee37b; color: #10260a; }
+.dbp-chk input:focus-visible + .dbp-cb { outline: 2px solid #aee37b; outline-offset: 2px; }
+.dbp-chk.is-off { opacity: .55; cursor: not-allowed; }
+.dbp-chk.is-off input { cursor: not-allowed; }

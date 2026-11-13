@@ -13,8 +13,8 @@ import { lintWeb } from "./weblint.js?v=2";
 import { openAlgoViz, openAlgoLibrary, libraryLabel, algoTitle, hasAlgoViz, kindForCode, registerAnimations } from "./algoviz.js?v=67";
 import { assembleWeb, fileExplorer, fsParse, fsToDraft, fsClone, fsApply, langOfName } from "./webfiles.js?v=3";
 import { mediaStore, applyMedia, snippetOf } from "./webmedia.js?v=1";
-import { loadSql, createEngine } from "./webdb.js?v=1";
-import { dbPanel } from "./webdbui.js?v=4";
+import { loadSql, createEngine } from "./webdb.js?v=2";
+import { dbPanel } from "./webdbui.js?v=7";
 
 var STR = {
   fr: {

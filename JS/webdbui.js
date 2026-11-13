@@ -1,6 +1,6 @@
 /* The "Base de données" panel of the code window: a small phpMyAdmin (tables, rows, structure, SQL, relations diagram).
    It works on an engine from JS/webdb.js. Everything the student wrote is put in the page with textContent, never as markup. */
-import { friendly } from "./webdb.js?v=1";
+import { friendly } from "./webdb.js?v=2";
 
 var STR = {
   fr: {
@@ -21,6 +21,15 @@ var STR = {
     row: "ligne",
     insert: "Insérer",
     del: "Supprimer",
+    edit: "Modifier",
+    save: "Enregistrer",
+    editRow: "Modifier la ligne",
+    editCol: "Modifier la colonne",
+    newCol: "Nouvelle colonne",
+    lockedMsg: "Utilisée par {t} : le nom, le type et la clé primaire sont verrouillés (le reste se modifie).",
+    lockedDel: "Cette colonne est utilisée par une autre table : on ne peut pas la supprimer.",
+    aiHelp: "A_I = AUTO_INCREMENT : le numéro se met tout seul (1, 2, 3…) à chaque nouvelle ligne, il n’y a pas à le saisir. Il faut une clé primaire de type INT.",
+    actions: "",
     delSure: "Confirmer ?",
     name: "Nom",
     type: "Type",
@@ -68,6 +77,15 @@ var STR = {
     row: "سطر",
     insert: "إدراج",
     del: "حذف",
+    edit: "تعديل",
+    save: "حفظ",
+    editRow: "تعديل السطر",
+    editCol: "تعديل العمود",
+    newCol: "عمود جديد",
+    lockedMsg: "هذا العمود يستعمله {t} : الاسم والنوع والمفتاح الأساسي مقفولة (الباقي يتعدّل).",
+    lockedDel: "هذا العمود يستعمله جدول آخر : لا يمكن حذفه.",
+    aiHelp: "A_I = AUTO_INCREMENT : الرقم يزيد وحده (1، 2، 3…) مع كل سطر جديد، ما تكتبوش. يلزم مفتاح أساسي من نوع INT.",
+    actions: "",
     delSure: "تأكيد؟",
     name: "الاسم",
     type: "النوع",
@@ -121,6 +139,10 @@ var ICO = {
   table: '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 10h18M9 10v10"/>',
   side: '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/>',
   chev: '<path d="m6 9 6 6 6-6"/>',
+  edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+  trash: '<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  lock: '<rect x="5" y="11" width="14" height="9" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
 };
 function icoHtml(name, size) {
   return '<svg viewBox="0 0 24 24" width="' + (size || 15) + '" height="' + (size || 15) + '" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICO[name] + "</svg>";
@@ -259,7 +281,24 @@ function dropdown(items, value, onChange, lead) {
       cur = v;
       paint();
     },
+    disable: function (v) {
+      b.disabled = !!v;
+      wrap.classList.toggle("is-off", !!v);
+    },
   };
+}
+// a checkbox of the site
+function check(label, icon, tip) {
+  var l = h("label", "dbp-chk");
+  var c = h("input");
+  c.type = "checkbox";
+  var box = h("span", "dbp-cb");
+  box.innerHTML = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg>'; // static, trusted SVG
+  l.append(c, box);
+  if (icon) l.append(ico(icon, icon === "key" ? "is-pk" : "is-fk", 14));
+  l.append(h("span", "", label));
+  if (tip) l.title = tip;
+  return { l: l, c: c };
 }
 var PAGE = 15;
 var SVGNS = "http://www.w3.org/2000/svg";
@@ -287,7 +326,7 @@ function ensureCss() {
   cssDone = true;
   var l = document.createElement("link");
   l.rel = "stylesheet";
-  l.href = new URL("../CSS/webdb.css?v=4", import.meta.url).href;
+  l.href = new URL("../CSS/webdb.css?v=7", import.meta.url).href;
   document.head.append(l);
 }
 
@@ -309,6 +348,9 @@ export function dbPanel(opts) {
   var sqlOut = null; // { error } | { res }
   var winEl = null;
   var sideOff = false;
+  var editRow = null; // { id, vals }: the line being changed
+  var editCol = ""; // the column being changed ("+" = a new one)
+  var colErr = "";
 
   var root = h("section", "dbp");
   root.setAttribute("aria-label", S.title);
@@ -394,6 +436,9 @@ export function dbPanel(opts) {
         creating = false;
         pageNo = 0;
         armedRow = null;
+        editRow = null;
+        editCol = "";
+        colErr = "";
         if (tab === "designer") tab = "browse";
         render();
       });
@@ -518,7 +563,15 @@ export function dbPanel(opts) {
           var td = h("td", "dbp-td-x");
           var id = data.ids[i];
           var key = cur + ":" + id;
-          var b = btn("dbp-del" + (armedRow === key ? " is-armed" : ""), armedRow === key ? S.delSure : "🗑", function () {
+          var ed = btn("dbp-ib", "", function () {
+            editRow = { id: id, vals: data.rows[i] };
+            render();
+          });
+          ed.append(ico("edit", "", 15));
+          ed.title = S.edit;
+          ed.setAttribute("aria-label", S.edit);
+          if (editRow && editRow.id === id) ed.classList.add("is-on");
+          var b = btn("dbp-ib is-del" + (armedRow === key ? " is-armed" : ""), "", function () {
             if (armedRow !== key) {
               armedRow = key;
               render();
@@ -533,8 +586,11 @@ export function dbPanel(opts) {
               render();
             }
           });
+          if (armedRow === key) b.textContent = S.delSure;
+          else b.append(ico("trash", "", 15));
           b.title = S.del;
-          td.append(b);
+          b.setAttribute("aria-label", S.del);
+          td.append(ed, b);
           return td;
         })
       );
@@ -557,16 +613,21 @@ export function dbPanel(opts) {
       );
       box.append(pg);
     }
-    box.append(insertForm());
+    box.append(rowForm());
     return box;
   }
 
-  function insertForm() {
+  function litOf(c, v) {
+    return /^-?\d+(\.\d+)?$/.test(v) && !/char|text|date|time/i.test(c.type) ? v : "'" + v.replace(/'/g, "''") + "'";
+  }
+  // one form to add a line, or (editRow) to change one
+  function rowForm() {
     var st = eng.structure(cur);
-    var form = h("form", "dbp-ins");
-    form.append(h("b", "dbp-ins-t", S.insert));
+    var ed = editRow;
+    var form = h("form", "dbp-ins" + (ed ? " is-edit" : ""));
+    form.append(h("b", "dbp-ins-t", ed ? S.editRow : S.insert));
     var inputs = [];
-    st.cols.forEach(function (c) {
+    st.cols.forEach(function (c, ci) {
       var lab = h("label", "dbp-f");
       lab.append(h("span", "", c.name));
       var i = h("input");
@@ -574,27 +635,45 @@ export function dbPanel(opts) {
       i.setAttribute("dir", "ltr");
       i.autocomplete = "off";
       i.placeholder = c.ai ? "auto" : c.notnull ? "" : "NULL";
+      if (ed && ed.vals[ci] !== null && ed.vals[ci] !== undefined) i.value = String(ed.vals[ci]);
       lab.append(i);
       form.append(lab);
       inputs.push({ c: c, i: i });
     });
-    var ok = btn("dbp-a is-main", S.insert);
+    var ok = btn("dbp-a is-main", ed ? S.save : S.insert);
     ok.type = "submit";
     form.append(ok);
+    if (ed)
+      form.append(
+        btn("dbp-a", S.cancel, function () {
+          editRow = null;
+          render();
+        })
+      );
     var err = h("p", "dbp-msg is-err");
     err.hidden = true;
     form.append(err);
     form.addEventListener("submit", function (e) {
       e.preventDefault();
-      var names = [];
-      var vals = [];
-      inputs.forEach(function (x) {
-        var v = x.i.value;
-        if (v === "" && (x.c.ai || !x.c.notnull)) return; // left empty: auto number or NULL
-        names.push("`" + x.c.name + "`");
-        vals.push(/^-?\d+(\.\d+)?$/.test(v) && !/char|text|date|time/i.test(x.c.type) ? v : "'" + v.replace(/'/g, "''") + "'");
-      });
       try {
+        if (ed) {
+          var sets = inputs.map(function (x) {
+            var v = x.i.value;
+            return "`" + x.c.name + "`=" + (v === "" && !x.c.notnull ? "NULL" : litOf(x.c, v));
+          });
+          eng.run("UPDATE `" + cur + "` SET " + sets.join(",") + " WHERE rowid=" + (ed.id | 0));
+          editRow = null;
+          render();
+          return;
+        }
+        var names = [];
+        var vals = [];
+        inputs.forEach(function (x) {
+          var v = x.i.value;
+          if (v === "" && (x.c.ai || !x.c.notnull)) return; // left empty: auto number or NULL
+          names.push("`" + x.c.name + "`");
+          vals.push(litOf(x.c, v));
+        });
         if (names.length) eng.run("INSERT INTO `" + cur + "` (" + names.join(",") + ") VALUES (" + vals.join(",") + ")");
         else eng.run("INSERT INTO `" + cur + "` DEFAULT VALUES");
       } catch (ex) {
@@ -603,6 +682,65 @@ export function dbPanel(opts) {
       }
     });
     return form;
+  }
+
+  // a line of the column form (name, type, NULL, PK, A_I, link): used to make a table and to change a column
+  // init: { name, type, notnull, pk, ai, fk }; lockedBy: names of the tables that point to this column
+  function colRow(init, lockedBy) {
+    init = init || {};
+    var r = h("div", "dbp-col");
+    var n = h("input");
+    n.placeholder = S.colName;
+    n.maxLength = 40;
+    n.setAttribute("dir", "ltr");
+    n.value = init.name || "";
+    var types = TYPES.slice();
+    var cur0 = String(init.type || "INT").toUpperCase();
+    if (
+      !types.some(function (x) {
+        return x[0] === cur0;
+      })
+    )
+      types.push([cur0, cur0]);
+    var ty = dropdown(types, cur0);
+    var cn = check(S.nul);
+    var cp = check(S.pk, "key");
+    var ca = check(S.ai, null, S.aiHelp);
+    cn.c.checked = init.notnull === false;
+    cp.c.checked = !!init.pk;
+    ca.c.checked = !!init.ai;
+    var fkItems = [["", S.fk + " " + S.none]];
+    tables().forEach(function (tb) {
+      if (tb.name === init.table) return;
+      eng.structure(tb.name).cols.forEach(function (c) {
+        if (c.pk) fkItems.push([tb.name + "." + c.name, tb.name + "." + c.name]); // a link goes to a key
+      });
+    });
+    if (
+      init.fk &&
+      !fkItems.some(function (x) {
+        return x[0] === init.fk;
+      })
+    )
+      fkItems.push([init.fk, init.fk]);
+    var fk = dropdown(fkItems, init.fk || "", null, ico("link", "is-fk", 14));
+    fk.el.classList.add("dbp-fk");
+    r.append(n, ty.el, cn.l, cp.l, ca.l, fk.el);
+    if (lockedBy && lockedBy.length) {
+      n.disabled = true;
+      ty.disable(true);
+      cp.c.disabled = true;
+      cp.l.classList.add("is-off");
+      var note = h("p", "dbp-lock");
+      note.append(ico("lock", "", 14), document.createTextNode(S.lockedMsg.replace("{t}", lockedBy.join(", "))));
+      r.append(note);
+    }
+    return {
+      el: r,
+      read: function () {
+        return { name: n.value.trim().replace(/[^A-Za-z0-9_]/g, "_"), type: ty.get(), notnull: !cn.c.checked, pk: cp.c.checked, ai: ca.c.checked, fk: fk.get() };
+      },
+    };
   }
 
   function structureTab() {
@@ -618,7 +756,93 @@ export function dbPanel(opts) {
       if (fk) rc.append(ico("link", "is-fk"), document.createTextNode(fk.ref + "." + fk.refCols[fk.cols.indexOf(c.name)]));
       return [c.name, c.type, c.notnull ? "NON" : "OUI", kc, c.ai ? "AUTO_INCREMENT" : "", rc];
     });
-    box.append(grid(["Colonne", "Type", "Null", "Clé", "Extra", "Relation"], rows));
+    box.append(
+      grid(["Colonne", "Type", "Null", "Clé", "Extra", "Relation"], rows, function (i) {
+        var c = st.cols[i];
+        var td = h("td", "dbp-td-x");
+        var ed = btn("dbp-ib" + (editCol === c.name ? " is-on" : ""), "", function () {
+          editCol = c.name;
+          colErr = "";
+          render();
+        });
+        ed.append(ico("edit", "", 15));
+        ed.title = S.edit;
+        ed.setAttribute("aria-label", S.edit);
+        var used = eng.referencedBy(cur, c.name);
+        var key = "col:" + cur + ":" + c.name;
+        var del = btn("dbp-ib is-del" + (armedRow === key ? " is-armed" : ""), "", function () {
+          if (used.length) {
+            colErr = S.lockedDel;
+            render();
+            return;
+          }
+          if (armedRow !== key) {
+            armedRow = key;
+            render();
+            return;
+          }
+          armedRow = null;
+          try {
+            eng.dropColumn(cur, c.name);
+          } catch (e) {
+            colErr = friendly(e);
+            render();
+          }
+        });
+        if (armedRow === key) del.textContent = S.delSure;
+        else del.append(ico(used.length ? "lock" : "trash", "", 15));
+        del.title = used.length ? S.lockedDel : S.del;
+        del.setAttribute("aria-label", S.del);
+        td.append(ed, del);
+        return td;
+      })
+    );
+    box.append(
+      btn("dbp-a is-add", "", function () {
+        editCol = "+";
+        colErr = "";
+        render();
+      })
+    );
+    box.lastChild.append(ico("plus", "", 14), document.createTextNode(S.newCol));
+    if (editCol) {
+      var cc = editCol === "+" ? null : st.cols.filter(function (x) { return x.name === editCol; })[0];
+      var fk0 = cc ? st.fks.filter(function (f) { return f.cols.length === 1 && f.cols[0] === cc.name; })[0] : null;
+      var form = h("div", "dbp-ins is-edit");
+      form.append(h("b", "dbp-ins-t", cc ? S.editCol + " « " + cc.name + " »" : S.newCol));
+      var model = eng.models().filter(function (m) { return m.name === cur; })[0];
+      var def = cc && model ? model.cols.filter(function (x) { return x.name === cc.name; })[0] : null;
+      var row = colRow(
+        cc
+          ? { table: cur, name: cc.name, type: ((def && def.def) || cc.type).replace(/\s*(NOT NULL|DEFAULT).*/i, "").trim(), notnull: cc.notnull, pk: cc.pk, ai: cc.ai, fk: fk0 ? fk0.ref + "." + fk0.refCols[0] : "" }
+          : { table: cur, type: "INT", notnull: true },
+        cc ? eng.referencedBy(cur, cc.name) : null
+      );
+      form.append(row.el);
+      var err = h("p", "dbp-msg is-err");
+      err.hidden = true;
+      var acts = h("div", "dbp-acts is-row");
+      acts.append(
+        btn("dbp-a is-main", S.save, function () {
+          try {
+            eng.editColumn(cur, cc ? cc.name : null, row.read());
+            editCol = "";
+            colErr = "";
+            render();
+          } catch (e) {
+            err.textContent = friendly(e);
+            err.hidden = false;
+          }
+        }),
+        btn("dbp-a", S.cancel, function () {
+          editCol = "";
+          render();
+        })
+      );
+      form.append(acts, err);
+      box.append(form);
+    }
+    if (colErr) box.append(h("p", "dbp-msg is-err", colErr));
     box.append(h("h4", "dbp-h", S.relations));
     if (!st.fks.length) box.append(h("p", "dbp-msg", S.noRel));
     else {
@@ -708,6 +932,68 @@ export function dbPanel(opts) {
       (colsList[c] = colsList[c] || []).push(m);
     });
     colsList = colsList.filter(Boolean);
+    // the order of the tables in each column that crosses the fewest links
+    function crossings(order) {
+      var colOf = {};
+      var yOf = {};
+      order.forEach(function (list, ci) {
+        var y = 0;
+        list.forEach(function (m) {
+          colOf[m.name.toLowerCase()] = ci;
+          yOf[m.name.toLowerCase()] = y;
+          y += HH + m.cols.length * LH + 8 + GAPY;
+        });
+      });
+      var ls = [];
+      models.forEach(function (m) {
+        m.fks.forEach(function (f) {
+          var a = m.name.toLowerCase();
+          var b = f.ref.toLowerCase();
+          if (colOf[b] === undefined || a === b) return;
+          var ia = Math.max(0, m.cols.map(function (c) { return c.name; }).indexOf(f.cols[0]));
+          var ib = Math.max(0, byName[b].cols.map(function (c) { return c.name; }).indexOf(f.refCols[0]));
+          ls.push({ ca: colOf[a], cb: colOf[b], ya: yOf[a] + HH + ia * LH, yb: yOf[b] + HH + ib * LH });
+        });
+      });
+      var n = 0;
+      for (var i = 0; i < ls.length; i++)
+        for (var j = i + 1; j < ls.length; j++) {
+          var p1 = ls[i];
+          var p2 = ls[j];
+          if (p1.ca !== p2.ca || p1.cb !== p2.cb) continue;
+          if ((p1.ya - p2.ya) * (p1.yb - p2.yb) < 0) n++;
+        }
+      return n;
+    }
+    function perms(arr) {
+      if (arr.length < 2) return [arr];
+      var out = [];
+      arr.forEach(function (x, i) {
+        perms(arr.slice(0, i).concat(arr.slice(i + 1))).forEach(function (p) {
+          out.push([x].concat(p));
+        });
+      });
+      return out;
+    }
+    for (var sweep = 0; sweep < 3; sweep++) {
+      var improved = false;
+      colsList.forEach(function (list, ci) {
+        if (list.length < 2 || list.length > 6) return;
+        var best = crossings(colsList);
+        var bestOrder = list;
+        perms(list).forEach(function (pm) {
+          colsList[ci] = pm;
+          var c = crossings(colsList);
+          if (c < best) {
+            best = c;
+            bestOrder = pm;
+          }
+        });
+        if (bestOrder !== list) improved = true;
+        colsList[ci] = bestOrder;
+      });
+      if (!improved) break;
+    }
     var pos = {};
     var width = 0;
     var height = 0;
@@ -783,12 +1069,26 @@ export function dbPanel(opts) {
           x2 = to.x + W;
           d = "M" + x1 + " " + y1 + " C" + (x1 + 48) + " " + y1 + " " + (x2 + 48) + " " + y2 + " " + x2 + " " + y2;
         }
-        svg.append(mk("path", { d: d, class: "dbp-link" }), mk("circle", { cx: x1, cy: y1, r: 4.5, class: "dbp-dot" }), mk("circle", { cx: x2, cy: y2, r: 4.5, class: "dbp-dot" }));
+        var tag = { "data-a": m.name.toLowerCase(), "data-b": f.ref.toLowerCase() };
+        svg.append(
+          mk("path", Object.assign({ d: d, class: "dbp-link" }, tag)),
+          mk("circle", Object.assign({ cx: x1, cy: y1, r: 4.5, class: "dbp-dot" }, tag)),
+          mk("circle", Object.assign({ cx: x2, cy: y2, r: 4.5, class: "dbp-dot" }, tag))
+        );
       });
     });
     Object.keys(pos).forEach(function (key) {
       var p = pos[key];
-      var g = mk("g", { transform: "translate(" + p.x + "," + p.y + ")" });
+      var g = mk("g", { transform: "translate(" + p.x + "," + p.y + ")", class: "dbp-card" });
+      g.addEventListener("mouseenter", function () {
+        svg.classList.add("is-dim");
+        svg.querySelectorAll("[data-a]").forEach(function (n) {
+          n.classList.toggle("is-hot", n.getAttribute("data-a") === key || n.getAttribute("data-b") === key);
+        });
+      });
+      g.addEventListener("mouseleave", function () {
+        svg.classList.remove("is-dim");
+      });
       g.append(mk("rect", { width: W, height: p.ht, rx: 16, class: "dbp-box" }));
       g.append(icoSvg("table", 14, 12, 18, "is-tbl"));
       g.append(mk("text", { x: 40, y: 27, class: "dbp-boxt" }, p.m.name));
@@ -825,41 +1125,12 @@ export function dbPanel(opts) {
     box.append(nameLab);
     var colsBox = h("div", "dbp-cols");
     var rowsData = [];
-    var others = tables().map(function (x) {
-      return x.name;
-    });
     var err = h("p", "dbp-msg is-err");
     err.hidden = true;
     function addRow() {
-      var r = h("div", "dbp-col");
-      var n = h("input");
-      n.placeholder = S.colName;
-      n.maxLength = 40;
-      n.setAttribute("dir", "ltr");
-      var ty = dropdown(TYPES, "INT");
-      function chk(label, icon) {
-        var l = h("label", "dbp-chk");
-        var c = h("input");
-        c.type = "checkbox";
-        l.append(c);
-        if (icon) l.append(ico(icon, icon === "key" ? "is-pk" : "is-fk", 14));
-        l.append(h("span", "", label));
-        return { l: l, c: c };
-      }
-      var cn = chk(S.nul);
-      var cp = chk(S.pk, "key");
-      var ca = chk(S.ai);
-      var fkItems = [["", S.fk + " " + S.none]];
-      others.forEach(function (tn) {
-        eng.structure(tn).cols.forEach(function (c) {
-          if (c.pk) fkItems.push([tn + "." + c.name, tn + "." + c.name]); // a link goes to a key
-        });
-      });
-      var fk = dropdown(fkItems, "", null, ico("link", "is-fk", 14));
-      fk.el.classList.add("dbp-fk");
-      r.append(n, ty.el, cn.l, cp.l, ca.l, fk.el);
-      colsBox.append(r);
-      rowsData.push({ n: n, ty: ty, nul: cn.c, pk: cp.c, ai: ca.c, fk: fk });
+      var r = colRow({ type: "INT", notnull: true });
+      colsBox.append(r.el);
+      rowsData.push(r);
     }
     addRow();
     addRow();
@@ -875,15 +1146,15 @@ export function dbPanel(opts) {
           return;
         }
         var model = { name: name, cols: [], pk: [], uniq: [], fks: [] };
-        rowsData.forEach(function (r) {
-          var cn = r.n.value.trim().replace(/[^A-Za-z0-9_]/g, "_");
-          if (!cn) return;
-          var isInt = /^(INT|TINYINT)/.test(r.ty.get());
-          model.cols.push({ name: cn, def: r.ty.get() + (r.nul.checked || r.pk.checked ? (r.pk.checked ? " NOT NULL" : "") : " NOT NULL"), ai: r.ai.checked && isInt });
-          if (r.pk.checked) model.pk.push(cn);
-          if (r.fk.get()) {
-            var p = r.fk.get().split(".");
-            model.fks.push({ cols: [cn], ref: p[0], refCols: [p[1]], tail: "" });
+        rowsData.forEach(function (rr) {
+          var r = rr.read();
+          if (!r.name) return;
+          var isInt = /^(INT|TINYINT)/.test(r.type);
+          model.cols.push({ name: r.name, def: r.type + (r.notnull || r.pk ? " NOT NULL" : ""), ai: r.ai && r.pk && isInt });
+          if (r.pk) model.pk.push(r.name);
+          if (r.fk) {
+            var p = r.fk.split(".");
+            model.fks.push({ cols: [r.name], ref: p[0], refCols: [p[1]], tail: "" });
           }
         });
         if (!model.cols.length) {
@@ -907,7 +1178,7 @@ export function dbPanel(opts) {
         render();
       })
     );
-    box.append(acts, err);
+    box.append(acts, err, h("p", "dbp-help", S.aiHelp));
     return box;
   }
 

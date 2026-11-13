@@ -400,7 +400,8 @@ export function createEngine(SQL, dump) {
     return !!(r.length && r[0].values.length);
   }
   // a table of the model is rebuilt: after ADD PRIMARY KEY, ADD FOREIGN KEY, MODIFY ... AUTO_INCREMENT on a table that has rows
-  function rebuild(model) {
+  function rebuild(model, renames) {
+    renames = renames || {}; // { newName: oldName }
     var old = model.name;
     var tmp = "__tmp_" + old;
     var have = [];
@@ -409,24 +410,140 @@ export function createEngine(SQL, dump) {
       r[0].values.forEach(function (row) {
         have.push(row[1]);
       });
-    var shared = model.cols
+    var shared = model.cols.filter(function (c) {
+      return have.indexOf(renames[c.name] || c.name) >= 0;
+    });
+    var copy = shared
       .map(function (c) {
-        return c.name;
+        return qi(c.name);
       })
-      .filter(function (n) {
-        return have.indexOf(n) >= 0;
-      });
-    var copy = shared.map(qi).join(", ");
+      .join(", ");
+    var from = shared
+      .map(function (c) {
+        return qi(renames[c.name] || c.name);
+      })
+      .join(", ");
     rawRun("PRAGMA foreign_keys=OFF");
     try {
       var tm = { name: tmp, cols: model.cols, pk: model.pk, uniq: model.uniq, fks: model.fks };
       rawRun(createOf(tm));
-      if (copy) rawRun("INSERT INTO " + qi(tmp) + " (" + copy + ") SELECT " + copy + " FROM " + qi(old));
+      if (copy) rawRun("INSERT INTO " + qi(tmp) + " (" + copy + ") SELECT " + from + " FROM " + qi(old));
       rawRun("DROP TABLE " + qi(old));
       rawRun("ALTER TABLE " + qi(tmp) + " RENAME TO " + qi(old));
+    } catch (e) {
+      try {
+        rawRun("DROP TABLE IF EXISTS " + qi(tmp));
+      } catch (x) {}
+      throw e;
     } finally {
       rawRun("PRAGMA foreign_keys=ON");
     }
+  }
+
+  // which other tables point to this column
+  function referencedBy(table, col) {
+    var out = [];
+    order.forEach(function (n) {
+      var m = models[low(n)];
+      if (!m || low(m.name) === low(table)) return;
+      m.fks.forEach(function (f) {
+        if (low(f.ref) === low(table) && f.refCols.some(function (c) { return low(c) === low(col); }) && out.indexOf(m.name) < 0) out.push(m.name);
+      });
+    });
+    return out;
+  }
+  function isIntType(def) {
+    return /^\s*(TINYINT|SMALLINT|MEDIUMINT|BIGINT|INT|INTEGER)\b/i.test(def || "");
+  }
+
+  // spec: { name, type, notnull, ai, pk, fk: "table.col" | "" }. null col = a new column.
+  // A column that other tables point to keeps its name, type and key (they would break); the rest can change.
+  function editColumn(table, col, spec) {
+    var model = models[low(table)];
+    if (!model) throw new Error("no such table: " + table);
+    var snap = JSON.parse(JSON.stringify(model));
+    var c = col
+      ? model.cols.filter(function (x) {
+          return low(x.name) === low(col);
+        })[0]
+      : null;
+    if (col && !c) throw new Error("no such column: " + col);
+    var nname = String(spec.name || "").trim();
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(nname)) throw new Error("Nom de colonne invalide (lettres, chiffres et _).");
+    var type = String(spec.type || "").trim();
+    if (!type) throw new Error("Choisis un type.");
+    if (
+      model.cols.some(function (x) {
+        return x !== c && low(x.name) === low(nname);
+      })
+    )
+      throw new Error("Une colonne « " + nname + " » existe déjà.");
+    var refs = col ? referencedBy(table, col) : [];
+    var wasPk = col ? model.pk.some(function (p) { return low(p) === low(col); }) : false;
+    if (refs.length) {
+      var oldType = (c.def || "").replace(/\s*NOT NULL.*/i, "").replace(/\s*DEFAULT.*/i, "").trim().toUpperCase();
+      if (low(nname) !== low(col) || !spec.pk || (type.toUpperCase() !== oldType && oldType)) {
+        throw new Error("La colonne « " + col + " » est utilisée par " + refs.join(", ") + " : son nom, son type et sa clé primaire ne peuvent pas changer.");
+      }
+    }
+    if (spec.ai && !spec.pk) throw new Error("A_I (numéro automatique) demande une clé primaire.");
+    if (spec.ai && !isIntType(type)) throw new Error("A_I ne marche qu’avec un type entier (INT).");
+    var renames = {};
+    try {
+      if (!c) {
+        c = { name: nname, def: "", ai: false };
+        model.cols.push(c);
+      } else if (low(nname) !== low(col)) {
+        renames[nname] = c.name;
+        model.pk = model.pk.map(function (p) { return low(p) === low(col) ? nname : p; });
+        model.uniq = model.uniq.map(function (u) { return u.map(function (p) { return low(p) === low(col) ? nname : p; }); });
+        model.fks.forEach(function (f) {
+          f.cols = f.cols.map(function (p) { return low(p) === low(col) ? nname : p; });
+        });
+        c.name = nname;
+      }
+      var dflt = /\bDEFAULT\s+('(?:[^']|'')*'|[^\s,]+)/i.exec(c.def || "");
+      c.def = type + (spec.notnull || spec.pk ? " NOT NULL" : "") + (dflt ? " DEFAULT " + dflt[1] : "");
+      c.ai = !!spec.ai;
+      var inPk = model.pk.some(function (p) { return low(p) === low(c.name); });
+      if (spec.pk && !inPk) model.pk.push(c.name);
+      if (!spec.pk && inPk) model.pk = model.pk.filter(function (p) { return low(p) !== low(c.name); });
+      if (c.ai && model.pk.length !== 1) throw new Error("A_I demande une clé primaire sur cette seule colonne.");
+      // links of this column: replaced by the chosen one
+      model.fks = model.fks.filter(function (f) {
+        return !(f.cols.length === 1 && low(f.cols[0]) === low(c.name));
+      });
+      if (spec.fk) {
+        var pr = String(spec.fk).split(".");
+        if (!models[low(pr[0])]) throw new Error("no such table: " + pr[0]);
+        model.fks.push({ cols: [c.name], ref: models[low(pr[0])].name, refCols: [pr[1]], tail: "" });
+      }
+      rebuild(model, renames);
+    } catch (e) {
+      models[low(table)] = snap; // nothing changed
+      throw e;
+    }
+    void wasPk;
+    fire();
+  }
+  function dropColumn(table, col) {
+    var model = models[low(table)];
+    if (!model) throw new Error("no such table: " + table);
+    var refs = referencedBy(table, col);
+    if (refs.length) throw new Error("La colonne « " + col + " » est utilisée par " + refs.join(", ") + " : elle ne peut pas être supprimée.");
+    if (model.cols.length < 2) throw new Error("Une table garde au moins une colonne.");
+    var snap = JSON.parse(JSON.stringify(model));
+    try {
+      model.cols = model.cols.filter(function (x) { return low(x.name) !== low(col); });
+      model.pk = model.pk.filter(function (p) { return low(p) !== low(col); });
+      model.uniq = model.uniq.filter(function (u) { return !u.some(function (p) { return low(p) === low(col); }); });
+      model.fks = model.fks.filter(function (f) { return !f.cols.some(function (p) { return low(p) === low(col); }); });
+      rebuild(model);
+    } catch (e) {
+      models[low(table)] = snap;
+      throw e;
+    }
+    fire();
   }
 
   // one ALTER TABLE statement on a table of the base (several clauses, comma separated)
@@ -771,6 +888,9 @@ export function createEngine(SQL, dump) {
       return { rows: rows, cols: r.cols, affected: r.affected, lastId: r.lastId || 0 };
     },
     // a table made by the "Nouvelle table" form: a model
+    editColumn: editColumn,
+    dropColumn: dropColumn,
+    referencedBy: referencedBy,
     createTable: function (model) {
       if (models[low(model.name)]) throw new Error("table " + model.name + " already exists");
       rawRun(createOf(model));
