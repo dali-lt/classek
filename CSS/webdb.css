@@ -200,3 +200,14 @@
 .dbp-io { flex-direction: column; }
 .dbp-opts { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
 .dbp-sec-h small { margin-inline-start: 0; margin-top: -2px; }
+
+/* the database fills the whole box of the editor (it replaces the file bar and the code); the button at the top right brings the editor back */
+.dbp { top: 0; border-radius: 20px; }
+.dbp-head { padding: 12px 14px 8px 16px; gap: 10px; }
+.dbp-dots { display: inline-flex; gap: 7px; margin-inline-end: 4px; }
+.dbp-dots i { width: 11px; height: 11px; border-radius: 50%; background: #0464de; }
+.dbp-dots i:nth-child(2) { background: #aee37b; }
+.dbp-dots i:nth-child(3) { background: #e64d6b; }
+.dbp-back { display: inline-flex; align-items: center; justify-content: center; background: #aee37b; border-color: #aee37b; color: #10260a; }
+.dbp-back:hover { background: #c0ee94; }
+.pg-win.db-open { min-height: 460px; }

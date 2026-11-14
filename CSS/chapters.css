@@ -4818,3 +4818,38 @@ html[dir="rtl"] .dv-road-h { transform: scaleX(-1); }
 .pp-sh-year { color: #01092d; font-size: 11px; font-weight: 800; margin-inline-end: 2px; }
 .pp-sh-pill { padding: 2px 9px; border-radius: 999px; background: #eaf1fd; color: #0464de; font-size: 9px; font-weight: 800; white-space: nowrap; }
 .pp-sh-pill.is-sub { background: #e6f6d6; color: #2b5214; }
+
+/* devoirs: search bar + two lists (year, kind of exam) */
+.dv-fbar { display: flex; flex-direction: column; gap: 14px; margin: 4px 0 18px; }
+.dv-search { position: relative; display: block; }
+.dv-search-ic { position: absolute; inset-inline-start: 16px; top: 50%; transform: translateY(-50%); display: inline-flex; color: var(--color-text-muted, #6b7aa6); pointer-events: none; }
+.dv-search-ic svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.dv-search input {
+  width: 100%; box-sizing: border-box; min-height: 48px; padding: 0 16px; padding-inline-start: 46px; border-radius: 14px; border: 1.5px solid var(--color-border);
+  background: var(--color-surface); color: var(--color-text); font: inherit; font-size: 15px; font-weight: 600;
+}
+.dv-search input::placeholder { color: var(--color-text-muted, #7d8bb0); font-weight: 500; }
+.dv-search input:focus-visible { outline: 3px solid var(--color-primary); outline-offset: 2px; }
+.dv-fsel { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.dv-sf { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.dv-sf-l { font-size: 14px; font-weight: 800; color: var(--color-text); }
+.dv-sel {
+  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 48px; padding: 0 14px; border-radius: 14px; border: 1.5px solid var(--color-border);
+  background: var(--color-surface); color: var(--color-text); font: inherit; font-size: 15px; font-weight: 700; text-align: start; cursor: pointer;
+}
+.dv-sel:hover { border-color: var(--color-primary); }
+.dv-sel:focus-visible { outline: 3px solid var(--color-primary); outline-offset: 2px; }
+.dv-sel[aria-expanded="true"] { border-color: var(--color-primary); }
+.dv-sel-t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dv-sel-c { display: inline-flex; color: var(--color-text-muted, #7d8bb0); }
+.dv-sel-c svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.dv-sl {
+  position: fixed; z-index: 100000; margin: 0; padding: 6px; list-style: none; overflow: auto; box-sizing: border-box; border-radius: 14px;
+  background: var(--color-surface); border: 1.5px solid var(--color-border); box-shadow: 0 18px 40px -14px rgba(3, 20, 80, 0.4); color: var(--color-text); font-size: 15px; font-weight: 700;
+}
+.dv-sl[hidden] { display: none; }
+.dv-sl-o { padding: 10px 12px; border-radius: 10px; cursor: pointer; white-space: nowrap; }
+.dv-sl-o:hover, .dv-sl-o.is-act { background: rgba(4, 100, 222, 0.12); }
+.dv-sl-o[aria-selected="true"] { background: var(--color-primary); color: #fff; }
+.student-empty[hidden], .sv-grid[hidden] { display: none; }
+@media (max-width: 480px) { .dv-fsel { gap: 10px; } }

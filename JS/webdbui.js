@@ -7,7 +7,7 @@ var STR = {
     title: "Base de données",
     toggle: "Base de données",
     sideToggle: "Afficher / masquer la liste des tables",
-    close: "Fermer",
+    close: "Éditeur",
     tables: "Tables",
     newTable: "Nouvelle table",
     importSql: "Importer .sql",
@@ -76,7 +76,7 @@ var STR = {
     title: "قاعدة البيانات",
     toggle: "قاعدة البيانات",
     sideToggle: "إظهار / إخفاء قائمة الجداول",
-    close: "إغلاق",
+    close: "المحرّر",
     tables: "الجداول",
     newTable: "جدول جديد",
     importSql: "استيراد .sql",
@@ -165,6 +165,7 @@ var ICO = {
   table: '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 10h18M9 10v10"/>',
   side: '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/>',
   chev: '<path d="m6 9 6 6 6-6"/>',
+  code: '<path d="m8 7-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/>',
   edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
   trash: '<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
@@ -358,7 +359,7 @@ function ensureCss() {
   cssDone = true;
   var l = document.createElement("link");
   l.rel = "stylesheet";
-  l.href = new URL("../CSS/webdb.css?v=11", import.meta.url).href;
+  l.href = new URL("../CSS/webdb.css?v=12", import.meta.url).href;
   document.head.append(l);
 }
 
@@ -390,11 +391,16 @@ export function dbPanel(opts) {
   root.setAttribute("dir", opts.lang === "ar" ? "rtl" : "ltr");
   var head = h("div", "dbp-head");
   var title = h("span", "dbp-title", S.title);
-  var close = btn("dbp-x", "×", function () {
+  // back to the editor: the box is the same, only its content changes
+  var close = btn("dbp-x dbp-back", "", function () {
     setOpen(false);
   });
+  close.innerHTML = icoHtml("code", 17); // static, trusted SVG
   close.setAttribute("aria-label", S.close);
   close.title = S.close;
+  var dots = h("span", "dbp-dots");
+  dots.setAttribute("aria-hidden", "true");
+  dots.append(h("i"), h("i"), h("i"));
   var sideBtn = btn("dbp-x dbp-sidebtn", "", function () {
     sideOff = !sideOff;
     body.classList.toggle("is-noside", sideOff);
@@ -405,7 +411,7 @@ export function dbPanel(opts) {
   sideBtn.title = S.sideToggle;
   sideBtn.setAttribute("aria-label", S.sideToggle);
   sideBtn.setAttribute("aria-expanded", "true");
-  head.append(sideBtn, title, close);
+  head.append(dots, sideBtn, title, close);
   var body = h("div", "dbp-body");
   root.append(head, body);
 

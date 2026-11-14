@@ -14,7 +14,7 @@ import { openAlgoViz, openAlgoLibrary, libraryLabel, algoTitle, hasAlgoViz, kind
 import { assembleWeb, fileExplorer, fsParse, fsToDraft, fsClone, fsApply, langOfName } from "./webfiles.js?v=3";
 import { mediaStore, applyMedia, snippetOf } from "./webmedia.js?v=1";
 import { loadSql, createEngine } from "./webdb.js?v=3";
-import { dbPanel } from "./webdbui.js?v=11";
+import { dbPanel } from "./webdbui.js?v=12";
 
 var STR = {
   fr: {
@@ -134,6 +134,11 @@ var STR = {
     dvStep4: "Correction",
     dvStep4t: "La solution, après ton temps de réflexion.",
     dvAll: "Tous",
+    dvYear: "Année",
+    dvYearAll: "Toutes les années",
+    dvKind: "Épreuve",
+    dvKindAll: "Toutes les épreuves",
+    dvSearch: "Rechercher un devoir (ex. Algorithmique 2024, contrôle…)",
     dvMain: "Principale",
     dvControl: "Contrôle",
     dvPrat: "Pratique",
@@ -409,6 +414,11 @@ var STR = {
     dvStep4: "التصحيح",
     dvStep4t: "الحل، بعد وقت التفكير.",
     dvAll: "الكل",
+    dvYear: "السنة",
+    dvYearAll: "كل السنوات",
+    dvKind: "الاختبار",
+    dvKindAll: "كل الاختبارات",
+    dvSearch: "ابحث عن فرض (مثال: خوارزميات 2024، مراقبة…)",
     dvMain: "رئيسية",
     dvControl: "مراقبة",
     dvPrat: "تطبيقي",
@@ -3317,6 +3327,122 @@ function devoirCard(ch) {
 }
 
 var devoirFilter = "all"; // "all" | "principale" | "controle" | "pratique"
+var devoirYear = "all";
+var devoirQ = "";
+
+// a list of the site (the browser's own list cannot be styled): a label, a button, a floating list
+var openSel = null;
+function siteSelect(label, items, value, onChange) {
+  var cur = value;
+  var wrap = el("div", "dv-sf");
+  var lab = el("span", "dv-sf-l", label);
+  var b = el("button", "dv-sel");
+  b.type = "button";
+  b.setAttribute("aria-haspopup", "listbox");
+  b.setAttribute("aria-expanded", "false");
+  var tx = el("span", "dv-sel-t");
+  var chev = el("span", "dv-sel-c");
+  chev.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 9 4-4 4 4M8 15l4 4 4-4"/></svg>'; // static, trusted SVG
+  b.append(tx, chev);
+  var ul = el("ul", "dv-sl");
+  ul.setAttribute("role", "listbox");
+  ul.hidden = true;
+  var opts = items.map(function (it, i) {
+    var li = el("li", "dv-sl-o", it[1]);
+    li.setAttribute("role", "option");
+    li.addEventListener("pointerdown", function (e) {
+      e.preventDefault();
+    });
+    li.addEventListener("click", function () {
+      pick(i);
+    });
+    ul.append(li);
+    return li;
+  });
+  var act = -1;
+  function paint() {
+    var i = items.findIndex(function (x) {
+      return x[0] === cur;
+    });
+    tx.textContent = i >= 0 ? items[i][1] : "";
+    opts.forEach(function (o, k) {
+      o.setAttribute("aria-selected", k === i ? "true" : "false");
+      o.classList.toggle("is-act", k === act);
+    });
+  }
+  function pick(i) {
+    cur = items[i][0];
+    paint();
+    close();
+    b.focus();
+    onChange(cur);
+  }
+  function onDoc(e) {
+    if (!wrap.contains(e.target) && !ul.contains(e.target)) close();
+  }
+  function onScroll(e) {
+    if (!ul.contains(e.target)) close();
+  }
+  function open() {
+    if (openSel) openSel();
+    document.body.append(ul);
+    ul.hidden = false;
+    b.setAttribute("aria-expanded", "true");
+    var r = b.getBoundingClientRect();
+    ul.style.minWidth = r.width + "px";
+    var below = window.innerHeight - r.bottom;
+    var maxH = Math.max(120, Math.min(280, Math.max(below, r.top) - 12));
+    ul.style.maxHeight = maxH + "px";
+    ul.style.left = Math.max(8, Math.min(r.left, window.innerWidth - 8 - r.width)) + "px";
+    if (below >= Math.min(maxH, 180) || below >= r.top) {
+      ul.style.top = r.bottom + 6 + "px";
+      ul.style.bottom = "auto";
+    } else {
+      ul.style.bottom = window.innerHeight - r.top + 6 + "px";
+      ul.style.top = "auto";
+    }
+    act = items.findIndex(function (x) {
+      return x[0] === cur;
+    });
+    paint();
+    openSel = close;
+    document.addEventListener("pointerdown", onDoc, true);
+    window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("resize", close);
+  }
+  function close() {
+    if (ul.hidden) return;
+    ul.hidden = true;
+    b.setAttribute("aria-expanded", "false");
+    ul.remove();
+    if (openSel === close) openSel = null;
+    document.removeEventListener("pointerdown", onDoc, true);
+    window.removeEventListener("scroll", onScroll, true);
+    window.removeEventListener("resize", close);
+  }
+  b.addEventListener("click", function () {
+    if (ul.hidden) open();
+    else close();
+  });
+  b.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && !ul.hidden) {
+      e.stopPropagation();
+      close();
+      return;
+    }
+    var k = e.key;
+    if (k !== "ArrowDown" && k !== "ArrowUp" && k !== "Enter" && k !== " ") return;
+    e.preventDefault();
+    if (ul.hidden) return open();
+    if (k === "Enter" || k === " ") return act >= 0 ? pick(act) : close();
+    act = Math.max(0, Math.min(items.length - 1, act + (k === "ArrowDown" ? 1 : -1)));
+    paint();
+    opts[act].scrollIntoView({ block: "nearest" });
+  });
+  wrap.append(lab, b);
+  paint();
+  return wrap;
+}
 
 function renderDevoirs(host, sub) {
   var list = extrasOf(sub, "devoir");
@@ -3387,30 +3513,92 @@ function renderDevoirs(host, sub) {
   var kindOf = function (c) {
     return c.session === "principale" ? "principale" : c.session === "controle" ? "controle" : c.session === "pratique" ? "pratique" : "other";
   };
-  var fl = el("div", "dv-filters");
-  [["all", "dvAll"], ["principale", "dvMain"], ["controle", "dvControl"], ["pratique", "dvPrat"]].forEach(function (f) {
-    var b = el("button", "dv-filter" + (devoirFilter === f[0] ? " is-on" : ""), t(f[1]));
-    b.type = "button";
-    b.addEventListener("click", function () {
-      devoirFilter = f[0];
-      render();
-    });
-    fl.append(b);
+  var yearOf = function (c) {
+    return String(c.year || (/\b(20\d\d)\b/.exec((c.sheetHeader || "") + " " + titleOf(c)) || [])[1] || "");
+  };
+  var years = [];
+  list.forEach(function (c) {
+    var y = yearOf(c);
+    if (y && years.indexOf(y) < 0) years.push(y);
   });
-  host.append(fl);
+  years.sort().reverse();
+  if (devoirYear !== "all" && years.indexOf(devoirYear) < 0) devoirYear = "all";
+  var norm = function (x) {
+    return String(x || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
+  };
+  var kindName = { principale: "dvMain", controle: "dvControl", pratique: "dvPrat" };
 
-  var shown = list.filter(function (c) {
-    return devoirFilter === "all" || kindOf(c) === devoirFilter;
-  });
-  if (!shown.length) {
-    host.append(el("div", "student-empty", t("dvNone")));
-    return;
-  }
+  // search bar + two lists (year, kind of exam)
+  var bar = el("div", "dv-fbar");
+  var sw = el("label", "dv-search");
+  var mag = el("span", "dv-search-ic");
+  mag.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>'; // static, trusted SVG
+  var qin = el("input");
+  qin.type = "search";
+  qin.value = devoirQ;
+  qin.placeholder = t("dvSearch");
+  qin.setAttribute("aria-label", t("dvSearch"));
+  qin.autocomplete = "off";
+  sw.append(mag, qin);
+  var sels = el("div", "dv-fsel");
+  var yItems = [["all", t("dvYearAll")]].concat(
+    years.map(function (y) {
+      return [y, y];
+    })
+  );
+  var kItems = [["all", t("dvKindAll")]].concat(
+    ["principale", "controle", "pratique"]
+      .filter(function (k) {
+        return list.some(function (c) {
+          return kindOf(c) === k;
+        });
+      })
+      .map(function (k) {
+        return [k, t(kindName[k])];
+      })
+  );
+  sels.append(
+    siteSelect(t("dvYear"), yItems, devoirYear, function (v) {
+      devoirYear = v;
+      apply();
+    }),
+    siteSelect(t("dvKind"), kItems, devoirFilter, function (v) {
+      devoirFilter = v;
+      apply();
+    })
+  );
+  bar.append(sw, sels);
+  host.append(bar);
+
   var grid = el("div", "sv-grid");
-  shown.forEach(function (c) {
-    grid.append(devoirCard(c));
+  var none = el("div", "student-empty", t("dvNone"));
+  function apply() {
+    var q = norm(devoirQ).trim();
+    var shown = list.filter(function (c) {
+      if (devoirFilter !== "all" && kindOf(c) !== devoirFilter) return false;
+      if (devoirYear !== "all" && yearOf(c) !== devoirYear) return false;
+      if (!q) return true;
+      var hay = norm(titleOf(c) + " " + yearOf(c) + " " + (kindName[kindOf(c)] ? t(kindName[kindOf(c)]) : "") + " " + t("s_" + c.subject));
+      return q.split(/\s+/).every(function (w) {
+        return hay.indexOf(w) >= 0;
+      });
+    });
+    grid.textContent = "";
+    shown.forEach(function (c) {
+      grid.append(devoirCard(c));
+    });
+    none.hidden = shown.length > 0;
+    grid.hidden = !shown.length;
+  }
+  qin.addEventListener("input", function () {
+    devoirQ = qin.value;
+    apply();
   });
-  host.append(grid);
+  host.append(none, grid);
+  apply();
 }
 
 function renderList(host, route) {
