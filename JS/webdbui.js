@@ -1,6 +1,6 @@
 /* The "Base de données" panel of the code window: a small phpMyAdmin (tables, rows, structure, SQL, relations diagram).
    It works on an engine from JS/webdb.js. Everything the student wrote is put in the page with textContent, never as markup. */
-import { friendly } from "./webdb.js?v=2";
+import { friendly } from "./webdb.js?v=3";
 
 var STR = {
   fr: {
@@ -20,6 +20,19 @@ var STR = {
     rows: "lignes",
     row: "ligne",
     insert: "Insérer",
+    unique: "UNIQUE",
+    uniqueSub: "pas de doublon (ex. nom, mail)",
+    nulSub: "peut rester vide",
+    pkSub: "identifie chaque ligne",
+    aiSub: "numéro automatique 1, 2, 3… (INT + clé primaire)",
+    secTable: "Table",
+    secTableSub: "Le nom de la table",
+    secCols: "Colonnes",
+    secColsSub: "Une boîte par colonne : nom, type et options",
+    colN: "Colonne",
+    removeCol: "Retirer cette colonne",
+    fkLabel: "Clé étrangère",
+    ioTitle: "Fichier .sql",
     del: "Supprimer",
     edit: "Modifier",
     save: "Enregistrer",
@@ -76,6 +89,19 @@ var STR = {
     rows: "أسطر",
     row: "سطر",
     insert: "إدراج",
+    unique: "UNIQUE",
+    uniqueSub: "بلا تكرار (مثال: الاسم، الـmail)",
+    nulSub: "يمكن أن يبقى فارغا",
+    pkSub: "يعرّف كل سطر",
+    aiSub: "رقم تلقائي 1، 2، 3… (INT + مفتاح أساسي)",
+    secTable: "الجدول",
+    secTableSub: "اسم الجدول",
+    secCols: "الأعمدة",
+    secColsSub: "صندوق لكل عمود : الاسم، النوع و الخيارات",
+    colN: "عمود",
+    removeCol: "إزالة هذا العمود",
+    fkLabel: "مفتاح أجنبي",
+    ioTitle: "ملف .sql",
     del: "حذف",
     edit: "تعديل",
     save: "حفظ",
@@ -142,6 +168,9 @@ var ICO = {
   edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
   trash: '<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
+  up: '<path d="M12 16V4M7 9l5-5 5 5M4 20h16"/>',
+  down: '<path d="M12 4v12M7 11l5 5 5-5M4 20h16"/>',
+  x: '<path d="m6 6 12 12M18 6 6 18"/>',
   lock: '<rect x="5" y="11" width="14" height="9" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
 };
 function icoHtml(name, size) {
@@ -287,21 +316,21 @@ function dropdown(items, value, onChange, lead) {
     },
   };
 }
-// a checkbox of the site
-function check(label, icon, tip) {
-  var l = h("label", "dbp-chk");
+// an option of a column: the checkbox of the site, its name and one line that says what it does
+function opt(label, sub, icon) {
+  var l = h("label", "dbp-opt");
   var c = h("input");
   c.type = "checkbox";
   var box = h("span", "dbp-cb");
   box.innerHTML = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg>'; // static, trusted SVG
-  l.append(c, box);
-  if (icon) l.append(ico(icon, icon === "key" ? "is-pk" : "is-fk", 14));
-  l.append(h("span", "", label));
-  if (tip) l.title = tip;
+  var tx = h("span", "dbp-opt-t");
+  var top = h("b", "dbp-opt-n");
+  if (icon) top.append(ico(icon, icon === "key" ? "is-pk" : "is-fk", 14));
+  top.append(document.createTextNode(label));
+  tx.append(top, h("small", "", sub));
+  l.append(c, box, tx);
   return { l: l, c: c };
 }
-var PAGE = 15;
-var SVGNS = "http://www.w3.org/2000/svg";
 
 function h(tag, cls, text) {
   var n = document.createElement(tag);
@@ -326,7 +355,7 @@ function ensureCss() {
   cssDone = true;
   var l = document.createElement("link");
   l.rel = "stylesheet";
-  l.href = new URL("../CSS/webdb.css?v=7", import.meta.url).href;
+  l.href = new URL("../CSS/webdb.css?v=10", import.meta.url).href;
   document.head.append(l);
 }
 
@@ -453,12 +482,20 @@ export function dbPanel(opts) {
       btn("dbp-a is-main", "+ " + S.newTable, function () {
         creating = true;
         render();
-      }),
-      btn("dbp-a", S.importSql, importFile),
-      btn("dbp-a", S.exportSql, exportFile)
+      })
     );
     s.append(acts);
     s.append(h("p", "dbp-note", S.note));
+    // import / export: at the bottom of the side bar
+    var io = h("div", "dbp-io");
+    io.setAttribute("role", "group");
+    io.setAttribute("aria-label", S.ioTitle);
+    var bi = btn("dbp-a is-io", "", importFile);
+    bi.append(ico("up", "", 15), document.createTextNode(S.importSql));
+    var be = btn("dbp-a is-io", "", exportFile);
+    be.append(ico("down", "", 15), document.createTextNode(S.exportSql));
+    io.append(bi, be);
+    s.append(io);
     return s;
   }
   function importFile() {
@@ -684,16 +721,33 @@ export function dbPanel(opts) {
     return form;
   }
 
-  // a line of the column form (name, type, NULL, PK, A_I, link): used to make a table and to change a column
-  // init: { name, type, notnull, pk, ai, fk }; lockedBy: names of the tables that point to this column
-  function colRow(init, lockedBy) {
+  // the box of one column (name, type, link, options): used to make a table and to change a column
+  // init: { name, type, notnull, pk, ai, unique, fk, table }; lockedBy: names of the tables that point to this column
+  // opts: { n: number shown, onRemove }
+  function colRow(init, lockedBy, o) {
     init = init || {};
-    var r = h("div", "dbp-col");
+    o = o || {};
+    var r = h("div", "dbp-colbox");
+    var hd = h("div", "dbp-colbox-h");
+    hd.append(h("span", "dbp-colnum", o.n ? S.colN + " " + o.n : S.colN));
+    if (o.onRemove) {
+      var rm = btn("dbp-ib is-del", "", o.onRemove);
+      rm.append(ico("x", "", 15));
+      rm.title = S.removeCol;
+      rm.setAttribute("aria-label", S.removeCol);
+      hd.append(rm);
+    }
+    var grid3 = h("div", "dbp-colgrid");
     var n = h("input");
     n.placeholder = S.colName;
     n.maxLength = 40;
     n.setAttribute("dir", "ltr");
     n.value = init.name || "";
+    function field(label, node) {
+      var f = h("div", "dbp-f");
+      f.append(h("span", "", label), node);
+      return f;
+    }
     var types = TYPES.slice();
     var cur0 = String(init.type || "INT").toUpperCase();
     if (
@@ -703,13 +757,7 @@ export function dbPanel(opts) {
     )
       types.push([cur0, cur0]);
     var ty = dropdown(types, cur0);
-    var cn = check(S.nul);
-    var cp = check(S.pk, "key");
-    var ca = check(S.ai, null, S.aiHelp);
-    cn.c.checked = init.notnull === false;
-    cp.c.checked = !!init.pk;
-    ca.c.checked = !!init.ai;
-    var fkItems = [["", S.fk + " " + S.none]];
+    var fkItems = [["", S.none]];
     tables().forEach(function (tb) {
       if (tb.name === init.table) return;
       eng.structure(tb.name).cols.forEach(function (c) {
@@ -725,7 +773,18 @@ export function dbPanel(opts) {
       fkItems.push([init.fk, init.fk]);
     var fk = dropdown(fkItems, init.fk || "", null, ico("link", "is-fk", 14));
     fk.el.classList.add("dbp-fk");
-    r.append(n, ty.el, cn.l, cp.l, ca.l, fk.el);
+    grid3.append(field(S.name, n), field(S.type, ty.el), field(S.fkLabel, fk.el));
+    var ops = h("div", "dbp-opts");
+    var cn = opt(S.nul, S.nulSub);
+    var cp = opt(S.pk, S.pkSub, "key");
+    var ca = opt(S.ai, S.aiSub);
+    var cu = opt(S.unique, S.uniqueSub);
+    cn.c.checked = init.notnull === false;
+    cp.c.checked = !!init.pk;
+    ca.c.checked = !!init.ai;
+    cu.c.checked = !!init.unique;
+    ops.append(cn.l, cp.l, ca.l, cu.l);
+    r.append(hd, grid3, ops);
     if (lockedBy && lockedBy.length) {
       n.disabled = true;
       ty.disable(true);
@@ -737,8 +796,11 @@ export function dbPanel(opts) {
     }
     return {
       el: r,
+      setNum: function (k) {
+        hd.firstChild.textContent = S.colN + " " + k;
+      },
       read: function () {
-        return { name: n.value.trim().replace(/[^A-Za-z0-9_]/g, "_"), type: ty.get(), notnull: !cn.c.checked, pk: cp.c.checked, ai: ca.c.checked, fk: fk.get() };
+        return { name: n.value.trim().replace(/[^A-Za-z0-9_]/g, "_"), type: ty.get(), notnull: !cn.c.checked, pk: cp.c.checked, ai: ca.c.checked, unique: cu.c.checked, fk: fk.get() };
       },
     };
   }
@@ -752,6 +814,7 @@ export function dbPanel(opts) {
       })[0];
       var kc = h("span", "dbp-cell");
       if (c.pk) kc.append(ico("key", "is-pk"), document.createTextNode("PRIMARY"));
+      else if (st.uniq.some(function (u) { return u.length === 1 && u[0] === c.name; })) kc.append(document.createTextNode("UNIQUE"));
       var rc = h("span", "dbp-cell");
       if (fk) rc.append(ico("link", "is-fk"), document.createTextNode(fk.ref + "." + fk.refCols[fk.cols.indexOf(c.name)]));
       return [c.name, c.type, c.notnull ? "NON" : "OUI", kc, c.ai ? "AUTO_INCREMENT" : "", rc];
@@ -814,9 +877,10 @@ export function dbPanel(opts) {
       var def = cc && model ? model.cols.filter(function (x) { return x.name === cc.name; })[0] : null;
       var row = colRow(
         cc
-          ? { table: cur, name: cc.name, type: ((def && def.def) || cc.type).replace(/\s*(NOT NULL|DEFAULT).*/i, "").trim(), notnull: cc.notnull, pk: cc.pk, ai: cc.ai, fk: fk0 ? fk0.ref + "." + fk0.refCols[0] : "" }
+          ? { table: cur, name: cc.name, type: ((def && def.def) || cc.type).replace(/\s*(NOT NULL|DEFAULT).*/i, "").trim(), notnull: cc.notnull, pk: cc.pk, ai: cc.ai, unique: st.uniq.some(function (u) { return u.length === 1 && u[0] === cc.name; }), fk: fk0 ? fk0.ref + "." + fk0.refCols[0] : "" }
           : { table: cur, type: "INT", notnull: true },
-        cc ? eng.referencedBy(cur, cc.name) : null
+        cc ? eng.referencedBy(cur, cc.name) : null,
+        {}
       );
       form.append(row.el);
       var err = h("p", "dbp-msg is-err");
@@ -1114,27 +1178,50 @@ export function dbPanel(opts) {
 
   // "Nouvelle table": name, columns, keys and links
   function newTableForm() {
-    var box = h("div", "dbp-pane");
-    box.append(h("h4", "dbp-h", S.newTable));
+    var box = h("div", "dbp-pane dbp-new");
+    // 1. the table
+    var sec1 = h("section", "dbp-sec");
+    var h1 = h("div", "dbp-sec-h");
+    h1.append(h("span", "dbp-sec-n", "1"), h("b", "", S.secTable), h("small", "", S.secTableSub));
     var nameLab = h("label", "dbp-f is-wide");
     nameLab.append(h("span", "", S.tName));
     var nameIn = h("input");
     nameIn.setAttribute("dir", "ltr");
     nameIn.maxLength = 40;
     nameLab.append(nameIn);
-    box.append(nameLab);
+    sec1.append(h1, nameLab);
+    // 2. the columns, one box each
+    var sec2 = h("section", "dbp-sec");
+    var h2 = h("div", "dbp-sec-h");
+    h2.append(h("span", "dbp-sec-n", "2"), h("b", "", S.secCols), h("small", "", S.secColsSub));
     var colsBox = h("div", "dbp-cols");
     var rowsData = [];
     var err = h("p", "dbp-msg is-err");
     err.hidden = true;
+    function renumber() {
+      rowsData.forEach(function (r, i) {
+        r.setNum(i + 1);
+      });
+    }
     function addRow() {
-      var r = colRow({ type: "INT", notnull: true });
+      var r = colRow({ type: "INT", notnull: true }, null, {
+        n: rowsData.length + 1,
+        onRemove: function () {
+          if (rowsData.length < 2) return;
+          rowsData.splice(rowsData.indexOf(r), 1);
+          r.el.remove();
+          renumber();
+        },
+      });
       colsBox.append(r.el);
       rowsData.push(r);
     }
     addRow();
     addRow();
-    box.append(colsBox);
+    var add = btn("dbp-a is-add", "", addRow);
+    add.append(ico("plus", "", 14), document.createTextNode(S.addCol.replace(/^\+\s*/, "")));
+    sec2.append(h2, colsBox, add);
+    box.append(sec1, sec2);
     var acts = h("div", "dbp-acts is-row");
     acts.append(
       btn("dbp-a", S.addCol, addRow),
@@ -1152,6 +1239,7 @@ export function dbPanel(opts) {
           var isInt = /^(INT|TINYINT)/.test(r.type);
           model.cols.push({ name: r.name, def: r.type + (r.notnull || r.pk ? " NOT NULL" : ""), ai: r.ai && r.pk && isInt });
           if (r.pk) model.pk.push(r.name);
+          else if (r.unique) model.uniq.push([r.name]);
           if (r.fk) {
             var p = r.fk.split(".");
             model.fks.push({ cols: [r.name], ref: p[0], refCols: [p[1]], tail: "" });
@@ -1178,7 +1266,7 @@ export function dbPanel(opts) {
         render();
       })
     );
-    box.append(acts, err, h("p", "dbp-help", S.aiHelp));
+    box.append(acts, err);
     return box;
   }
 

@@ -509,6 +509,10 @@ export function createEngine(SQL, dump) {
       if (spec.pk && !inPk) model.pk.push(c.name);
       if (!spec.pk && inPk) model.pk = model.pk.filter(function (p) { return low(p) !== low(c.name); });
       if (c.ai && model.pk.length !== 1) throw new Error("A_I demande une clé primaire sur cette seule colonne.");
+      model.uniq = model.uniq.filter(function (u) {
+        return !(u.length === 1 && low(u[0]) === low(c.name));
+      });
+      if (spec.unique && !spec.pk) model.uniq.push([c.name]);
       // links of this column: replaced by the chosen one
       model.fks = model.fks.filter(function (f) {
         return !(f.cols.length === 1 && low(f.cols[0]) === low(c.name));
