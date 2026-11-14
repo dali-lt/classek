@@ -14,7 +14,7 @@ import { openAlgoViz, openAlgoLibrary, libraryLabel, algoTitle, hasAlgoViz, kind
 import { assembleWeb, fileExplorer, fsParse, fsToDraft, fsClone, fsApply, langOfName } from "./webfiles.js?v=3";
 import { mediaStore, applyMedia, snippetOf } from "./webmedia.js?v=1";
 import { loadSql, createEngine } from "./webdb.js?v=3";
-import { dbPanel } from "./webdbui.js?v=12";
+import { dbPanel } from "./webdbui.js?v=13";
 
 var STR = {
   fr: {
@@ -2781,7 +2781,7 @@ async function setStatus(chId, exId, value, opts) {
 
 /* ---------------- where the student was ---------------- */
 var PLACE_KEY = "cl.place";
-var PLACE_TTL = 3 * 3600 * 1000; // after three hours away, the site starts again on the subjects page
+var PLACE_TTL = 15 * 60 * 1000; // after a quarter of an hour away, the site starts again on the subjects page
 var placeTimer = 0;
 var placeHoldY = null; // while the place is being found again, the saved height must not be overwritten by the top of a half-loaded page
 function placeSave(top) {
@@ -6819,6 +6819,7 @@ function render() {
 }
 
 export var Chapters = {
+  skeleton: skeleton, // grey bars with a light shine: what is shown while something loads (kind: cards | grid | rows | line)
   /* what the weekly bilan needs: chapters (with their quiz banks) and the exercise statuses */
   snapshot: function () {
     return { chapters: S.chapters, status: S.status, loading: S.loading, failed: S.failed };

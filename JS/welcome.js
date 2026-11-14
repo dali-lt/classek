@@ -179,7 +179,16 @@ function render() {
   panel.textContent = "";
 
   if (state.view === "loading") {
-    panel.append(el("p", "welcome-loading", t("loading")));
+    var sk = el("div", "welcome-sk");
+    sk.setAttribute("role", "status");
+    sk.setAttribute("aria-busy", "true");
+    sk.setAttribute("aria-label", t("loading"));
+    ["100%", "70%", "86%"].forEach(function (w) {
+      var b = el("span", "welcome-sk-bar");
+      b.style.width = w;
+      sk.append(b);
+    });
+    panel.append(sk);
     return;
   }
 

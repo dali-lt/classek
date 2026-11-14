@@ -2287,3 +2287,10 @@ html.s-drawer-open .s-menu-btn .notif-dot {
     opacity: 0;
   }
 }
+
+.welcome-sk { display: flex; flex-direction: column; gap: 14px; padding: 8px 0; }
+.welcome-sk-bar { display: block; height: 16px; border-radius: 999px; background: linear-gradient(100deg, rgba(3,44,123,.07) 20%, rgba(3,44,123,.15) 45%, rgba(3,44,123,.07) 70%); background-size: 250% 100%; animation: welcome-shine 1.9s ease-in-out infinite; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .welcome-sk-bar { background-image: linear-gradient(100deg, rgba(255,255,255,.06) 20%, rgba(255,255,255,.13) 45%, rgba(255,255,255,.06) 70%); } }
+:root[data-theme="dark"] .welcome-sk-bar { background-image: linear-gradient(100deg, rgba(255,255,255,.06) 20%, rgba(255,255,255,.13) 45%, rgba(255,255,255,.06) 70%); }
+@keyframes welcome-shine { 0% { background-position: 120% 0; } 100% { background-position: -120% 0; } }
+@media (prefers-reduced-motion: reduce) { .welcome-sk-bar { animation: none; } }

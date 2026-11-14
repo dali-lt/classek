@@ -3,7 +3,7 @@
    The profile card ("My account") reuses the teacher app's modal look (style.css)
    and saves to users/{uid}/meta/profile. */
 
-import { Chapters } from "./chapters.js?v=117";
+import { Chapters } from "./chapters.js?v=118";
 import * as Cy from "./cycle.js?v=68";
 import {
   MAX_SHOWN,
@@ -1160,7 +1160,7 @@ function renderModal() {
     });
     editBtn.disabled = !profileLoaded; // wait for the cloud copy so a stale one can't overwrite it
     body.append(editBtn);
-    if (!profileLoaded) body.append(el("p", "me-hint", t("profileSyncing")));
+    if (!profileLoaded) body.append(Chapters.skeleton("line"));
     else if (justSaved) body.append(el("p", "me-hint", t("profileSaved")));
     return;
   }
@@ -3043,7 +3043,7 @@ function paintDevices() {
     return;
   }
   if (!sess.list) {
-    host.append(el("p", "me-hint", t("devLoading")));
+    host.append(Chapters.skeleton("rows"));
     return;
   }
   var now = Date.now();

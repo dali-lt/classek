@@ -211,3 +211,10 @@
 .dbp-back { display: inline-flex; align-items: center; justify-content: center; background: #aee37b; border-color: #aee37b; color: #10260a; }
 .dbp-back:hover { background: #c0ee94; }
 .pg-win.db-open { min-height: 460px; }
+
+/* loading: bars with a light shine, like the rest of the site */
+.dbp-sk { display: flex; flex-direction: column; gap: 16px; width: 100%; padding: 22px 24px; box-sizing: border-box; }
+.dbp-sk-bar { display: block; height: 16px; border-radius: 999px; background: linear-gradient(100deg, rgba(255,255,255,.06) 20%, rgba(255,255,255,.16) 45%, rgba(255,255,255,.06) 70%); background-size: 250% 100%; animation: dbp-shine 1.9s ease-in-out infinite; }
+.dbp-sk-bar:nth-child(2n) { animation-delay: .15s; }
+@keyframes dbp-shine { 0% { background-position: 120% 0; } 100% { background-position: -120% 0; } }
+@media (prefers-reduced-motion: reduce) { .dbp-sk-bar { animation: none; } }

@@ -359,7 +359,7 @@ function ensureCss() {
   cssDone = true;
   var l = document.createElement("link");
   l.rel = "stylesheet";
-  l.href = new URL("../CSS/webdb.css?v=12", import.meta.url).href;
+  l.href = new URL("../CSS/webdb.css?v=13", import.meta.url).href;
   document.head.append(l);
 }
 
@@ -437,7 +437,16 @@ export function dbPanel(opts) {
   function start() {
     if (eng) return render();
     body.textContent = "";
-    body.append(h("p", "dbp-msg", S.loading));
+    var sk = h("div", "dbp-sk");
+    sk.setAttribute("role", "status");
+    sk.setAttribute("aria-busy", "true");
+    sk.setAttribute("aria-label", S.loading);
+    ["100%", "72%", "88%", "54%", "80%"].forEach(function (w) {
+      var r = h("span", "dbp-sk-bar");
+      r.style.width = w;
+      sk.append(r);
+    });
+    body.append(sk);
     opts.getEngine().then(
       function (e) {
         eng = e;
