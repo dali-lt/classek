@@ -2940,10 +2940,20 @@
   }
 
   // opts.skipItem / opts.skipPct: do not keep what is typed in that part of the form (it was just added / reset)
+  var planRedrawLater = false;
   function renderPlanBox(opts) {
     opts = opts || {};
     var box = planById("planBox");
     if (!box) return;
+    // data arriving from another device (or the day changing) must not rebuild the form under a finger: the list of the
+    // "what is it for" field closed by itself and the phone keyboard went away. Such a redraw waits until the field is left;
+    // what the person does in the form (opts.force) redraws at once.
+    var live = document.activeElement;
+    if (!opts.force && planEditing && live && box.contains(live) && /^(INPUT|TEXTAREA|SELECT)$/.test(live.tagName)) {
+      planRedrawLater = true;
+      return;
+    }
+    planRedrawLater = false;
     // the box sits under the payments page: only there, and only when there is somebody to be paid by
     if (!students.length || currentPage !== "payments") {
       box.hidden = true;
@@ -2951,6 +2961,10 @@
       return;
     }
     planCaptureDrafts(opts);
+    // a redraw (a payment arriving from another device, the day changing...) must not take the cursor away from a field
+    var ae = document.activeElement;
+    var keepId = ae && ae.id && box.contains(ae) ? ae.id : "";
+    var keepSel = keepId && typeof ae.selectionStart === "number" ? [ae.selectionStart, ae.selectionEnd] : null;
     box.hidden = false;
     var today = new Date();
     var win = paymentWindow(today, cycleAnchorDay(students));
@@ -3061,6 +3075,17 @@
         "</button></div>";
     }
     box.innerHTML = html;
+    if (keepId) {
+      var back = planById(keepId);
+      if (back) {
+        planSkipOpen = keepId === "planItemLabel"; // the list stays closed: the redraw was not a tap
+        try {
+          back.focus({ preventScroll: true });
+          if (keepSel && back.setSelectionRange) back.setSelectionRange(keepSel[0], keepSel[1]);
+        } catch (x) {}
+        planSkipOpen = false;
+      }
+    }
   }
 
   /* the "what is it for" field: a dropdown of known labels that also takes a new one */
@@ -3171,21 +3196,21 @@
     if (action === "plan-basis") {
       plan.basis = btn.dataset.basis === "expected" ? "expected" : "collected";
       savePlan();
-      renderPlanBox();
+      renderPlanBox({ force: true });
     } else if (action === "plan-edit") {
       planEditing = true;
       planError = "";
-      renderPlanBox();
+      renderPlanBox({ force: true });
     } else if (action === "plan-cancel") {
       planEditing = false;
       planClearDrafts();
-      renderPlanBox();
+      renderPlanBox({ force: true });
     } else if (action === "plan-reset") {
       plan.savings = PLAN_DEFAULT.savings;
       plan.needs = PLAN_DEFAULT.needs;
       planDraft = null;
       savePlan();
-      renderPlanBox({ skipPct: true });
+      renderPlanBox({ skipPct: true, force: true });
     } else if (action === "plan-combo-toggle") {
       var input = planById("planItemLabel");
       var list = planById("planComboList");
@@ -3214,7 +3239,7 @@
         return it.id !== id;
       });
       savePlanExtras();
-      renderPlanBox();
+      renderPlanBox({ force: true });
       showToast(t("planItemRemoved"), false);
     }
   }
@@ -3278,7 +3303,7 @@
     planDraftItem.amount = amountEl.value;
     if (!label) {
       planError = t("planItemErrLabel");
-      renderPlanBox();
+      renderPlanBox({ force: true });
       planSkipOpen = true; // focus the field without opening the list over the entries
       var l = planById("planItemLabel");
       if (l) l.focus();
@@ -3286,7 +3311,7 @@
     }
     if (!isFinite(amount) || amount <= 0 || amount > 10000000) {
       planError = t("planItemErrAmount");
-      renderPlanBox();
+      renderPlanBox({ force: true });
       var a = planById("planItemAmount");
       if (a) a.focus();
       return;
@@ -3301,7 +3326,7 @@
     savePlanExtras();
     planError = "";
     planDraftItem = { label: "", amount: "" };
-    renderPlanBox({ skipItem: true });
+    renderPlanBox({ skipItem: true, force: true });
     planSkipOpen = true;
     var next = planById("planItemLabel");
     if (next) next.focus();
@@ -3327,7 +3352,7 @@
     planEditing = false;
     planClearDrafts();
     savePlan();
-    renderPlanBox();
+    renderPlanBox({ force: true });
     showToast(t("planSaved"), false);
   }
 
@@ -5333,8 +5358,15 @@
     }
   });
   var paymentsResizeTimer = null;
+  var paymentsLastW = window.innerWidth;
   window.addEventListener("resize", function () {
     if (currentPage !== "payments") return;
+    // on a phone the keyboard opening (or the address bar hiding) fires "resize" too: redrawing then closed the list of the
+    // plan form and made the fields lose focus. Only a change of width is worth a redraw, and never while somebody is typing.
+    if (window.innerWidth === paymentsLastW) return;
+    paymentsLastW = window.innerWidth;
+    var ae = document.activeElement;
+    if (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) return;
     clearTimeout(paymentsResizeTimer);
     paymentsResizeTimer = setTimeout(renderPaymentsPage, 150);
   });
@@ -5613,6 +5645,13 @@
     planBoxEl.addEventListener("input", handlePlanInput);
     planBoxEl.addEventListener("submit", handlePlanSubmit);
     planBoxEl.addEventListener("focusin", handlePlanFocusIn);
+    planBoxEl.addEventListener("focusout", function () {
+      if (!planRedrawLater) return;
+      setTimeout(function () {
+        var ae = document.activeElement;
+        if (planRedrawLater && !(ae && planBoxEl.contains(ae) && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName))) renderPlanBox();
+      }, 300);
+    });
     planBoxEl.addEventListener("keydown", handlePlanKeydown);
     // a click anywhere else closes the dropdown of the "what is it for" field
     document.addEventListener("click", function (e) {

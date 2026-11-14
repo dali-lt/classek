@@ -4853,3 +4853,40 @@ html[dir="rtl"] .dv-road-h { transform: scaleX(-1); }
 .dv-sl-o[aria-selected="true"] { background: var(--color-primary); color: #fff; }
 .student-empty[hidden], .sv-grid[hidden] { display: none; }
 @media (max-width: 480px) { .dv-fsel { gap: 10px; } }
+
+/* loading: grey shapes with a very light shine (instead of the word "loading") */
+.sk { --sk-a: rgba(3, 44, 123, 0.07); --sk-b: rgba(3, 44, 123, 0.15); display: flex; flex-direction: column; gap: 14px; width: 100%; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .sk { --sk-a: rgba(255, 255, 255, 0.06); --sk-b: rgba(255, 255, 255, 0.13); } }
+:root[data-theme="dark"] .sk { --sk-a: rgba(255, 255, 255, 0.06); --sk-b: rgba(255, 255, 255, 0.13); }
+.sk-bar {
+  display: block; height: 16px; max-width: 100%; border-radius: 999px;
+  background: linear-gradient(100deg, var(--sk-a) 20%, var(--sk-b) 45%, var(--sk-a) 70%); background-size: 250% 100%;
+  animation: sk-shine 1.9s ease-in-out infinite;
+}
+.sk-thin { height: 11px; }
+.sk-dot { width: 10px; height: 10px; flex: none; }
+.sk-btn { height: 40px; border-radius: 999px; margin-top: 4px; }
+.sk-row { display: flex; align-items: center; gap: 14px; }
+.sk-rows { padding: 6px 2px; gap: 20px; max-width: 520px; }
+.sk-line { gap: 10px; max-width: 360px; }
+.sk-cards, .sk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+.sk-card { display: flex; flex-direction: column; gap: 12px; padding: 20px; border-radius: 22px; border: 1.5px solid var(--color-border); background: var(--color-surface); }
+.sk-card .sk-dot { width: 42px; height: 42px; border-radius: 14px; margin-bottom: 4px; }
+.sk-card:nth-child(2) .sk-bar { animation-delay: .15s; }
+.sk-card:nth-child(3) .sk-bar { animation-delay: .3s; }
+@keyframes sk-shine { 0% { background-position: 120% 0; } 100% { background-position: -120% 0; } }
+@media (prefers-reduced-motion: reduce) { .sk-bar { animation: none; } }
+
+/* devoirs filter: one line on a large screen; on a phone the search bar first, then the two lists side by side */
+@media (min-width: 900px) {
+  .dv-fbar { flex-direction: row; align-items: flex-end; gap: 14px; }
+  .dv-search { flex: 1 1 auto; min-width: 0; }
+  .dv-fsel { flex: 0 0 auto; grid-template-columns: repeat(2, 210px); }
+}
+/* wide screens: the search bar and the two lists share one line; on a phone the search is alone on the first line, the two lists side by side on the second */
+@media (min-width: 760px) {
+  .dv-fbar { flex-direction: row; align-items: flex-end; gap: 14px; }
+  .dv-search { flex: 1 1 auto; min-width: 0; }
+  .dv-fsel { flex: 0 0 auto; grid-template-columns: repeat(2, minmax(190px, 230px)); }
+}
+.sk-cards, .sk-grid { grid-column: 1 / -1; width: 100%; box-sizing: border-box; }

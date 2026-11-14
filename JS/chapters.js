@@ -138,7 +138,7 @@ var STR = {
     dvYearAll: "Toutes les années",
     dvKind: "Épreuve",
     dvKindAll: "Toutes les épreuves",
-    dvSearch: "Rechercher un devoir (ex. Algorithmique 2024, contrôle…)",
+    dvSearch: "Rechercher un devoir…",
     dvMain: "Principale",
     dvControl: "Contrôle",
     dvPrat: "Pratique",
@@ -418,7 +418,7 @@ var STR = {
     dvYearAll: "كل السنوات",
     dvKind: "الاختبار",
     dvKindAll: "كل الاختبارات",
-    dvSearch: "ابحث عن فرض (مثال: خوارزميات 2024، مراقبة…)",
+    dvSearch: "ابحث عن فرض…",
     dvMain: "رئيسية",
     dvControl: "مراقبة",
     dvPrat: "تطبيقي",
@@ -2779,6 +2779,64 @@ async function setStatus(chId, exId, value, opts) {
   }
 }
 
+/* ---------------- where the student was ---------------- */
+var PLACE_KEY = "cl.place";
+var PLACE_TTL = 3 * 3600 * 1000; // after three hours away, the site starts again on the subjects page
+var placeTimer = 0;
+var placeHoldY = null; // while the place is being found again, the saved height must not be overwritten by the top of a half-loaded page
+function placeSave(top) {
+  try {
+    var r = readRoute();
+    var h = window.location.hash || "";
+    var y = top === true ? 0 : placeHoldY !== null ? placeHoldY : Math.round(window.pageYOffset || 0);
+    window.localStorage.setItem(PLACE_KEY, JSON.stringify({ h: h, y: y, tab: r.c ? tabs[r.c] || "" : "", ts: Date.now() }));
+  } catch (e) {}
+}
+function placeSaveSoon() {
+  clearTimeout(placeTimer);
+  placeTimer = setTimeout(function () {
+    placeSave();
+  }, 400);
+}
+function resumePlace() {
+  var saved = null;
+  try {
+    saved = JSON.parse(window.localStorage.getItem(PLACE_KEY) || "null");
+  } catch (e) {}
+  var fresh = saved && typeof saved.ts === "number" && Date.now() - saved.ts < PLACE_TTL;
+  var hash = window.location.hash || "";
+  if (!fresh) {
+    // a long absence: back to the subjects page
+    if (hash && window.history && window.history.replaceState) window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    return;
+  }
+  if (!hash && /^#(c|s)=/.test(saved.h || "") && window.history && window.history.replaceState) {
+    window.history.replaceState(null, "", window.location.pathname + window.location.search + saved.h);
+    hash = saved.h;
+  }
+  if (hash && hash === saved.h) {
+    var r = readRoute();
+    if (r.c && (saved.tab === "course" || saved.tab === "ex" || saved.tab === "notes")) tabs[r.c] = saved.tab;
+    if (saved.y > 40) {
+      // the page is not tall enough until the data is there: try for a few seconds
+      var tries = 0;
+      placeHoldY = saved.y;
+      var iv = setInterval(function () {
+        tries++;
+        var tall = document.documentElement.scrollHeight - window.innerHeight;
+        if (!S.loading && tall >= saved.y - 4) {
+          clearInterval(iv);
+          placeHoldY = null;
+          window.scrollTo(0, saved.y);
+        } else if (tries > 50) {
+          clearInterval(iv);
+          placeHoldY = null;
+        }
+      }, 150);
+    }
+  }
+}
+
 /* ---------------- route: #c=<chapterId> ---------------- */
 function readRoute() {
   var h = window.location.hash || "";
@@ -3601,6 +3659,41 @@ function renderDevoirs(host, sub) {
   apply();
 }
 
+/* while the data comes: grey shapes shaped like what will be there, with a very light moving shine */
+function skeleton(kind) {
+  var box = el("div", "sk sk-" + kind);
+  box.setAttribute("role", "status");
+  box.setAttribute("aria-busy", "true");
+  box.setAttribute("aria-label", t("loading"));
+  var bar = function (w, cls) {
+    var b = el("span", "sk-bar" + (cls ? " " + cls : ""));
+    b.style.width = w;
+    return b;
+  };
+  if (kind === "cards") {
+    for (var i = 0; i < 3; i++) {
+      var c = el("div", "sk-card");
+      c.append(bar("42px", "sk-dot"), bar("60%"), bar("85%", "sk-thin"), bar("45%", "sk-thin"));
+      box.append(c);
+    }
+  } else if (kind === "grid") {
+    for (var j = 0; j < 6; j++) {
+      var g = el("div", "sk-card");
+      g.append(bar("30%", "sk-thin"), bar("80%"), bar("55%", "sk-thin"), bar("100%", "sk-btn"));
+      box.append(g);
+    }
+  } else if (kind === "line") {
+    box.append(bar("38%", "sk-thin"), bar("70%"));
+  } else {
+    [["88%"], ["72%"], ["54%"]].forEach(function (w) {
+      var row = el("div", "sk-row");
+      row.append(bar("10px", "sk-dot"), bar(w[0]));
+      box.append(row);
+    });
+  }
+  return box;
+}
+
 function renderList(host, route) {
   host.textContent = "";
   host.classList.remove("is-subjects", "is-sv");
@@ -3608,7 +3701,7 @@ function renderList(host, route) {
   if (title) title.hidden = false;
   if (S.loading || !ctx.ready()) {
     setBackRow(host, false);
-    host.append(el("div", "student-empty", t("loading")));
+    host.append(skeleton(route.s ? "grid" : "cards"));
     return;
   }
   if (S.failed) {
@@ -5220,9 +5313,12 @@ function pickTab(tab) {
   if (!ch) return;
   if (tab === "notes" && notesWide.matches) return;
   tabs[ch.id] = tab;
+  placeHoldY = null;
   if (tab === "ex") autoScrolled[ch.id] = false; // coming back to the exercises: jump to the current one again
+  placeHoldY = null;
   render();
   window.scrollTo(0, 0);
+  placeSave(true);
 }
 
 /* "Ton parcours": the exercises of the chapter as numbered circles on a winding line (same look as the series ladder) */
@@ -6163,7 +6259,7 @@ function exercisesPart(ch) {
   var box = el("div", "ch-ex");
   var cur = S.cur;
   if (!cur || cur.loading) {
-    box.append(el("div", "student-empty", t("loading")));
+    box.append(skeleton("rows"));
   } else if (cur.failed) {
     var fail = el("div", "student-empty");
     fail.append(el("b", "", t("loadFail")));
@@ -6572,7 +6668,7 @@ function paintResume() {
   mark.alt = "";
   box.append(mark);
   if (S.loading || !ctx || !ctx.ready()) {
-    box.append(el("span", "rs-cap", t("loading")));
+    box.append(skeleton("line"));
     return;
   }
   var sum = summary();
@@ -6712,7 +6808,7 @@ function render() {
   }
   if (!ch) {
     view.textContent = "";
-    view.append(el("div", "student-empty", t("loading")));
+    view.append(skeleton("rows"));
     return;
   }
   if (!S.cur || S.cur.id !== id) {
@@ -6738,11 +6834,24 @@ export var Chapters = {
     ctx = c;
     loadThink();
     startThinkTicker();
-    /* a reload always starts on the subjects page */
-    if (window.location.hash && window.history && window.history.replaceState) {
-      window.history.replaceState(null, "", window.location.pathname + window.location.search);
-    }
-    window.addEventListener("hashchange", render);
+    /* a reload (or a quick return) keeps the student where he was: same page, same tab, same place on the page.
+       Only after a long absence does the site start again on the subjects page. */
+    resumePlace();
+    window.addEventListener("hashchange", function () {
+      placeHoldY = null;
+      placeSave(true);
+      render();
+    });
+    window.addEventListener("scroll", placeSaveSoon, { passive: true });
+    window.addEventListener("pagehide", function () {
+      placeSave();
+    });
+    document.addEventListener("visibilitychange", function () {
+      placeSave();
+    });
+    setInterval(function () {
+      if (!document.hidden) placeSave();
+    }, 20000);
     window.addEventListener("scroll", syncBackButton, { passive: true });
     RAIL_BTNS.forEach(function (b) {
       var btn = $(b[0]);
