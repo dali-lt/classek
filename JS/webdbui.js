@@ -332,6 +332,9 @@ function opt(label, sub, icon) {
   return { l: l, c: c };
 }
 
+var PAGE = 15;
+var SVGNS = "http://www.w3.org/2000/svg";
+
 function h(tag, cls, text) {
   var n = document.createElement(tag);
   if (cls) n.className = cls;
@@ -355,7 +358,7 @@ function ensureCss() {
   cssDone = true;
   var l = document.createElement("link");
   l.rel = "stylesheet";
-  l.href = new URL("../CSS/webdb.css?v=10", import.meta.url).href;
+  l.href = new URL("../CSS/webdb.css?v=11", import.meta.url).href;
   document.head.append(l);
 }
 
