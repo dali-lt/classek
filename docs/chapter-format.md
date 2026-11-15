@@ -105,3 +105,18 @@ The files of the editor come from the optional field `pyFiles` (up to 6 names); 
 ```
 
 Note: `examHead` (the candidate box on sheet 1) and the header table written at the top of `sheets[0]` both print: keep only one of them.
+
+
+## Printed subject: official header
+
+On sheet 1 of a devoir the site can draw the official header (flag, ministry, "EXAMEN DU BACCALAURÉAT", Épreuve / Section / Durée / Coefficient, session and year) from the devoir's own fields, so nothing is typed twice:
+
+| Field | Used for |
+|---|---|
+| `year`, `session`, `subject`, `hours` | year, session pill, default Épreuve name, Durée (already used elsewhere) |
+| `coef` | Coefficient (optional, shows "—" if missing) |
+| `epreuve`, `section` | optional text overrides (default: the subject's name / "Sciences de l’informatique") |
+| `examHead` (any value) | turns the header on **and** adds the candidate box (Nom et Prénom, date and place of birth, N° d’inscription, Série, mark) |
+| `officialHead: true` | turns the header on without the candidate box (practical exams) |
+
+When the header is on, the table typed at the top of `sheets[0]` ("EXAMEN DU BACCALAURÉAT … RÉPUBLIQUE … Durée … Coefficient …") and the empty "N° d’inscription : ☐☐☐" line are dropped automatically, and a line starting with "Le sujet comporte" is centered.

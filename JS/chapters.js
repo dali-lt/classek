@@ -5468,6 +5468,78 @@ function examHeadBox(h) {
   w.append(left, right);
   return w;
 }
+/* the official header of an exam paper, drawn from the devoir's own fields (nothing to type twice):
+   year, session, subject, hours, and the optional coef / epreuve / section. "examHead" adds the candidate box under it. */
+var FLAG_SVG = '<svg viewBox="0 0 48 48" aria-hidden="true"><rect width="48" height="48" rx="12" fill="#e70013"/><circle cx="24" cy="24" r="13.5" fill="#fff"/><circle cx="22.2" cy="24" r="8.6" fill="#e70013"/><circle cx="24.8" cy="24" r="6.9" fill="#fff"/><polygon fill="#e70013" points="25.20,20.40 26.05,22.83 28.62,22.89 26.58,24.45 27.32,26.91 25.20,25.45 23.08,26.91 23.82,24.45 21.78,22.89 24.35,22.83"/></svg>';
+var EPREUVE_OF = { prog: "Algorithmique et Programmation", sti: "Systèmes et Technologies de l’Informatique" };
+function hoursText(h) {
+  var n = Number(h);
+  if (!n) return "—";
+  var hh = Math.floor(n);
+  var mm = Math.round((n - hh) * 60);
+  return hh + "h" + (mm ? " " + mm + "mn" : "");
+}
+function officialHead(ch) {
+  var w = el("div", "pp-off");
+  var l = el("div", "pp-off-l");
+  var fl = el("span", "pp-off-flag");
+  fl.innerHTML = FLAG_SVG; // static, trusted SVG
+  l.append(fl, el("b", "", "RÉPUBLIQUE TUNISIENNE"), el("span", "", "MINISTÈRE DE L’ÉDUCATION"));
+  var grid = el("div", "pp-off-grid");
+  var cell = function (label, val) {
+    var c = el("div", "pp-off-c");
+    c.append(el("small", "", label), el("b", "", val));
+    return c;
+  };
+  grid.append(
+    cell("Épreuve", ch.epreuve || EPREUVE_OF[ch.subject] || t("s_" + ch.subject)),
+    cell("Section", ch.section || "Sciences de l’informatique"),
+    cell("Durée", hoursText(ch.hours)),
+    cell("Coefficient", ch.coef != null && ch.coef !== "" ? String(ch.coef) : "—")
+  );
+  var r = el("div", "pp-off-r");
+  var yr = ch.year || (/\b(20\d\d)\b/.exec((ch.sheetHeader || "") + " " + titleOf(ch)) || [])[1];
+  var sess = ch.session === "pratique" ? "Épreuve pratique" : ch.session === "controle" ? "Session de contrôle" : "Session principale";
+  r.append(el("span", "pp-off-sess", sess));
+  if (yr) r.append(el("b", "pp-off-year", String(yr)));
+  w.append(l, el("div", "pp-off-top", "EXAMEN DU BACCALAURÉAT"), grid, r);
+  return w;
+}
+// the box the candidate fills in (name, birth, registration number, series) and the mark
+function candidateBox(ch) {
+  var w = el("div", "pp-cand");
+  var line = function (label, boxes) {
+    var p = el("p", "pp-cand-line");
+    p.append(el("span", "", label));
+    if (boxes) {
+      var bx = el("span", "pp-cand-boxes");
+      for (var k = 0; k < boxes; k++) bx.append(el("i", ""));
+      p.append(bx);
+    } else p.append(el("i", "pp-cand-fill"));
+    return p;
+  };
+  var a = el("div", "pp-cand-c");
+  a.append(line("Nom et Prénom :"), line("Date et lieu de naissance :"));
+  var b = el("div", "pp-cand-c");
+  b.append(line("N° d’inscription :", 7), line("Série :"));
+  var n = el("div", "pp-cand-note");
+  n.append(el("small", "", "Note"), el("b", "", "/ " + (ch.points || 20)));
+  w.append(a, b, n);
+  return w;
+}
+// the old paper head typed at the top of sheet 1 (the table "EXAMEN DU BACCALAURÉAT… RÉPUBLIQUE… Durée… Coefficient…", the empty
+// "N° d’inscription" line) is dropped when the header above is drawn by the site, and "Le sujet comporte…" is centered
+function stripPaperHead(src, withCandidate) {
+  var lines = String(src || "").replace(/\r/g, "").split("\n");
+  var i = 0;
+  while (i < lines.length && !lines[i].trim()) i++;
+  var j = i;
+  while (j < lines.length && /^\s*\|/.test(lines[j])) j++;
+  if (j > i && /EXAMEN DU BACCALAUR/i.test(lines.slice(i, j).join(" "))) lines = lines.slice(j);
+  var out = lines.join("\n");
+  if (withCandidate) out = out.replace(/^[ \t]*N°\s*d['’]inscription\s*:[\s☐□▢_.…-]*$/im, "");
+  return out.replace(/^([ \t]*)(?!\[\[center\]\])([*_]*Le sujet comporte[^\n]*)$/im, "$1[[center]] $2");
+}
 // the name of the site on the sheets: its logo, not a word
 function siteLogo() {
   var i = document.createElement("img");
@@ -5496,8 +5568,12 @@ function fillSheets(ch, box, title) {
   ch.sheets.forEach(function (src, k) {
     var sh = el("div", "pp-sheet is-flow");
     sh.append(sheetHead(ch));
-    if (k === 0 && ch.examHead) sh.append(examHeadBox(ch.examHead));
-    sh.append(md(src, { rich: true, noRun: true, figures: ch.figures }));
+    var official = k === 0 && (ch.examHead || ch.officialHead);
+    if (official) {
+      sh.append(officialHead(ch));
+      if (ch.examHead) sh.append(candidateBox(ch));
+    }
+    sh.append(md(official ? stripPaperHead(src, !!ch.examHead) : src, { rich: true, noRun: true, figures: ch.figures }));
     sh.append(el("div", "pp-foot", tf("ppPageOf", { n: k + 1, total: n })));
     box.append(sh);
   });
