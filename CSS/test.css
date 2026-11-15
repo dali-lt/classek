@@ -1869,7 +1869,7 @@ html[dir="rtl"] .lv-mid .lv-overall {
 .bl-evo { margin: 14px 0 4px; display: grid; gap: 10px; }
 .bl-delta { margin: 0; padding: 9px 12px; border-radius: 12px; font-size: 13.5px; font-weight: 700; background: var(--color-light-blue); color: var(--color-primary-dark); }
 .bl-delta.is-up { background: color-mix(in srgb, var(--brand-lime) 30%, var(--color-surface)); color: #1c6b2f; }
-.bl-delta.is-down { background: color-mix(in srgb, var(--color-danger) 12%, var(--color-surface)); color: var(--color-danger); }
+.bl-delta.is-down { background: color-mix(in srgb, #f5a623 18%, var(--color-surface)); color: #8a5300; }
 .bl-sec { margin: 6px 0 0; font-size: 14px; font-weight: 700; }
 .bl-list { display: grid; gap: 12px; }
 .bl-row-head { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; margin-bottom: 6px; }
@@ -2009,7 +2009,7 @@ html[dir="rtl"] .lv-mid .lv-overall {
 .lt-side { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
 .lt-hint { font-size: 13px; font-weight: 800; color: var(--color-text-muted); }
 .lt-hint.is-up { color: #2f6f1c; }
-.lt-hint.is-down { color: #b3322b; }
+.lt-hint.is-down { color: #8a5300; }
 .lt-goal-note { margin-inline-start: auto; font-size: 12px; font-weight: 700; color: var(--color-text-muted); }
 @keyframes ltGrow { from { transform: scaleY(0); opacity: 0; } to { transform: scaleY(1); opacity: 1; } }
 @keyframes ltPulse { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, #0464de 30%, transparent); } 50% { box-shadow: 0 0 0 6px color-mix(in srgb, #0464de 0%, transparent); } }

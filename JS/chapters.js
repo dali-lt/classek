@@ -27,6 +27,7 @@ var STR = {
     allSubjects: "Toutes les matières",
     tabChapters: "Chapitres",
     svIntro: "Entraîne-toi par niveau, puis passe aux sujets de Bac.",
+    svIntro_sti: "Révise chapitre par chapitre, puis passe aux sujets de Bac.",
     ppSheet: "Sujet",
     ppPage: "Page {n} / {total}",
     ppPageOf: "Page {n} sur {total}",
@@ -307,6 +308,7 @@ var STR = {
     allSubjects: "كل المواد",
     tabChapters: "الدروس",
     svIntro: "تمرّن حسب المستوى، وبعدها اعمل مواضيع الباك.",
+    svIntro_sti: "راجع درس بدرس، وبعدها اعمل مواضيع الباك.",
     ppSheet: "الموضوع",
     ppPage: "صفحة {n} / {total}",
     ppPageOf: "صفحة {n} من {total}",
@@ -3040,7 +3042,9 @@ function chapterCard(ch) {
   ic.innerHTML = ICON_FOLDER_BOOK; // static, trusted SVG
   row.append(ic);
   if (total) row.append(halfGauge((done / total) * 100));
-  front.append(row, el("b", "fd-title", title || ""));
+  var fdTitle = el("b", "fd-title", title || "");
+  if (title) fdTitle.title = title; // full title on hover / long-press
+  front.append(row, fdTitle);
   var meta = soon ? t("soon") : tf("doneOf", { d: done, n: total });
   if (nNotes) meta += " · " + notesLabel(nNotes);
   front.append(el("small", "fd-meta", meta));
@@ -3110,7 +3114,8 @@ function svHead(sub, view) {
   var head = el("header", "sv-head");
   var text = el("div", "sv-head-text");
   var h = el("h1", "sv-head-title", t("s_" + sub));
-  text.append(h, el("p", "sv-head-intro", t("svIntro")));
+  // each subject can have its own intro (svIntro_<subject>); the generic one is the fallback
+  text.append(h, el("p", "sv-head-intro", t("svIntro_" + sub) || t("svIntro")));
   head.append(text, svTabs(sub, view));
   return head;
 }
@@ -3260,15 +3265,17 @@ function serieCard(ch, no, L, locked) {
   segBar(bar, locked ? 0 : p);
   foot.append(meta, bar);
   card.append(foot);
+  if (locked) {
+    // no disabled button repeated on every card: the status chip + the level tag ("Termine 70 % de … pour ouvrir") say it once
+    card.setAttribute("aria-disabled", "true");
+    return card;
+  }
   var btn = el("button", "sv-btn");
   btn.type = "button";
-  btn.textContent = t(locked ? "btnLocked" : st === "done" ? "btnReview" : st === "prog" ? "btnCont" : "btnStart");
-  btn.disabled = locked;
-  if (!locked) {
-    btn.addEventListener("click", function () {
-      openChapter(ch.id);
-    });
-  }
+  btn.textContent = t(st === "done" ? "btnReview" : st === "prog" ? "btnCont" : "btnStart");
+  btn.addEventListener("click", function () {
+    openChapter(ch.id);
+  });
   card.append(btn);
   return card;
 }

@@ -190,7 +190,7 @@ var STR = {
     bMix: "Mélange",
     bFirst: "Premier bilan : c’est ton point de départ.",
     bUpTxt: "▲ +{d} pts par rapport au bilan précédent",
-    bDownTxt: "▼ −{d} pts par rapport au bilan précédent",
+    bDownTxt: "▼ −{d} pts par rapport au bilan précédent. Pas de souci : on cible les chapitres à revoir.",
     bSameTxt: "= Même score que le bilan précédent",
     bEvo: "Ton évolution par chapitre",
     bPrevMark: "Le trait noir = ton bilan précédent",
@@ -378,7 +378,7 @@ var STR = {
     bMix: "مزيج",
     bFirst: "أول تقييم: هو نقطة البداية متاعك.",
     bUpTxt: "▲ +{d} نقطة مقارنة بالتقييم الي قبل",
-    bDownTxt: "▼ −{d} نقطة مقارنة بالتقييم الي قبل",
+    bDownTxt: "▼ −{d} نقطة مقارنة بالتقييم الي قبل. ما فماش مشكل، نركزو على الدروس الي تستحق مراجعة.",
     bSameTxt: "= نفس النتيجة متاع التقييم الي قبل",
     bEvo: "تطورك حسب الدرس",
     bPrevMark: "الخط الأسود = التقييم الي قبل",
@@ -1618,7 +1618,7 @@ function levelTrend() {
   var side = el("div", "lt-side");
   side.append(levelBadge(last.c / last.t, ""));
   var d = pts.length > 1 ? Math.round((last.c / last.t - pts[pts.length - 2].c / pts[pts.length - 2].t) * 100) : null;
-  var hint = el("span", "lt-hint", d === null ? t("bTrendFirst") : d === 0 ? t("bTrendSame") : (d > 0 ? "▲ +" : "▼ −") + Math.abs(d) + "%");
+  var hint = el("span", "lt-hint", d === null ? t("bTrendFirst") : d === 0 ? t("bTrendSame") : (d > 0 ? "▲ +" : "▼ −") + Math.abs(d) + " " + t("bPts"));
   if (d) hint.classList.add(d > 0 ? "is-up" : "is-down");
   side.append(hint, el("small", "lt-goal-note", t("bTrendGoal")));
   box.append(side);

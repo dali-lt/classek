@@ -4890,3 +4890,16 @@ html[dir="rtl"] .dv-road-h { transform: scaleX(-1); }
   .dv-fsel { flex: 0 0 auto; grid-template-columns: repeat(2, minmax(190px, 230px)); }
 }
 .sk-cards, .sk-grid { grid-column: 1 / -1; width: 100%; box-sizing: border-box; }
+
+/* ---- v53: folder titles may use two lines on desktop too (phones already do) ---- */
+@media (min-width: 521px) {
+  .fd-front { height: auto; min-height: 118px; } /* grows upward over the decorative sheets */
+  .fd-title {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+  }
+}
