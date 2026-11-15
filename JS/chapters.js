@@ -1670,6 +1670,7 @@ var FILE_SYMBOLS = {
   css: ["{", "}", ":", ";", "#", ".", '"'],
   js: ["{", "}", "(", ")", "[", "]", ";", '"', "="],
   php: ["<?php", "?>", "$", ";", "(", ")", "{", "}", '"', "="],
+  python: ["(", ")", "[", "]", ":", "=", '"', "#"],
 };
 // the symbol bar of a window with several files: it follows the open tab
 function fileTools(files, getTitle) {
@@ -1692,7 +1693,7 @@ function fileTools(files, getTitle) {
       tools.append(btn);
     });
     if (f.lang === "html") tools.append(skeletonButton(f.ta, getTitle));
-    tools.append(reindentButton(f.ta, f.lang === "html" ? null : reindentBraces));
+    if (f.lang !== "python") tools.append(reindentButton(f.ta, f.lang === "html" ? null : reindentBraces)); // Python: the indentation is the syntax, no automatic re-indent
   }
   return { el: tools, sync: sync };
 }
@@ -1748,7 +1749,8 @@ function openPlayground(opts) {
     f.setAttribute("autocapitalize", "off");
     f.setAttribute("autocorrect", "off");
     f.maxLength = ANSWER_MAX;
-    codeEditor(f, true);
+    if (opts.py) codeEditor(f, false, true);
+    else codeEditor(f, true);
     return f;
   }
   var ta = newField(multi ? opts.files[0].value : opts.code);
@@ -1757,7 +1759,7 @@ function openPlayground(opts) {
         return { id: f.id, name: f.name, lang: f.lang, ta: i === 0 ? ta : newField(f.value) };
       })
     : [{ ta: ta }];
-  var win = codeWindow("html");
+  var win = codeWindow(opts.py ? "python" : "html");
   var wrapL = el("div", "ex-box");
   wrapL.append(win.win);
   var fxm = null; // the explorer of the files (only for the exercises that give files)
@@ -1778,7 +1780,10 @@ function openPlayground(opts) {
   }
   var mstore = opts.mediaScope ? mediaStore(opts.mediaScope) : null; // the images, videos and sounds of the student
   var dbh = opts.dbScope ? dbHandle(opts.dbScope, opts.workId) : null; // the database of the practical exam
-  var live = liveFrame(
+  // Python (practical exam of Programmation): nothing to show as a page, so no live frame
+  var live = opts.py
+    ? { wrap: Object.assign(el("div", "live-frame pg-win"), { hidden: true }), update: function () {} }
+    : liveFrame(
     function () {
       if (!multi) return ta.value;
       return applyMedia(
@@ -1816,7 +1821,7 @@ function openPlayground(opts) {
     if (opts.statement || opts.sheetsOf) list.push(["task", opts.sheetsOf ? t("ppDevoir") : t("pgTask")]);
     if (opts.sheetsOf) side.classList.add("is-switch"); // the subject and the result take turns on the whole side
     if (expFrame) list.push(["exp", t("liveExpected")]);
-    var all = list.concat([["mine", opts.sheetsOf ? t("ppResult") : t("liveMine")]]);
+    var all = opts.py ? list : list.concat([["mine", opts.sheetsOf ? t("ppResult") : t("liveMine")]]);
     var btns = [];
     function setView(v) {
       if (v !== "mine") task.setAttribute("data-view", v);
@@ -1840,6 +1845,10 @@ function openPlayground(opts) {
       addBtn(views3, v);
     });
     task.setAttribute("data-view", list[0][0]);
+    if (opts.py) {
+      views.style.display = "none"; // Python: only the subject, no "Résultat" switch
+      views3.style.display = "none";
+    }
     task.append(views);
     if (opts.sheetsOf) {
       var tb = el("div", "pg-task-body pp-pages pp-modal-pages");
@@ -2333,11 +2342,13 @@ function mdBlocks(text, opts) {
           i++;
         }
       } else {
-        var p = para();
+        var CTR = /^\[\[center\]\]\s*/; // "[[center]] text" : a centered line
+        var centered = CTR.test(l.trim());
+        var p = para(centered ? "ch-p is-center" : "ch-p");
         var first = true;
-        while (i < lines.length && lines[i].trim() && !/^\s*>/.test(lines[i]) && !/^#{2,3} /.test(lines[i]) && !LI.test(lines[i]) && !(isRow(lines[i]) && isRow(lines[i + 1])) && !/^\[\[fig:/.test(lines[i].trim())) {
+        while (i < lines.length && lines[i].trim() && !/^\s*>/.test(lines[i]) && !/^#{2,3} /.test(lines[i]) && !LI.test(lines[i]) && !(isRow(lines[i]) && isRow(lines[i + 1])) && !/^\[\[fig:/.test(lines[i].trim()) && CTR.test(lines[i].trim()) === centered) {
           if (!first) p.append(document.createElement("br"));
-          inline(p, lines[i].trim());
+          inline(p, lines[i].trim().replace(CTR, ""));
           first = false;
           i++;
         }
@@ -2640,7 +2651,7 @@ async function loadExercises(chId) {
     })[0];
     if (meta0 && meta0.session === "pratique" && S.cur.exercises)
       S.cur.exercises.forEach(function (e) {
-        if (!e.lang) e.lang = "html";
+        if (!e.lang) e.lang = meta0.subject === "prog" ? "python" : "html";
         if (!e.starter) e.starter = "none";
       });
   } catch (e) {
@@ -5498,6 +5509,10 @@ function openFreeEditor(ch, title) {
     openPlayground({ code: "", title: title || "", tone: "bac" });
     return;
   }
+  if (ch.subject === "prog") {
+    openPyExam(ch, title); // Programmation: Python files, not a web page
+    return;
+  }
   // a practical exam: the files of the exam (index.html, mesStyles.css, mesControles.js, and the ones the student makes), kept in this browser,
   // the subject (the sheets themselves) | the result on the side
   var key = "cl.dvFiles." + ch.id;
@@ -5548,6 +5563,44 @@ function openFreeEditor(ch, title) {
         });
       saved["#fs"] = fsToDraft(fsm);
       persist();
+    },
+  });
+}
+// a practical exam of Programmation: the work is Python files (no HTML/CSS/JS tabs, no page to show), kept in this browser like the web exams.
+// The files come from the devoir (field "pyFiles": ["Consultation.py", "Evaluation.py"]); without it, one main.py.
+function openPyExam(ch, title) {
+  var key = "cl.dvFiles." + ch.id; // same place as the web exams, so it follows the student from one device to another
+  var saved = {};
+  try {
+    saved = JSON.parse(window.localStorage.getItem(key) || "{}") || {};
+  } catch (e) {}
+  var names = (Array.isArray(ch.pyFiles) ? ch.pyFiles : [])
+    .filter(function (n) {
+      return typeof n === "string" && /^[A-Za-z0-9_.-]{1,40}$/.test(n);
+    })
+    .slice(0, 6);
+  if (!names.length) names = ["main.py"];
+  var fileList = names.map(function (n, i) {
+    // "py0", "py1"... : never the slots of the old HTML editor ("0", "1"...), so no HTML shows up as Python
+    return { id: i, name: n, lang: "python", value: typeof saved["py" + i] === "string" ? saved["py" + i] : "" };
+  });
+  openPlayground({
+    files: fileList,
+    py: true,
+    workId: ch.id,
+    title: title || "",
+    tone: "bac",
+    sheetsOf: ch.sheets ? ch : null,
+    timer: dvTimer(ch),
+    rich: !!(ch.paper || ch.sheets),
+    figures: ch.figures,
+    statement: ch.sheets ? "" : ch.paper || "",
+    onChange: function (v, id) {
+      saved["py" + id] = v;
+      try {
+        window.localStorage.setItem(key, JSON.stringify(saved));
+      } catch (e) {}
+      workTouch(ch.id);
     },
   });
 }

@@ -4903,3 +4903,7 @@ html[dir="rtl"] .dv-road-h { transform: scaleX(-1); }
     overflow-wrap: anywhere;
   }
 }
+
+/* ---- v53: "[[center]] text" in a printed subject ---- */
+.ch-content .ch-p.is-center,
+.pp-sheet .ch-content .ch-p.is-center { text-align: center; }

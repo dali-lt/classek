@@ -82,3 +82,26 @@ Examples: `docs/exemple-serie.json`, `docs/exemple-devoir.json`.
 ### Devoir affiché comme une feuille d'examen
 
 Un devoir peut avoir un champ `paper` (texte markdown : tout l'énoncé, tableaux écrits `| a | b |`) : il s'affiche sur une feuille blanche, d'un seul tenant. Les `exercises` du fichier deviennent la correction (`label` + `solution`), qui s'ouvre après le temps de réflexion `think` (secondes, 900 par défaut).
+
+
+## Printed subject: centered lines
+
+In a devoir's `sheets` (and `paper`), start a line with `[[center]]` to center it:
+
+```
+[[center]] N° d'inscription : ☐☐☐☐☐☐☐
+[[center]] *Le sujet comporte 5 pages numérotées de 1/5 à 5/5.*
+```
+
+Consecutive `[[center]]` lines make one centered paragraph.
+
+## Programmation practical exams (Python)
+
+A devoir with `subject: "prog"` and `session: "pratique"` opens a **Python** editor (no HTML/CSS/JS tabs, no result page).
+The files of the editor come from the optional field `pyFiles` (up to 6 names); without it there is one `main.py`:
+
+```json
+{ "pyFiles": ["Consultation.py", "Evaluation.py"] }
+```
+
+Note: `examHead` (the candidate box on sheet 1) and the header table written at the top of `sheets[0]` both print: keep only one of them.
