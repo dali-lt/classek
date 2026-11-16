@@ -4932,3 +4932,16 @@ html[dir="rtl"] .dv-road-h { transform: scaleX(-1); }
 .pp-cand-note { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; color: #0464de; }
 .pp-cand-note small { font-size: 8px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #7b86a0; }
 .pp-cand-note b { font-size: 16px; font-weight: 800; }
+
+/* ---- v55: Python result panel (PyQt5 window + console) and its buttons ---- */
+.pyres { overflow: hidden; }
+.pyres-host { flex: 1 1 58%; min-height: 0; overflow: auto; background: #e9eef7; }
+.pyres-host .live-empty { height: 100%; display: grid; place-items: center; }
+.pyres-out {
+  flex: 0 0 34%; min-height: 70px; margin: 0; padding: 10px 14px; overflow: auto; background: #01092d; color: #e8eefc;
+  font: 12.5px/1.55 ui-monospace, "Cascadia Mono", Consolas, monospace; white-space: pre-wrap; word-break: break-word; text-align: start;
+}
+.pyres-out .is-err { color: #ff9a9a; }
+.pyres-out .is-info { color: #8fa3d6; }
+.pg-tools .ex-tool.is-run { margin-inline-start: auto; background: #0464de; color: #fff; border-color: #0464de; font-weight: 800; }
+.pg-tools .ex-tool.is-run:hover { background: #0353b8; }

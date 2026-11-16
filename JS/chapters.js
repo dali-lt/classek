@@ -28,6 +28,15 @@ var STR = {
     tabChapters: "Chapitres",
     svIntro: "Entraîne-toi par niveau, puis passe aux sujets de Bac.",
     svIntro_sti: "Révise chapitre par chapitre, puis passe aux sujets de Bac.",
+    pyRun: "Exécuter",
+    pyRunTitle: "Exécuter le fichier ouvert (comme dans Thonny)",
+    pySkel: "Squelette Qt",
+    pySkelTitle: "Insère le squelette d’un programme PyQt5 (QApplication + loadUi)",
+    pySkelClass: "Squelette (classe)",
+    pySkelClassTitle: "Insère le squelette PyQt5 avec une classe qui hérite de QMainWindow",
+    pyEmpty: "Clique sur « Exécuter » : la fenêtre PyQt5 s’affichera ici.",
+    pyLoading: "Chargement de Python (une seule fois, environ 10 Mo)…",
+    pyConsole: "Console",
     ppSheet: "Sujet",
     ppPage: "Page {n} / {total}",
     ppPageOf: "Page {n} sur {total}",
@@ -309,6 +318,15 @@ var STR = {
     tabChapters: "الدروس",
     svIntro: "تمرّن حسب المستوى، وبعدها اعمل مواضيع الباك.",
     svIntro_sti: "راجع درس بدرس، وبعدها اعمل مواضيع الباك.",
+    pyRun: "تشغيل",
+    pyRunTitle: "شغّل الملف المفتوح (كيما في Thonny)",
+    pySkel: "هيكل Qt",
+    pySkelTitle: "يدخل هيكل برنامج PyQt5 (QApplication + loadUi)",
+    pySkelClass: "هيكل (class)",
+    pySkelClassTitle: "يدخل هيكل PyQt5 بـ class ترث من QMainWindow",
+    pyEmpty: "كليكي على « تشغيل » وتظهر نافذة PyQt5 هنا.",
+    pyLoading: "تحميل Python (مرة وحدة، تقريبا 10 Mo)…",
+    pyConsole: "الكونسول",
     ppSheet: "الموضوع",
     ppPage: "صفحة {n} / {total}",
     ppPageOf: "صفحة {n} من {total}",
@@ -1673,7 +1691,7 @@ var FILE_SYMBOLS = {
   python: ["(", ")", "[", "]", ":", "=", '"', "#"],
 };
 // the symbol bar of a window with several files: it follows the open tab
-function fileTools(files, getTitle) {
+function fileTools(files, getTitle, extra) {
   var tools = el("div", "ex-tools pg-tools");
   function sync(i) {
     tools.textContent = "";
@@ -1694,6 +1712,7 @@ function fileTools(files, getTitle) {
     });
     if (f.lang === "html") tools.append(skeletonButton(f.ta, getTitle));
     if (f.lang !== "python") tools.append(reindentButton(f.ta, f.lang === "html" ? null : reindentBraces)); // Python: the indentation is the syntax, no automatic re-indent
+    if (extra) extra(f, tools);
   }
   return { el: tools, sync: sync };
 }
@@ -1763,11 +1782,47 @@ function openPlayground(opts) {
   var wrapL = el("div", "ex-box");
   wrapL.append(win.win);
   var fxm = null; // the explorer of the files (only for the exercises that give files)
-  if (multi) {
-    var ptools = fileTools(pfiles, function () {
-      return opts.title || "Ma page";
+  var pyActive = 0;
+  var runPy = function () {
+    // like Thonny: runs the open file (if it is not a .py file, the first .py file)
+    if (!opts.onRun) return;
+    var cur = pfiles[pyActive] && /\.py$/i.test(pfiles[pyActive].name) ? pfiles[pyActive] : pfiles.filter(function (f) { return /\.py$/i.test(f.name); })[0];
+    if (!cur) return;
+    if (devSetView) devSetView("mine");
+    opts.onRun(
+      pfiles.map(function (f) {
+        return { name: f.name, code: f.ta.value };
+      }),
+      cur.name
+    );
+  };
+  var pyExtra = function (f, tools) {
+    var uiName = (pfiles.filter(function (x) { return /\.ui$/i.test(x.name); })[0] || {}).name || "interface.ui";
+    if (/\.py$/i.test(f.name)) {
+      tools.append(pyInsertButton(f.ta, t("pySkel"), t("pySkelTitle"), pySkeleton(uiName)));
+      tools.append(pyInsertButton(f.ta, t("pySkelClass"), t("pySkelClassTitle"), pySkeletonClass(uiName)));
+    }
+    var go = el("button", "ex-tool is-run");
+    go.type = "button";
+    go.title = t("pyRunTitle");
+    go.setAttribute("aria-label", t("pyRunTitle"));
+    go.append(el("span", "", "▶ " + t("pyRun")));
+    go.addEventListener("pointerdown", function (e) {
+      e.preventDefault();
     });
+    go.addEventListener("click", runPy);
+    tools.append(go);
+  };
+  if (multi) {
+    var ptools = fileTools(
+      pfiles,
+      function () {
+        return opts.title || "Ma page";
+      },
+      opts.py ? pyExtra : null
+    );
     win.useFiles(pfiles, function (i) {
+      pyActive = i;
       ptools.sync(i);
       if (fxm) fxm.refresh();
     });
@@ -1780,9 +1835,9 @@ function openPlayground(opts) {
   }
   var mstore = opts.mediaScope ? mediaStore(opts.mediaScope) : null; // the images, videos and sounds of the student
   var dbh = opts.dbScope ? dbHandle(opts.dbScope, opts.workId) : null; // the database of the practical exam
-  // Python (practical exam of Programmation): nothing to show as a page, so no live frame
+  // Python (practical exam of Programmation): the result is the PyQt5 window and the console, not a page
   var live = opts.py
-    ? { wrap: Object.assign(el("div", "live-frame pg-win"), { hidden: true }), update: function () {} }
+    ? { wrap: opts.pyPanel.wrap, update: function () {} }
     : liveFrame(
     function () {
       if (!multi) return ta.value;
@@ -1808,6 +1863,7 @@ function openPlayground(opts) {
   x.title = t("pgClose");
   x.setAttribute("aria-label", t("pgClose"));
   x.innerHTML = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg>';
+  if (opts.py && opts.pyPanel.rerun) opts.pyPanel.rerun.addEventListener("click", runPy);
   var side = live.wrap;
   var devSetView = null;
   if (opts.statement || expFrame || opts.sheetsOf) {
@@ -1821,7 +1877,7 @@ function openPlayground(opts) {
     if (opts.statement || opts.sheetsOf) list.push(["task", opts.sheetsOf ? t("ppDevoir") : t("pgTask")]);
     if (opts.sheetsOf) side.classList.add("is-switch"); // the subject and the result take turns on the whole side
     if (expFrame) list.push(["exp", t("liveExpected")]);
-    var all = opts.py ? list : list.concat([["mine", opts.sheetsOf ? t("ppResult") : t("liveMine")]]);
+    var all = list.concat([["mine", opts.sheetsOf ? t("ppResult") : t("liveMine")]]);
     var btns = [];
     function setView(v) {
       if (v !== "mine") task.setAttribute("data-view", v);
@@ -1845,10 +1901,6 @@ function openPlayground(opts) {
       addBtn(views3, v);
     });
     task.setAttribute("data-view", list[0][0]);
-    if (opts.py) {
-      views.style.display = "none"; // Python: only the subject, no "Résultat" switch
-      views3.style.display = "none";
-    }
     task.append(views);
     if (opts.sheetsOf) {
       var tb = el("div", "pg-task-body pp-pages pp-modal-pages");
@@ -5642,6 +5694,112 @@ function openFreeEditor(ch, title) {
     },
   });
 }
+// the result of a Python run: the PyQt5 window(s) on top, the console (print, errors) below
+function pyPanel() {
+  var wrap = el("div", "live-frame pg-win pyres");
+  var bar = el("div", "live-bar pg-bar");
+  bar.append(dots());
+  var url = el("span", "live-url");
+  url.append(el("i", "live-dot"), document.createTextNode("Python · PyQt5"));
+  var rerun = el("button", "live-reload", "▶");
+  rerun.type = "button";
+  rerun.title = t("pyRunTitle");
+  rerun.setAttribute("aria-label", t("pyRunTitle"));
+  bar.append(url, rerun);
+  var host = el("div", "pyres-host");
+  host.append(el("p", "live-empty", t("pyEmpty")));
+  var out = el("pre", "pyres-out");
+  out.setAttribute("aria-live", "polite");
+  out.setAttribute("aria-label", t("pyConsole"));
+  out.setAttribute("dir", "ltr");
+  wrap.append(bar, host, out);
+  function write(text, kind) {
+    out.append(el("span", kind ? "is-" + kind : "", text));
+    out.scrollTop = out.scrollHeight;
+  }
+  return {
+    wrap: wrap,
+    host: host,
+    rerun: rerun,
+    clear: function () {
+      out.textContent = "";
+    },
+    write: function (text, isErr) {
+      write(text, isErr ? "err" : "");
+    },
+    info: function (text) {
+      write(text + "\n", "info");
+    },
+  };
+}
+// the part every Qt program repeats (the exam uses PyQt5: exec_, not exec)
+function pySkeleton(ui) {
+  return [
+    "import sys",
+    "from PyQt5.QtWidgets import QApplication",
+    "from PyQt5.uic import loadUi",
+    "",
+    "# 1. Fonction (slot) exécutée lors d'un clic",
+    "def action_bouton():",
+    "    texte = fenetre.zone_texte.text()  # lire le texte d'un QLineEdit",
+    '    fenetre.label_resultat.setText("Bonjour " + texte)  # afficher dans un QLabel',
+    "",
+    "# 2. Initialisation de l'application",
+    "app = QApplication(sys.argv)",
+    "",
+    "# 3. Chargement de l'interface créée avec Qt Designer",
+    'fenetre = loadUi("' + ui + '")',
+    "",
+    "# 4. Connexion des événements (signal -> slot)",
+    "fenetre.mon_bouton.clicked.connect(action_bouton)",
+    "",
+    "# 5. Affichage et boucle principale",
+    "fenetre.show()",
+    "sys.exit(app.exec_())",
+    "",
+  ].join("\n");
+}
+function pySkeletonClass(ui) {
+  return [
+    "import sys",
+    "from PyQt5.QtWidgets import QApplication, QMainWindow",
+    "from PyQt5 import uic",
+    "",
+    "class MaFenetre(QMainWindow):",
+    "    def __init__(self):",
+    "        super().__init__()",
+    "        # chargement du fichier .ui dans cette classe",
+    '        uic.loadUi("' + ui + '", self)',
+    "        # connexion du bouton (objectName défini dans Qt Designer)",
+    "        self.mon_bouton.clicked.connect(self.action_bouton)",
+    "",
+    "    def action_bouton(self):",
+    "        texte = self.zone_texte.text()",
+    '        self.label_resultat.setText("Bonjour " + texte)',
+    "",
+    'if __name__ == "__main__":',
+    "    app = QApplication(sys.argv)",
+    "    fenetre = MaFenetre()",
+    "    fenetre.show()",
+    "    sys.exit(app.exec_())",
+    "",
+  ].join("\n");
+}
+function pyInsertButton(ta, label, title, code) {
+  var btn = el("button", "ex-tool is-reindent is-skel", "⟨/⟩ " + label);
+  btn.type = "button";
+  btn.title = title;
+  btn.setAttribute("aria-label", title);
+  btn.addEventListener("pointerdown", function (e) {
+    e.preventDefault();
+  });
+  btn.addEventListener("click", function () {
+    ta.focus();
+    if (!ta.value.trim()) ta.setSelectionRange(0, ta.value.length); // an empty file: the skeleton fills it; otherwise it goes at the cursor
+    editText(ta, code);
+  });
+  return btn;
+}
 // a practical exam of Programmation: the work is Python files (no HTML/CSS/JS tabs, no page to show), kept in this browser like the web exams.
 // The files come from the devoir (field "pyFiles": ["Consultation.py", "Evaluation.py"]); without it, one main.py.
 function openPyExam(ch, title) {
@@ -5660,9 +5818,38 @@ function openPyExam(ch, title) {
     // "py0", "py1"... : never the slots of the old HTML editor ("0", "1"...), so no HTML shows up as Python
     return { id: i, name: n, lang: "python", value: typeof saved["py" + i] === "string" ? saved["py" + i] : "" };
   });
+  var panel = pyPanel();
+  var running = false;
+  var onRun = function (files, main) {
+    if (running) return;
+    running = true;
+    panel.clear();
+    panel.host.replaceChildren();
+    panel.info("▶ " + main);
+    import("./pyrun.js?v=1")
+      .then(function (m) {
+        return m.runPython({
+          files: files,
+          main: main,
+          host: panel.host,
+          onOut: panel.write,
+          setStatus: function (k) {
+            panel.info(t(k === "loadPython" ? "pyLoading" : k));
+          },
+        });
+      })
+      .catch(function (e) {
+        panel.write(String((e && e.message) || e) + "\n", true);
+      })
+      .then(function () {
+        running = false;
+      });
+  };
   openPlayground({
     files: fileList,
     py: true,
+    pyPanel: panel,
+    onRun: onRun,
     workId: ch.id,
     title: title || "",
     tone: "bac",

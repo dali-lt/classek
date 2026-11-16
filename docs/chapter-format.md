@@ -95,14 +95,19 @@ In a devoir's `sheets` (and `paper`), start a line with `[[center]]` to center i
 
 Consecutive `[[center]]` lines make one centered paragraph.
 
-## Programmation practical exams (Python)
+## Programmation practical exams (Python + PyQt5)
 
-A devoir with `subject: "prog"` and `session: "pratique"` opens a **Python** editor (no HTML/CSS/JS tabs, no result page).
+A devoir with `subject: "prog"` and `session: "pratique"` opens a **Python** editor (no HTML/CSS/JS tabs).
 The files of the editor come from the optional field `pyFiles` (up to 6 names); without it there is one `main.py`:
 
 ```json
-{ "pyFiles": ["Consultation.py", "Evaluation.py"] }
+{ "pyFiles": ["Consultation.py", "Evaluation.py", "interface.ui"] }
 ```
+
+- **Exécuter** (▶, like Thonny) runs the open `.py` file in the browser with Pyodide (downloaded once, about 10 MB). `print` and errors go to the console under the result; a PyQt5 window is drawn above it. All the files are written in the working folder first, so `import Evaluation`, `open("Evaluations.dat", "rb")` (pickle) and `loadUi("interface.ui")` work.
+- **PyQt5 is simulated** by `JS/qtshim.py` (QApplication, uic.loadUi, QMainWindow, QLabel, QLineEdit, QPushButton, QCheckBox, QRadioButton, QSpinBox, QDoubleSpinBox, QComboBox, QTextEdit, QListWidget, QTableWidget, QGroupBox, QSlider, QProgressBar, QLCDNumber, QMessageBox, QInputDialog, QTimer, VBox/HBox/Grid layouts). It reads real Qt Designer `.ui` files. `import PyQt6` fails on purpose, like on the exam computers. It is a look-alike, not Qt: the students must check on Thonny before the exam.
+- **Squelette Qt** buttons insert the part every program repeats (procedural, and with a class inheriting QMainWindow).
+- Limits: an infinite loop freezes the page (reload it); `QDialog.exec_()` does not wait; `QFileDialog` is not simulated.
 
 Note: `examHead` (the candidate box on sheet 1) and the header table written at the top of `sheets[0]` both print: keep only one of them.
 
