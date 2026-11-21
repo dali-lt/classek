@@ -113,6 +113,8 @@ var STR = {
     tagSoon: "Bientôt",
     lockNeed: "Termine 70 % de « {level} » pour ouvrir",
     serieN: "Série {n}",
+    svPdf: "PDF",
+    svPdfTitle: "Ouvrir la série en PDF",
     svDone: "Terminée",
     stProg: "En cours",
     stNew: "À faire",
@@ -405,6 +407,8 @@ var STR = {
     tagSoon: "قريب",
     lockNeed: "كمّل 70 % من « {level} » باش يتفتح",
     serieN: "سلسلة {n}",
+    svPdf: "PDF",
+    svPdfTitle: "افتح السلسلة PDF",
     svDone: "كملت",
     stProg: "جارية",
     stNew: "باش تعملها",
@@ -3328,6 +3332,37 @@ function ladderState(list) {
   return lv;
 }
 
+/* The number of a série comes from its data: the chapterId "serie-prog-09-enregistrements" is série 9, like its PDF "serie-9-…".
+   A série that is not published yet leaves a gap instead of renumbering the next ones. Without it: order 109 -> 9; without that: its rank. */
+function serieNo(ch, rank) {
+  var m = /^serie-[a-z0-9]+-(\d{1,3})(?:-|$)/i.exec(String(ch.id || ""));
+  if (m && Number(m[1]) > 0) return Number(m[1]);
+  var o = Math.round(Number(ch.order));
+  if (o > 100 && o < 200) return o - 100;
+  return rank;
+}
+/* The printable version of a série: a file of the site (docs/pdf/…), never another address. */
+var PDF_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 11v6m-3-3 3 3 3-3"/></svg>';
+function pdfUrl(ch) {
+  var p = typeof ch.pdf === "string" ? ch.pdf.trim() : "";
+  if (!/^docs\/pdf\/[A-Za-z0-9_\-\/.]+\.pdf$/.test(p) || p.indexOf("..") >= 0) return "";
+  return new URL(p, document.baseURI).href;
+}
+function pdfLink(ch, cls) {
+  var url = pdfUrl(ch);
+  if (!url) return null;
+  var a = el("a", cls || "sv-pdf");
+  a.href = url;
+  a.target = "_blank";
+  a.rel = "noopener";
+  a.title = t("svPdfTitle");
+  a.setAttribute("aria-label", t("svPdfTitle") + " : " + titleOf(ch));
+  var ic = el("span", "sv-pdf-ico");
+  ic.innerHTML = PDF_SVG; // static, trusted SVG
+  a.append(ic, el("span", "", t("svPdf")));
+  return a;
+}
+
 function serieCard(ch, no, L, locked) {
   var total = exTotal(ch);
   var done = doneCount(ch);
@@ -3371,7 +3406,11 @@ function serieCard(ch, no, L, locked) {
   btn.addEventListener("click", function () {
     openChapter(ch.id);
   });
-  card.append(btn);
+  var act = el("div", "sv-actions");
+  act.append(btn);
+  var pdf = pdfLink(ch, "sv-pdf"); // only for an open série: the PDF of a locked one would skip the steps
+  if (pdf) act.append(pdf);
+  card.append(act);
   return card;
 }
 
@@ -3384,7 +3423,7 @@ function renderSeries(host, sub) {
   var lv = ladderState(list);
   var numbers = {};
   list.forEach(function (c, i) {
-    numbers[c.id] = i + 1;
+    numbers[c.id] = serieNo(c, i + 1);
   });
 
   // the ladder: four steps joined by a line
@@ -6805,10 +6844,13 @@ function renderView(view, ch) {
   var hero = el("header", "sv-head ch-head");
   var htext = el("div", "sv-head-text");
   var total = Number(ch.exerciseCount) || 0;
+  if (ch.kind === "serie" && serieNo(ch, 0)) htext.append(el("span", "sv-kicker ch-kicker", tf("serieN", { n: serieNo(ch, 0) })));
   htext.append(el("h1", "sv-head-title", title || ""));
   if (total && ch.kind === "devoir" && ch.session !== "pratique") htext.append(el("p", "sv-head-intro", tf("dvPctDone", { p: dvPct(ch) }) + " · " + tf("dvStCount", { n: total })));
   else if (total && ch.session !== "pratique") htext.append(el("p", "sv-head-intro", tf("progress", { done: doneCount(ch), total: total })));
   hero.append(htext);
+  var heroPdf = ch.kind === "serie" ? pdfLink(ch, "sv-pdf") : null;
+  if (heroPdf) hero.append(heroPdf);
 
   backTargets.view = {
     label: tf("back", { name: t("s_" + ch.subject) }),

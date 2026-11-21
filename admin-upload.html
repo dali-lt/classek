@@ -217,6 +217,7 @@
         }
         if (d.kind !== undefined && ["chapter", "serie", "devoir"].indexOf(d.kind) < 0) return "kind must be chapter, serie or devoir";
         if (d.kind === "serie" && !(Number(d.serieLevel) >= 1 && Number(d.serieLevel) <= 4)) return "a serie needs serieLevel 1 to 4 (1 Facile, 2 Moyen, 3 Difficile, 4 Très difficile)";
+        if (d.pdf !== undefined && d.pdf !== "" && !(typeof d.pdf === "string" && /^docs\/pdf\/[A-Za-z0-9_\-\/.]+\.pdf$/.test(d.pdf) && d.pdf.indexOf("..") < 0)) return "pdf must be a file of the site like docs/pdf/series/serie-1-….pdf";
         if (d.quiz !== undefined) {
           if (!Array.isArray(d.quiz)) return "quiz must be a list of questions";
           var badQz = d.quiz.filter(function (q) {
@@ -387,6 +388,8 @@
           serieLevel: data.kind === "serie" ? Math.round(Number(data.serieLevel)) : 0,
           topics: Array.isArray(data.topics) ? data.topics.filter(function (x) { return typeof x === "string" && x.trim(); }).slice(0, 3) : [],
           minutes: Number(data.minutes) > 0 ? Math.round(Number(data.minutes)) : 0,
+          // the printable PDF of a série (a file of the site, docs/pdf/…)
+          pdf: typeof data.pdf === "string" && /^docs\/pdf\/[A-Za-z0-9_\-\/.]+\.pdf$/.test(data.pdf) && data.pdf.indexOf("..") < 0 ? data.pdf : "",
           paper: data.kind === "devoir" && typeof data.paper === "string" ? data.paper : "",
           // a devoir written page by page, like the printed paper
           sheets: data.kind === "devoir" && Array.isArray(data.sheets) && data.sheets.length ? data.sheets.filter(function (x) { return typeof x === "string"; }).slice(0, 12) : null,

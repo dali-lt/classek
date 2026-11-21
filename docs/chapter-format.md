@@ -67,6 +67,7 @@ A série or a devoir is a normal chapter file with a few extra fields. It is upl
 |---|---|---|
 | `kind` | both | `"serie"` or `"devoir"` (missing = normal chapter) |
 | `serieLevel` | série | `1` Facile · `2` Moyen · `3` Difficile · `4` Très difficile (required) |
+| `pdf` | série | the printable version, a file of the site: `docs/pdf/series/serie-1-revision-bases-final.pdf` (the exact file name; shown as a PDF button on the card and in the série) |
 | `topics` | série | up to 3 short labels shown as chips (or the single `topic`) |
 | `minutes` | série | estimated time, shown on the card |
 | `session` | devoir | `"principale"`, `"controle"` or `"pratique"` (other = "Autres devoirs") |
@@ -126,3 +127,10 @@ On sheet 1 of a devoir the site can draw the official header (flag, ministry, "E
 | `officialHead: true` | turns the header on without the candidate box (practical exams) |
 
 When the header is on, the table typed at the top of `sheets[0]` ("EXAMEN DU BACCALAURÉAT … RÉPUBLIQUE … Durée … Coefficient …") and the empty "N° d’inscription : ☐☐☐" line are dropped automatically, and a line starting with "Le sujet comporte" is centered.
+
+
+## Série number
+
+The number shown on a série ("Série 9") is read from its `chapterId`: `serie-prog-09-enregistrements` is série 9, like its PDF `serie-9-…`.
+A série that is not published yet leaves a gap (1, 2, 3, 4, 9) instead of renumbering the next ones. Without that pattern the number is `order − 100`
+(order 109), then its rank in the list. Several séries can share a `serieLevel`; they are listed by `order`.

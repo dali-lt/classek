@@ -4945,3 +4945,20 @@ html[dir="rtl"] .dv-road-h { transform: scaleX(-1); }
 .pyres-out .is-info { color: #8fa3d6; }
 .pg-tools .ex-tool.is-run { margin-inline-start: auto; background: #0464de; color: #fff; border-color: #0464de; font-weight: 800; }
 .pg-tools .ex-tool.is-run:hover { background: #0353b8; }
+
+/* ---- v56: série number and PDF (from the data) ---- */
+.sv-actions { display: flex; align-items: stretch; gap: 8px; }
+.sv-actions .sv-btn { flex: 1 1 auto; min-width: 0; }
+.sv-pdf {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; flex: none;
+  min-height: 46px; padding: 0 16px; border: 1.5px solid var(--color-border); border-radius: 14px;
+  background: var(--color-surface); color: var(--color-primary-dark); font: inherit; font-size: 15px; font-weight: 800;
+  text-decoration: none; cursor: pointer;
+}
+.sv-pdf:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.sv-pdf:focus-visible { outline: 3px solid var(--color-primary); outline-offset: 2px; }
+.sv-pdf-ico svg { display: block; width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.sv-head .sv-pdf { align-self: flex-end; }
+.ch-kicker { display: block; margin-bottom: 6px; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .sv-pdf { color: var(--color-text); } }
+:root[data-theme="dark"] .sv-pdf { color: var(--color-text); }
