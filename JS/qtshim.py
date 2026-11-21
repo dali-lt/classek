@@ -1200,13 +1200,13 @@ class QTableWidget(QWidget):
         head.appendChild(corner)
         for c in range(self._cols):
             th = _doc.createElement("th")
-            th.textContent = self._hh[c] if c < len(self._hh) else str(c + 1)
+            th.textContent = (self._hh[c] if c < len(self._hh) else "") or str(c + 1)
             head.appendChild(th)
         self._tbl.appendChild(head)
         for r in range(self._rows):
             tr = _doc.createElement("tr")
             th = _doc.createElement("th")
-            th.textContent = self._vh[r] if r < len(self._vh) else str(r + 1)
+            th.textContent = (self._vh[r] if r < len(self._vh) else "") or str(r + 1)
             tr.appendChild(th)
             for c in range(self._cols):
                 td = _doc.createElement("td")
@@ -1377,48 +1377,17 @@ class QTimer(QObject):
 
 
 # ---------------------------------------------------------------- the windows on screen
-_CSS = """
-.qt-host{padding:14px;overflow:auto;height:100%;box-sizing:border-box;position:relative}
-.qt-win{position:relative;display:inline-block;vertical-align:top;margin:0 12px 12px 0;border-radius:8px;overflow:hidden;
-  box-shadow:0 6px 24px rgba(1,9,45,.22);border:1px solid #9aa4b8;background:#f0f0f0;font:12px 'Segoe UI',system-ui,sans-serif;color:#000}
-.qt-bar{display:flex;align-items:center;gap:8px;padding:5px 10px;background:#fff;border-bottom:1px solid #d5d9e2;font-size:12px}
-.qt-bar b{flex:1;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.qt-x{border:0;background:none;cursor:pointer;font-size:15px;line-height:1;padding:0 2px;color:#444}
-.qt-body{position:relative;overflow:hidden}
-.qt-w{position:absolute;box-sizing:border-box;margin:0}
-.qt-main,.qt-QWidget.qt-top{position:relative}
-.qt-w.qt-off{opacity:.5;pointer-events:none}
-.qt-QLabel{white-space:nowrap;overflow:hidden;line-height:1.2}
-.qt-QPushButton{border:1px solid #adadad;background:#e1e1e1;border-radius:3px;font:inherit;cursor:pointer;padding:0 8px}
-.qt-QPushButton:hover{background:#e5f1fb;border-color:#0078d7}.qt-QPushButton:active,.qt-QPushButton.qt-on{background:#cce4f7}
-.qt-QCheckBox,.qt-QRadioButton{display:flex;align-items:center;gap:6px}
-.qt-QCheckBox input,.qt-QRadioButton input{margin:0}
-.qt-QLineEdit input,.qt-QSpinBox input,.qt-QDoubleSpinBox input,.qt-QComboBox select,.qt-QTextEdit textarea,.qt-QPlainTextEdit textarea{
-  width:100%;height:100%;box-sizing:border-box;border:1px solid #7a7a7a;background:#fff;font:inherit;padding:1px 4px;border-radius:2px}
-.qt-QTextEdit textarea,.qt-QPlainTextEdit textarea{resize:none}
-.qt-QSlider input{width:100%;height:100%;margin:0}.qt-QSlider.qt-vert input{writing-mode:vertical-lr;direction:rtl}
-.qt-QProgressBar progress{width:100%;height:100%}
-.qt-QLCDNumber{background:#1e2a1e;color:#b6ff8a;font:600 22px ui-monospace,monospace;display:flex;align-items:center;justify-content:flex-end;padding:0 8px;border:1px solid #555}
-.qt-QGroupBox{border:1px solid #b9b9b9;border-radius:3px}
-.qt-gb-title{position:absolute;left:9px;top:-8px;background:#f0f0f0;padding:0 3px}
-.qt-QListWidget,.qt-QTableWidget{background:#fff;border:1px solid #7a7a7a;overflow:auto}
-.qt-li{padding:2px 6px;cursor:default}.qt-li.qt-sel,td.qt-sel{background:#0078d7;color:#fff}
-.qt-QTableWidget table{border-collapse:collapse;width:100%}
-.qt-QTableWidget th{background:#f0f0f0;border:1px solid #c8c8c8;font-weight:400;padding:2px 6px;position:sticky;top:0}
-.qt-QTableWidget td{border:1px solid #e0e0e0;padding:2px 6px;min-width:40px}
-.qt-status{left:0;right:0;bottom:0;top:auto;height:22px;padding:3px 8px;background:#f0f0f0;border-top:1px solid #d0d0d0}
-.qt-layout{display:flex;gap:6px;padding:9px;box-sizing:border-box;position:absolute;inset:0}
-.qt-layout.qt-QVBoxLayout{flex-direction:column}.qt-layout.qt-QGridLayout{display:grid;align-items:start}
-.qt-layout .qt-w{min-height:24px}
-"""
+
 
 
 def _ensure_css():
-    if _doc.getElementById("classek-qt") is None:
-        st = _doc.createElement("style")
-        st.id = "classek-qt"
-        st.textContent = _CSS
-        _doc.head.appendChild(st)
+    # the look lives in CSS/qtlook.css (student.html already links it: id "classek-qtlook"); load it if the page does not
+    if _doc.getElementById("classek-qtlook") is None:
+        lk = _doc.createElement("link")
+        lk.id = "classek-qtlook"
+        lk.rel = "stylesheet"
+        lk.href = "CSS/qtlook.css?v=1"
+        _doc.head.appendChild(lk)
 
 
 def _host():

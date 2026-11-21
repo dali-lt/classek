@@ -37,6 +37,8 @@ var STR = {
     pyEmpty: "Clique sur « Exécuter » : la fenêtre PyQt5 s’affichera ici.",
     pyLoading: "Chargement de Python (une seule fois, environ 10 Mo)…",
     pyConsole: "Console",
+    pyDesigner: "Qt Designer",
+    pyDesignerTitle: "Dessiner l’interface (fichier .ui) comme dans Qt Designer",
     ppSheet: "Sujet",
     ppPage: "Page {n} / {total}",
     ppPageOf: "Page {n} sur {total}",
@@ -327,6 +329,8 @@ var STR = {
     pyEmpty: "كليكي على « تشغيل » وتظهر نافذة PyQt5 هنا.",
     pyLoading: "تحميل Python (مرة وحدة، تقريبا 10 Mo)…",
     pyConsole: "الكونسول",
+    pyDesigner: "Qt Designer",
+    pyDesignerTitle: "ارسم الواجهة (ملف .ui) كيما في Qt Designer",
     ppSheet: "الموضوع",
     ppPage: "صفحة {n} / {total}",
     ppPageOf: "صفحة {n} من {total}",
@@ -1798,6 +1802,34 @@ function openPlayground(opts) {
   };
   var pyExtra = function (f, tools) {
     var uiName = (pfiles.filter(function (x) { return /\.ui$/i.test(x.name); })[0] || {}).name || "interface.ui";
+    var uf = pfiles.filter(function (x) {
+      return /\.ui$/i.test(x.name);
+    })[0];
+    if (uf) {
+      var dz = el("button", "ex-tool is-reindent is-skel");
+      dz.type = "button";
+      dz.title = t("pyDesignerTitle");
+      dz.setAttribute("aria-label", t("pyDesignerTitle"));
+      dz.append(el("span", "", "▦ " + t("pyDesigner")));
+      dz.addEventListener("pointerdown", function (e) {
+        e.preventDefault();
+      });
+      dz.addEventListener("click", function () {
+        import("./designer.js?v=1").then(function (m) {
+          m.openDesigner({
+            xml: uf.ta.value,
+            fileName: uf.name,
+            lang: ctx && ctx.getLang && ctx.getLang() === "ar" ? "ar" : "fr",
+            // the drawing is saved in the .ui file, like any other change of a file
+            onChange: function (xml) {
+              uf.ta.value = xml;
+              uf.ta.dispatchEvent(new Event("input", { bubbles: true }));
+            },
+          });
+        });
+      });
+      tools.append(dz);
+    }
     if (/\.py$/i.test(f.name)) {
       tools.append(pyInsertButton(f.ta, t("pySkel"), t("pySkelTitle"), pySkeleton(uiName)));
       tools.append(pyInsertButton(f.ta, t("pySkelClass"), t("pySkelClassTitle"), pySkeletonClass(uiName)));
@@ -5814,6 +5846,8 @@ function openPyExam(ch, title) {
     })
     .slice(0, 6);
   if (!names.length) names = ["main.py"];
+  // the interface is drawn in the Designer and saved in a .ui file: there is always one
+  if (!names.some(function (n) { return /\.ui$/i.test(n); }) && names.length < 6) names.push("interface.ui");
   var fileList = names.map(function (n, i) {
     // "py0", "py1"... : never the slots of the old HTML editor ("0", "1"...), so no HTML shows up as Python
     return { id: i, name: n, lang: "python", value: typeof saved["py" + i] === "string" ? saved["py" + i] : "" };
