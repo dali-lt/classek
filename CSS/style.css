@@ -4458,3 +4458,15 @@ html[dir="rtl"] .month-end-modal::after {
 @media (max-width: 720px) {
   .plan-item-row .plan-btn { flex: 1 1 100%; }
 }
+
+/* ---- v57: every title is in capitals (one list: add a class here to join it) ----
+   Not the text of the courses and exercises, the printed subjects, nor names (the greeting, the profile). */
+.sv-head-title, .sv-hero-title, .sv-title, .dv-title, .dv-hero-text h3, .ex-parcours-text h3, .dev-head-text h3,
+.fd-title, .sc-title, .part-title, .ch-section-title, .tc-h, .pp-title,
+.chart-title, .profile-section-title, .groups-heading, .payments-board-title, .payment-details-heading, .plan-title {
+  text-transform: uppercase;
+}
+/* a little air between capitals, in French only (letter-spacing breaks the joined Arabic letters) */
+html[dir="ltr"] :is(.sv-head-title, .sv-hero-title, .sv-title, .dv-title, .dv-hero-text h3, .ex-parcours-text h3, .dev-head-text h3, .sc-title, .part-title, .ch-section-title, .tc-h, .pp-title) {
+  letter-spacing: 0.012em;
+}

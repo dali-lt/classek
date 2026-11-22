@@ -3492,39 +3492,33 @@ function levelStrip(list) {
   return box;
 }
 
+/* A série is a coloured pill like the chapter folders (idle / doing / done): its number where an illustration would be,
+   the title and what it covers in the middle, the PDF and a round arrow on the side. The whole pill is the click target. */
+var ARROW_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>';
 function serieCard(ch, no, here) {
   var total = exTotal(ch);
   var done = doneCount(ch);
   var p = total ? (done / total) * 100 : 0;
   var st = serieState(ch);
-  var card = el("article", "sv-card lv-" + (st === "done" ? 1 : 2) + " st-" + st + (here ? " is-here" : ""));
-  var top = el("div", "sv-card-top");
-  top.append(el("span", "sv-kicker", tf("serieN", { n: no })), el("span", "sv-status", t({ done: "svDone", prog: "stProg", new: "stNew" }[st])));
-  var h = el("h3", "sv-title", titleOf(ch));
+  var card = el("article", "sv-card st-" + st + (here ? " is-here" : ""));
+  var num = el("div", "sv-num", String(no));
+  num.setAttribute("aria-hidden", "true");
+  var body = el("div", "sv-body");
+  if (st !== "new") body.append(el("span", "sv-st", t(st === "done" ? "svDone" : "stProg")));
+  var h = el("h3", "sv-title");
   h.setAttribute("dir", "auto");
-  card.append(top, h);
+  h.append(el("span", "sr-only", tf("serieN", { n: no }) + " : "), document.createTextNode(titleOf(ch)));
+  body.append(h);
   var topics = Array.isArray(ch.topics) ? ch.topics : ch.topic ? [ch.topic] : [];
-  if (topics.length) {
-    var chips = el("div", "sv-chips");
-    topics.slice(0, 3).forEach(function (x) {
-      chips.append(el("span", "sv-chip", String(x)));
-    });
-    card.append(chips);
-  }
-  // how the exercises are spread: facile / moyen / Bac (one segment each, as long as their number)
+  if (topics.length) body.append(el("p", "sv-sub", topics.slice(0, 3).join(" · ")));
+  // how the exercises are spread: facile / moyen / Bac
   var mix = exDiffOf(ch);
   if (mix) {
     var legend = el("div", "sv-mixl");
-    var bar = el("div", "sv-mix");
-    bar.setAttribute("aria-hidden", "true");
     [["easy", "mixEasy"], ["medium", "mixMedium"], ["bac", "mixBac"]].forEach(function (x) {
-      if (!mix[x[0]]) return;
-      legend.append(el("span", "is-" + x[0], tf(x[1], { n: mix[x[0]] })));
-      var seg = el("i", "is-" + x[0]);
-      seg.style.flex = String(mix[x[0]]);
-      bar.append(seg);
+      if (mix[x[0]]) legend.append(el("span", "is-" + x[0], tf(x[1], { n: mix[x[0]] })));
     });
-    card.append(legend, bar);
+    body.append(legend);
   }
   var foot = el("div", "sv-foot");
   var meta = el("div", "sv-meta");
@@ -3535,18 +3529,21 @@ function serieCard(ch, no, here) {
   var pbar = el("span", "domain-bar sv-bar");
   segBar(pbar, p);
   foot.append(meta, pbar);
-  card.append(foot);
-  var btn = el("button", "sv-btn");
-  btn.type = "button";
-  btn.textContent = t(st === "done" ? "btnReview" : st === "prog" ? "btnCont" : "btnStart");
-  btn.addEventListener("click", function () {
+  body.append(foot);
+  var side = el("div", "sv-side");
+  var pdf = pdfLink(ch, "sv-pdf");
+  if (pdf) side.append(pdf);
+  var label = t(st === "done" ? "btnReview" : st === "prog" ? "btnCont" : "btnStart");
+  var go = el("button", "sv-go");
+  go.type = "button";
+  go.title = label;
+  go.setAttribute("aria-label", label + " : " + titleOf(ch));
+  go.innerHTML = ARROW_SVG; // static, trusted SVG
+  go.addEventListener("click", function () {
     openChapter(ch.id);
   });
-  var act = el("div", "sv-actions");
-  act.append(btn);
-  var pdf = pdfLink(ch, "sv-pdf");
-  if (pdf) act.append(pdf);
-  card.append(act);
+  side.append(go);
+  card.append(num, body, side);
   return card;
 }
 
