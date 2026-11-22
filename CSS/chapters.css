@@ -5066,3 +5066,12 @@ html[dir="rtl"] .sv-vw-arrow { transform: scaleX(-1); }
   .sv-vw-name { display: none; }
   .sv-vw-foot { justify-content: center; }
 }
+
+/* v58 · markdown tables in séries and cours: the same look as the printed PDF (navy head, zebra rows, code in blue) */
+.ch-table-wrap { overflow-x: auto; margin: 10px 0 14px; border: 1px solid #01092d; border-radius: 12px; background: var(--color-surface); }
+.ch-content .ch-table-wrap .ch-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.ch-content .ch-table-wrap th { background: #01092d; color: #fff; font-weight: 800; font-size: 12.5px; letter-spacing: .02em; text-align: left; padding: 9px 12px; white-space: nowrap; }
+.ch-content .ch-table-wrap td { padding: 7px 12px; border-top: 1px solid color-mix(in srgb, var(--color-text) 9%, transparent); vertical-align: middle; }
+.ch-content .ch-table-wrap tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--color-primary) 4%, transparent); }
+.ch-content .ch-table-wrap td:first-child, .ch-content .ch-table-wrap th:first-child { width: 44px; text-align: center; color: var(--color-text-muted); font-weight: 700; }
+.ch-content .ch-table-wrap td code { white-space: nowrap; }

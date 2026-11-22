@@ -2319,6 +2319,11 @@ function mdBlocks(text, opts) {
           var h = el("h3", "ch-h");
           inline(h, para.slice(3));
           box.append(h);
+        } else if (/^\s*\|.*\|\s*\n\s*\|[\s|:-]+\|\s*(\n|$)/.test(para)) {
+          // a markdown table (séries, cours): same parser as the rich text, in a scrolling frame so a wide table never breaks the page
+          var wrap = el("div", "ch-table-wrap");
+          richWords(para, wrap);
+          box.append(wrap);
         } else {
           var p = el("p", "ch-p");
           inline(p, para);
