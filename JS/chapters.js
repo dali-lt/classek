@@ -26,7 +26,7 @@ var STR = {
     back: "Retour à {name}",
     allSubjects: "Toutes les matières",
     tabChapters: "Chapitres",
-    svIntro: "Entraîne-toi par niveau, puis passe aux sujets de Bac.",
+    svIntro: "Suis le cours série par série, du plus simple au sujet de Bac.",
     svIntro_sti: "Révise chapitre par chapitre, puis passe aux sujets de Bac.",
     pyRun: "Exécuter",
     pyRunTitle: "Exécuter le fichier ouvert (comme dans Thonny)",
@@ -96,6 +96,15 @@ var STR = {
     exNoteNext: "À faire",
     tabSeries: "Séries",
     tabDevoirs: "Devoirs",
+    pathTitle: "Ton parcours",
+    pathHint: "Les séries suivent l’ordre du cours. Dans chaque série, les exercices montent du facile au niveau Bac.",
+    lvlStrip: "Tes exercices par niveau :",
+    mixEasy: "{n} faciles",
+    mixMedium: "{n} moyens",
+    mixBac: "{n} Bac",
+    svFaits: "{d} / {n} faits",
+    exPrev: "Exercice précédent",
+    exNext: "Exercice suivant",
     ladderTitle: "Ton échelle de difficulté",
     ladderHint: "Finis 70 % d’un niveau pour ouvrir le suivant. Pas de piège : tu montes marche par marche.",
     lvl1: "Facile",
@@ -320,7 +329,7 @@ var STR = {
     back: "رجوع إلى {name}",
     allSubjects: "كل المواد",
     tabChapters: "الدروس",
-    svIntro: "تمرّن حسب المستوى، وبعدها اعمل مواضيع الباك.",
+    svIntro: "تبع الدرس سيري بسيري، من الأسهل لموضوع الباك.",
     svIntro_sti: "راجع درس بدرس، وبعدها اعمل مواضيع الباك.",
     pyRun: "تشغيل",
     pyRunTitle: "شغّل الملف المفتوح (كيما في Thonny)",
@@ -390,6 +399,15 @@ var STR = {
     exNoteNext: "للإنجاز",
     tabSeries: "السلاسل",
     tabDevoirs: "الفروض",
+    pathTitle: "طريقك",
+    pathHint: "السيريات تتبع ترتيب الدرس. في كل سيري، التمارين تطلع من السهل لمستوى الباك.",
+    lvlStrip: "تمارينك حسب المستوى :",
+    mixEasy: "{n} سهل",
+    mixMedium: "{n} متوسط",
+    mixBac: "{n} باك",
+    svFaits: "{d} / {n} مكمّلين",
+    exPrev: "التمرين اللي قبل",
+    exNext: "التمرين اللي بعد",
     ladderTitle: "سلّم الصعوبة متاعك",
     ladderHint: "كمّل 70 % من مستوى باش يتفتح اللي بعدو. ما فما حتى فخ: تطلع درجة درجة.",
     lvl1: "سهل",
@@ -2529,6 +2547,12 @@ async function addLocalExtras(levelId) {
       });
       LOCAL[d.chapterId] = ex;
       var meta = Object.assign({}, d, { id: d.chapterId, exerciseCount: ex.length });
+      if (d.kind === "serie" && !meta.exDiff) {
+        meta.exDiff = {};
+        ex.forEach(function (e, i) {
+          meta.exDiff[e.id || "e" + (i + 1)] = e.difficulty;
+        });
+      }
       delete meta.exercises;
       S.extra.push(meta);
     });
@@ -3194,7 +3218,6 @@ function message(host, titleKey, textKey, retry) {
 }
 
 /* ---------------- séries and devoirs (tabs inside a subject) ---------------- */
-var UNLOCK_AT = 70; // % of a level's exercises to finish before the next level opens
 
 function extrasOf(sub, kind) {
   return S.extra.filter(function (c) {
@@ -3248,90 +3271,6 @@ function svTabs(sub, view) {
   return row;
 }
 
-/* four little bars that grow with the level (Facile = 1 … Très difficile = 4) */
-function levelBars(n, cls) {
-  var box = el("span", "lv-bars " + (cls || ""));
-  box.setAttribute("aria-hidden", "true");
-  for (var i = 1; i <= 4; i++) box.append(el("i", i <= n ? "on" : ""));
-  return box;
-}
-
-function levelOf(ch) {
-  var n = Math.round(Number(ch.serieLevel));
-  return n >= 1 && n <= 4 ? n : 1;
-}
-
-/* where the student stands on the ladder: per level the series, the done / total exercises and whether it is open */
-/* the winding line between the level circles (same spirit as the path between exercises); redrawn when the ladder is resized */
-function drawLadderPath(steps, on) {
-  var NS = "http://www.w3.org/2000/svg";
-  var draw = function () {
-    if (!steps.isConnected) return;
-    var old = steps.querySelector("svg.sv-path");
-    if (old) old.remove();
-    var box = steps.getBoundingClientRect();
-    if (!box.width) return;
-    var svg = document.createElementNS(NS, "svg");
-    svg.setAttribute("class", "sv-path");
-    svg.setAttribute("aria-hidden", "true");
-    svg.setAttribute("viewBox", "0 0 " + box.width + " " + box.height);
-    var nodes = steps.querySelectorAll(".sv-node");
-    var amp = box.width < 560 ? 22 : 34;
-    for (var i = 0; i < nodes.length - 1; i++) {
-      var a = nodes[i].getBoundingClientRect();
-      var b = nodes[i + 1].getBoundingClientRect();
-      var x1 = a.right - box.left - 2;
-      var y1 = a.top - box.top + a.height / 2;
-      var x2 = b.left - box.left + 2;
-      var y2 = b.top - box.top + b.height / 2;
-      var dir = y2 > y1 ? 1 : -1;
-      var path = document.createElementNS(NS, "path");
-      path.setAttribute(
-        "d",
-        "M" + x1 + " " + y1 + " C " + (x1 + (x2 - x1) * 0.9) + " " + (y1 - dir * amp) + ", " + (x1 + (x2 - x1) * 0.1) + " " + (y2 + dir * amp) + ", " + x2 + " " + y2,
-      );
-      path.setAttribute("class", "sv-path-seg" + (on[i] ? " is-on" : ""));
-      svg.append(path);
-    }
-    steps.append(svg);
-  };
-  requestAnimationFrame(draw);
-  if (window.ResizeObserver) {
-    var ro = new ResizeObserver(draw);
-    ro.observe(steps);
-  }
-}
-
-function ladderState(list) {
-  var lv = [null, null, null, null, null];
-  for (var n = 1; n <= 4; n++) lv[n] = { n: n, list: [], done: 0, total: 0, pct: 0, open: true, here: false };
-  list.forEach(function (c) {
-    var L = lv[levelOf(c)];
-    L.list.push(c);
-    L.total += exTotal(c);
-    L.done += doneCount(c);
-  });
-  var blocked = false;
-  var here = 0;
-  for (var m = 1; m <= 4; m++) {
-    var L2 = lv[m];
-    L2.pct = L2.total ? (L2.done / L2.total) * 100 : 0;
-    L2.open = !blocked;
-    if (L2.list.length && L2.open && !here && L2.pct < UNLOCK_AT) here = m;
-    if (L2.list.length && L2.pct < UNLOCK_AT) blocked = true; // a level with series that is not at 70 % keeps the next ones closed
-  }
-  if (!here) {
-    for (var k = 4; k >= 1; k--) {
-      if (lv[k].list.length) {
-        here = k;
-        break;
-      }
-    }
-  }
-  if (here) lv[here].here = true;
-  return lv;
-}
-
 /* The number of a série comes from its data: the chapterId "serie-prog-09-enregistrements" is série 9, like its PDF "serie-9-…".
    A série that is not published yet leaves a gap instead of renumbering the next ones. Without it: order 109 -> 9; without that: its rank. */
 function serieNo(ch, rank) {
@@ -3363,17 +3302,164 @@ function pdfLink(ch, cls) {
   return a;
 }
 
-function serieCard(ch, no, L, locked) {
+/* ---------------- séries: one parcours in the order of the course ---------------- */
+/* Every série follows the course (Série 1, 2, 3 …) and climbs from facile to Bac inside itself, like its PDF.
+   The difficulty is therefore shown per exercise (a bar on each card, a total per level), not by locking whole levels. */
+function exDiffOf(ch) {
+  var m = ch && ch.exDiff && typeof ch.exDiff === "object" ? ch.exDiff : null;
+  if (!m) return null;
+  var out = { easy: 0, medium: 0, bac: 0 };
+  Object.keys(m).forEach(function (k) {
+    out[m[k] === "bac" || m[k] === "medium" ? m[k] : "easy"]++;
+  });
+  return out;
+}
+function serieState(ch) {
+  var total = exTotal(ch);
+  var done = doneCount(ch);
+  return total && done >= total ? "done" : done > 0 ? "prog" : "new";
+}
+function fmtMinutes(m) {
+  m = Math.round(Number(m) || 0);
+  if (m < 60) return m + " min";
+  var r = m % 60;
+  return Math.floor(m / 60) + " h" + (r ? " " + (r < 10 ? "0" : "") + r : "");
+}
+
+/* the winding line of the séries, in the order of the course; the first one not finished is "Tu es ici" */
+function seriesPath(list, numbers, curId) {
+  var card = el("section", "ex-parcours sv-route");
+  var txt = el("div", "ex-parcours-text");
+  txt.append(el("h3", "", t("pathTitle")), el("p", "", t("pathHint")));
+  var map = el("div", "ex-map sv-map");
+  card.append(txt, map);
+  var NS = "http://www.w3.org/2000/svg";
+  var lastW = 0;
+  var draw = function () {
+    if (!map.isConnected) return;
+    var W = map.clientWidth;
+    if (!W || W === lastW) return;
+    lastW = W;
+    var size = W < 560 ? 46 : 58;
+    var perRow = Math.max(2, Math.min(list.length, Math.floor(W / (size + 62))));
+    var dy = size * 0.85;
+    var lab = 54; // room for the label above / under a circle
+    var rowH = lab + size + dy + lab + 22;
+    var rows = Math.ceil(list.length / perRow);
+    var step = W / perRow;
+    var pts = list.map(function (c, k) {
+      var r = Math.floor(k / perRow);
+      var j = k % perRow;
+      var col = r % 2 ? perRow - 1 - j : j; // snake: the second row runs the other way
+      return { x: (col + 0.5) * step, y: lab + size / 2 + r * rowH + (k % 2 ? dy : 0), r: r };
+    });
+    map.textContent = "";
+    map.style.height = rows * rowH + "px";
+    var svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("class", "ex-map-line");
+    svg.setAttribute("aria-hidden", "true");
+    svg.setAttribute("viewBox", "0 0 " + W + " " + rows * rowH);
+    for (var i = 0; i < pts.length - 1; i++) {
+      var a = pts[i];
+      var b = pts[i + 1];
+      var d;
+      if (b.r !== a.r) {
+        var out = (a.x > W / 2 ? 1 : -1) * Math.min(36, W * 0.1);
+        d = "M" + a.x + " " + a.y + " C " + (a.x + out * 1.6) + " " + (a.y + 10) + ", " + (b.x + out * 1.6) + " " + (b.y - 10) + ", " + b.x + " " + b.y;
+      } else {
+        var dir = b.y > a.y ? 1 : -1;
+        var amp = size * 0.55;
+        d = "M" + a.x + " " + a.y + " C " + (a.x + (b.x - a.x) * 0.9) + " " + (a.y - dir * amp) + ", " + (a.x + (b.x - a.x) * 0.1) + " " + (b.y + dir * amp) + ", " + b.x + " " + b.y;
+      }
+      var path = document.createElementNS(NS, "path");
+      path.setAttribute("d", d);
+      path.setAttribute("class", "ex-map-seg" + (serieState(list[i]) === "done" ? " is-on" : ""));
+      svg.append(path);
+    }
+    map.append(svg);
+    list.forEach(function (c, k) {
+      var p = pts[k];
+      var st = serieState(c);
+      var total = exTotal(c);
+      var pct = total ? Math.min(100, (doneCount(c) / total) * 100) : 0;
+      var here = c.id === curId;
+      var node = el("button", "sv-pn is-" + st + (here ? " is-here" : ""));
+      node.type = "button";
+      node.style.left = p.x - size / 2 + "px";
+      node.style.top = p.y - size / 2 + "px";
+      node.style.width = node.style.height = size + "px";
+      node.setAttribute("aria-label", tf("serieN", { n: numbers[c.id] }) + " : " + titleOf(c));
+      var ring = document.createElementNS(NS, "svg");
+      ring.setAttribute("viewBox", "0 0 36 36");
+      ring.setAttribute("aria-hidden", "true");
+      var track = document.createElementNS(NS, "circle");
+      var arc = document.createElementNS(NS, "circle");
+      [track, arc].forEach(function (cc) {
+        cc.setAttribute("cx", "18");
+        cc.setAttribute("cy", "18");
+        cc.setAttribute("r", "15.5");
+      });
+      track.setAttribute("class", "sv-pn-track");
+      arc.setAttribute("class", "sv-pn-arc");
+      var C = 2 * Math.PI * 15.5;
+      arc.setAttribute("stroke-dasharray", (C * pct) / 100 + " " + C);
+      arc.setAttribute("transform", "rotate(-90 18 18)");
+      ring.append(track, arc);
+      node.append(ring, el("span", "sv-pn-n", st === "done" ? "✓" : String(numbers[c.id])));
+      node.addEventListener("click", function () {
+        openChapter(c.id);
+      });
+      map.append(node);
+      var up = k % 2 === 0;
+      var cap = el("span", "sv-pl " + (up ? "is-up" : "is-down"));
+      cap.style.left = p.x - Math.min(step - 8, 150) / 2 + "px";
+      cap.style.width = Math.min(step - 8, 150) + "px";
+      cap.style.top = (up ? p.y - size / 2 - 50 : p.y + size / 2 + 6) + "px";
+      cap.append(el("b", "", tf("serieN", { n: numbers[c.id] })), el("small", "", titleOf(c)));
+      if (here) cap.append(el("i", "sv-pl-here", t("tagHere")));
+      map.append(cap);
+    });
+  };
+  window.requestAnimationFrame(draw);
+  if (window.ResizeObserver) new ResizeObserver(draw).observe(map);
+  return card;
+}
+
+/* "Tes exercices par niveau": done / total per difficulty, over every série that tells its levels */
+function levelStrip(list) {
+  var tot = { easy: 0, medium: 0, bac: 0 };
+  var dn = { easy: 0, medium: 0, bac: 0 };
+  var any = false;
+  list.forEach(function (c) {
+    if (!c.exDiff || typeof c.exDiff !== "object") return;
+    any = true;
+    var st = statusOf(c.id);
+    Object.keys(c.exDiff).forEach(function (id) {
+      var k = c.exDiff[id] === "bac" || c.exDiff[id] === "medium" ? c.exDiff[id] : "easy";
+      tot[k]++;
+      if (st[id] === "done" || st[id] === "mid" || st[id] === "review") dn[k]++;
+    });
+  });
+  if (!any) return null;
+  var box = el("div", "sv-levels");
+  box.append(el("b", "", t("lvlStrip")));
+  ["easy", "medium", "bac"].forEach(function (k) {
+    if (!tot[k]) return;
+    var chip = el("span", "sv-lv is-" + k);
+    chip.append(el("i", ""), el("span", "", t("d_" + k)), el("b", "", dn[k] + " / " + tot[k]));
+    box.append(chip);
+  });
+  return box;
+}
+
+function serieCard(ch, no, here) {
   var total = exTotal(ch);
   var done = doneCount(ch);
   var p = total ? (done / total) * 100 : 0;
-  var st = locked ? "locked" : total && done >= total ? "done" : done > 0 ? "prog" : "new";
-  var card = el("article", "sv-card lv-" + L.n + " st-" + st);
+  var st = serieState(ch);
+  var card = el("article", "sv-card lv-" + (st === "done" ? 1 : 2) + " st-" + st + (here ? " is-here" : ""));
   var top = el("div", "sv-card-top");
-  top.append(
-    el("span", "sv-kicker", tf("serieN", { n: no })),
-    el("span", "sv-status", t({ locked: "stLocked", done: "svDone", prog: "stProg", new: "stNew" }[st]))
-  );
+  top.append(el("span", "sv-kicker", tf("serieN", { n: no })), el("span", "sv-status", t({ done: "svDone", prog: "stProg", new: "stNew" }[st])));
   var h = el("h3", "sv-title", titleOf(ch));
   h.setAttribute("dir", "auto");
   card.append(top, h);
@@ -3385,21 +3471,31 @@ function serieCard(ch, no, L, locked) {
     });
     card.append(chips);
   }
+  // how the exercises are spread: facile / moyen / Bac (one segment each, as long as their number)
+  var mix = exDiffOf(ch);
+  if (mix) {
+    var legend = el("div", "sv-mixl");
+    var bar = el("div", "sv-mix");
+    bar.setAttribute("aria-hidden", "true");
+    [["easy", "mixEasy"], ["medium", "mixMedium"], ["bac", "mixBac"]].forEach(function (x) {
+      if (!mix[x[0]]) return;
+      legend.append(el("span", "is-" + x[0], tf(x[1], { n: mix[x[0]] })));
+      var seg = el("i", "is-" + x[0]);
+      seg.style.flex = String(mix[x[0]]);
+      bar.append(seg);
+    });
+    card.append(legend, bar);
+  }
   var foot = el("div", "sv-foot");
   var meta = el("div", "sv-meta");
   meta.append(
     el("span", "", ch.minutes ? tf("serieMeta", { n: total, m: ch.minutes }) : tf("serieMetaNoMin", { n: total })),
-    el("span", "", locked ? "—" : done + " / " + total)
+    el("span", "", done + " / " + total),
   );
-  var bar = el("span", "domain-bar sv-bar");
-  segBar(bar, locked ? 0 : p);
-  foot.append(meta, bar);
+  var pbar = el("span", "domain-bar sv-bar");
+  segBar(pbar, p);
+  foot.append(meta, pbar);
   card.append(foot);
-  if (locked) {
-    // no disabled button repeated on every card: the status chip + the level tag ("Termine 70 % de … pour ouvrir") say it once
-    card.setAttribute("aria-disabled", "true");
-    return card;
-  }
   var btn = el("button", "sv-btn");
   btn.type = "button";
   btn.textContent = t(st === "done" ? "btnReview" : st === "prog" ? "btnCont" : "btnStart");
@@ -3408,7 +3504,7 @@ function serieCard(ch, no, L, locked) {
   });
   var act = el("div", "sv-actions");
   act.append(btn);
-  var pdf = pdfLink(ch, "sv-pdf"); // only for an open série: the PDF of a locked one would skip the steps
+  var pdf = pdfLink(ch, "sv-pdf");
   if (pdf) act.append(pdf);
   card.append(act);
   return card;
@@ -3420,61 +3516,126 @@ function renderSeries(host, sub) {
     message(host, "seriesEmptyTitle", "seriesEmptyText", false);
     return;
   }
-  var lv = ladderState(list);
   var numbers = {};
   list.forEach(function (c, i) {
     numbers[c.id] = serieNo(c, i + 1);
   });
-
-  // the ladder: four steps joined by a line
-  var ladder = el("section", "sv-ladder");
-  var lhead = el("div", "sv-ladder-head");
-  lhead.append(el("h3", "", t("ladderTitle")), el("p", "", t("ladderHint")));
-  var steps = el("div", "sv-steps");
-  for (var n = 1; n <= 4; n++) {
-    var L = lv[n];
-    var empty = !L.list.length;
-    var locked = !L.open && !empty;
-    var tag = empty ? "tagSoon" : locked ? "tagLocked" : L.here ? "tagHere" : L.pct >= UNLOCK_AT ? "tagDone" : "tagOpen";
-    var step = el("div", "sv-step lv-" + n + (locked || empty ? " is-locked" : "") + (L.here ? " is-here" : ""));
-    var line = el("div", "sv-line");
-    line.append(el("i", "sv-l a" + (n === 1 ? " is-end" : (L.open && !empty) || L.here ? " is-on" : "")));
-    var node = el("span", "sv-node");
-    node.append(levelBars(n));
-    line.append(node, el("i", "sv-l b" + (n === 4 ? " is-end" : lv[n + 1].open && lv[n + 1].list.length ? " is-on" : "")));
-    step.append(line, el("b", "sv-step-name", t("lvl" + n)), el("small", "sv-step-count", tf("doneOf", { d: L.done, n: L.total })), el("span", "sv-step-tag", t(tag)));
-    steps.append(step);
-  }
-  ladder.append(lhead, steps);
-  host.append(ladder);
-  drawLadderPath(steps, [1, 2, 3].map(function (k) {
-    return !!(lv[k + 1].open && lv[k + 1].list.length);
-  }));
-
-  // one block per level that has series
-  for (var m = 1; m <= 4; m++) {
-    var Lm = lv[m];
-    if (!Lm.list.length) continue;
-    var lockedLevel = !Lm.open;
-    var sec = el("section", "sv-level lv-" + m);
-    var head = el("div", "sv-level-head");
-    var chip = el("span", "sv-level-chip");
-    chip.append(levelBars(m), el("span", "", t("lvl" + m)));
-    head.append(chip, el("span", "sv-level-sub", t("lvlSub" + m)));
-    if (lockedLevel) {
-      var prev = m - 1;
-      while (prev > 1 && !lv[prev].list.length) prev--;
-      head.append(el("span", "sv-lock", tf("lockNeed", { level: t("lvl" + prev) })));
-    }
-    sec.append(head);
-    var grid = el("div", "sv-grid");
-    Lm.list.forEach(function (c) {
-      grid.append(serieCard(c, numbers[c.id], Lm, lockedLevel));
-    });
-    sec.append(grid);
-    host.append(sec);
-  }
+  var cur = list.filter(function (c) {
+    return serieState(c) !== "done";
+  })[0];
+  var curId = cur ? cur.id : "";
+  var route = seriesPath(list, numbers, curId);
+  var strip = levelStrip(list);
+  if (strip) route.append(strip);
+  host.append(route);
+  var grid = el("div", "sv-grid");
+  list.forEach(function (c) {
+    grid.append(serieCard(c, numbers[c.id], c.id === curId));
+  });
+  host.append(grid);
 }
+
+/* the top of a série: its number, title and intro on the blue banner, then what it holds and where to go next */
+function serieHero(ch, title) {
+  var no = serieNo(ch, 0);
+  var total = exTotal(ch);
+  var done = doneCount(ch);
+  var st = serieState(ch);
+  var hero = el("header", "sv-hero ch-head");
+  if (no) hero.append(el("span", "sv-hero-num", (no < 10 ? "0" : "") + no));
+  var tx = el("div", "sv-hero-text");
+  tx.append(el("span", "sv-hero-kicker", (no ? tf("serieN", { n: no }) + " · " : "") + t("s_" + ch.subject)));
+  var h1 = el("h1", "sv-hero-title", title || "");
+  h1.setAttribute("dir", "auto");
+  tx.append(h1);
+  var intro = ctx.getLang() === "ar" && ch.intro_ar ? ch.intro_ar : ch.intro;
+  if (intro) tx.append(el("p", "sv-hero-intro", intro));
+  var meta = el("div", "sv-hero-meta");
+  if (total) meta.append(el("span", "", tf("serieMetaNoMin", { n: total })));
+  if (ch.minutes) meta.append(el("span", "", fmtMinutes(ch.minutes)));
+  if (total) meta.append(el("span", "", tf("svFaits", { d: done, n: total })));
+  tx.append(meta);
+  hero.append(tx);
+  var act = el("div", "sv-hero-act");
+  var go = el("button", "sv-hero-go", t(st === "done" ? "btnReview" : st === "prog" ? "btnCont" : "btnStart"));
+  go.type = "button";
+  go.addEventListener("click", function () {
+    if (curTab(ch) !== "ex") pickTab("ex");
+    else {
+      var d = document.querySelector(".ex-detail");
+      if (d) d.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  });
+  act.append(go);
+  var pdf = pdfLink(ch, "sv-pdf sv-pdf-hero");
+  if (pdf) act.append(pdf);
+  hero.append(act);
+  return hero;
+}
+
+/* one exercise at a time with an arrow on each side (and ← → on the keyboard); an exercise not reached yet stays locked */
+function serieViewer(ch, exs, selIdx, curId, det) {
+  var st0 = statusOf(ch.id);
+  var locked = function (k) {
+    return !st0[exs[k].id] && !!curId && curId !== exs[k].id;
+  };
+  var goTo = function (k) {
+    if (k < 0 || k >= exs.length || locked(k)) return;
+    openEx[ch.id] = exs[k].id;
+    render();
+    window.requestAnimationFrame(function () {
+      var box = document.querySelector(".sv-vw");
+      if (box && box.getBoundingClientRect().top < 0) box.scrollIntoView({ block: "start" });
+    });
+  };
+  var arrow = function (dir) {
+    var k = selIdx + dir;
+    var b = el("button", "sv-vw-arrow " + (dir < 0 ? "sv-vw-prev" : "sv-vw-next"), dir < 0 ? "‹" : "›");
+    b.type = "button";
+    b.disabled = k < 0 || k >= exs.length || locked(k);
+    var name = dir < 0 ? t("exPrev") : t("exNext");
+    b.title = name;
+    b.setAttribute("aria-label", name);
+    b.addEventListener("click", function () {
+      goTo(k);
+    });
+    return b;
+  };
+  var vw = el("div", "sv-vw");
+  var main = el("div", "sv-vw-main");
+  main.append(det);
+  var foot = el("div", "sv-vw-foot");
+  var nm = function (k) {
+    return k >= 0 && k < exs.length ? (k < 9 ? "0" : "") + (k + 1) + " · " + (exs[k].label || "") : "";
+  };
+  var dots = el("span", "sv-vw-dots");
+  exs.forEach(function (e, k) {
+    var d = el("button", "sv-vw-dot" + (k === selIdx ? " is-on" : st0[e.id] ? " is-done" : ""));
+    d.type = "button";
+    d.disabled = locked(k);
+    d.setAttribute("aria-label", nm(k));
+    d.addEventListener("click", function () {
+      goTo(k);
+    });
+    dots.append(d);
+  });
+  foot.append(el("span", "sv-vw-name is-prev", nm(selIdx - 1)), dots, el("span", "sv-vw-name is-next", nm(selIdx + 1)));
+  main.append(foot);
+  vw.append(arrow(-1), main, arrow(1));
+  return vw;
+}
+document.addEventListener("keydown", function (e) {
+  if ((e.key !== "ArrowLeft" && e.key !== "ArrowRight") || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || e.defaultPrevented) return;
+  var tg = e.target;
+  if (tg && tg.closest && (/^(INPUT|TEXTAREA|SELECT)$/.test(tg.tagName) || tg.isContentEditable || tg.closest("[contenteditable], .cm-editor, .CodeMirror"))) return;
+  var rtl = !!ctx && ctx.getLang() === "ar";
+  var forward = (e.key === "ArrowRight") !== rtl;
+  var b = document.querySelector(forward ? ".sv-vw-next:not(:disabled)" : ".sv-vw-prev:not(:disabled)");
+  if (b) {
+    e.preventDefault();
+    b.click();
+  }
+});
 
 function devoirStatus(ch) {
   var total = exTotal(ch);
@@ -6808,7 +6969,8 @@ function exercisesPart(ch) {
       dr.append(det);
       split.append(dl, dr);
       box.append(sw, split);
-    } else box.append(det);
+    } else if (ch.kind === "serie") box.append(serieViewer(ch, exs, selIdx, curId, det));
+    else box.append(det);
   }
   return box;
 }
@@ -6841,16 +7003,17 @@ function renderView(view, ch) {
   var title = ctx.getLang() === "ar" && ch.title_ar ? ch.title_ar : ch.title;
   crumb.append(home, el("span", "sv-crumb-sep", sep), subLink, el("span", "sv-crumb-sep", sep), el("b", "", title || ""));
 
-  var hero = el("header", "sv-head ch-head");
-  var htext = el("div", "sv-head-text");
-  var total = Number(ch.exerciseCount) || 0;
-  if (ch.kind === "serie" && serieNo(ch, 0)) htext.append(el("span", "sv-kicker ch-kicker", tf("serieN", { n: serieNo(ch, 0) })));
-  htext.append(el("h1", "sv-head-title", title || ""));
-  if (total && ch.kind === "devoir" && ch.session !== "pratique") htext.append(el("p", "sv-head-intro", tf("dvPctDone", { p: dvPct(ch) }) + " · " + tf("dvStCount", { n: total })));
-  else if (total && ch.session !== "pratique") htext.append(el("p", "sv-head-intro", tf("progress", { done: doneCount(ch), total: total })));
-  hero.append(htext);
-  var heroPdf = ch.kind === "serie" ? pdfLink(ch, "sv-pdf") : null;
-  if (heroPdf) hero.append(heroPdf);
+  var hero;
+  if (ch.kind === "serie") hero = serieHero(ch, title);
+  else {
+    hero = el("header", "sv-head ch-head");
+    var htext = el("div", "sv-head-text");
+    var total = Number(ch.exerciseCount) || 0;
+    htext.append(el("h1", "sv-head-title", title || ""));
+    if (total && ch.kind === "devoir" && ch.session !== "pratique") htext.append(el("p", "sv-head-intro", tf("dvPctDone", { p: dvPct(ch) }) + " · " + tf("dvStCount", { n: total })));
+    else if (total && ch.session !== "pratique") htext.append(el("p", "sv-head-intro", tf("progress", { done: doneCount(ch), total: total })));
+    hero.append(htext);
+  }
 
   backTargets.view = {
     label: tf("back", { name: t("s_" + ch.subject) }),

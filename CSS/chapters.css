@@ -4962,3 +4962,107 @@ html[dir="rtl"] .dv-road-h { transform: scaleX(-1); }
 .ch-kicker { display: block; margin-bottom: 6px; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .sv-pdf { color: var(--color-text); } }
 :root[data-theme="dark"] .sv-pdf { color: var(--color-text); }
+
+/* ---- v57: séries as one parcours in the order of the course ---- */
+.sv-route { margin-bottom: 22px; }
+.sv-map { min-height: 160px; }
+.sv-pn {
+  position: absolute; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%;
+  background: var(--color-surface); color: var(--color-primary-dark); cursor: pointer; font: inherit;
+  box-shadow: 0 0 0 3px var(--color-surface), 0 6px 16px color-mix(in srgb, var(--color-primary) 14%, transparent);
+  transition: transform 0.15s ease;
+}
+.sv-pn:hover { transform: scale(1.06); }
+.sv-pn:focus-visible { outline: 3px solid var(--color-primary); outline-offset: 3px; }
+.sv-pn svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.sv-pn-track { fill: none; stroke: color-mix(in srgb, var(--color-text) 12%, transparent); stroke-width: 3.4; }
+.sv-pn-arc { fill: none; stroke: var(--color-primary); stroke-width: 3.4; stroke-linecap: round; }
+.sv-pn-n { position: relative; font-size: 20px; font-weight: 800; line-height: 1; }
+.sv-pn.is-done { background: var(--color-accent); color: var(--color-accent-ink); }
+.sv-pn.is-done svg { display: none; }
+:root[data-theme="dark"] .sv-pn.is-done { color: var(--color-navy); }
+.sv-pn.is-here { box-shadow: 0 0 0 3px var(--color-surface), 0 0 0 7px var(--color-primary); }
+.sv-pl { position: absolute; display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; pointer-events: none; }
+.sv-pl.is-up { justify-content: flex-end; height: 44px; }
+.sv-pl b { font-size: 14px; font-weight: 800; }
+.sv-pl small { max-width: 100%; font-size: 12px; font-weight: 600; line-height: 1.25; color: var(--color-text-muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.sv-pl-here { position: absolute; top: -22px; padding: 2px 10px; border-radius: 999px; background: var(--color-primary); color: #fff; font-size: 11px; font-weight: 800; font-style: normal; white-space: nowrap; }
+.sv-pl.is-up .sv-pl-here { display: none; }
+.sv-pl.is-down .sv-pl-here { top: auto; bottom: auto; position: static; margin-top: 4px; }
+.sv-levels { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; margin-top: 10px; padding-top: 14px; border-top: 1px solid var(--color-border); font-size: 14px; color: var(--color-text-muted); }
+.sv-levels > b { color: var(--color-text); }
+.sv-lv { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border: 1px solid var(--color-border); border-radius: 999px; background: var(--color-page); font-weight: 600; }
+.sv-lv i { width: 10px; height: 10px; border-radius: 50%; background: var(--color-accent); }
+.sv-lv.is-medium i { background: var(--color-primary); }
+.sv-lv.is-bac i { background: var(--color-navy); }
+:root[data-theme="dark"] .sv-lv.is-bac i { background: #e6f0fc; }
+.sv-lv b { color: var(--color-text); }
+
+.sv-card { border-top-color: var(--lv); }
+.sv-card.is-here { box-shadow: 0 14px 30px color-mix(in srgb, var(--color-primary) 16%, transparent); }
+.sv-mixl { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; font-weight: 600; color: var(--color-text-muted); }
+.sv-mixl span::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-inline-end: 5px; border-radius: 50%; background: var(--color-accent); }
+.sv-mixl .is-medium::before { background: var(--color-primary); }
+.sv-mixl .is-bac::before { background: var(--color-navy); }
+.sv-mix { display: flex; gap: 3px; height: 8px; margin-top: -4px; }
+.sv-mix i { border-radius: 999px; background: var(--color-accent); }
+.sv-mix i.is-medium { background: var(--color-primary); }
+.sv-mix i.is-bac { background: var(--color-navy); }
+:root[data-theme="dark"] .sv-mixl .is-bac::before, :root[data-theme="dark"] .sv-mix i.is-bac { background: #e6f0fc; }
+
+/* the banner of a série */
+.sv-hero {
+  position: relative; display: flex; align-items: center; gap: 28px; margin-bottom: 22px; padding: 30px 34px; overflow: hidden;
+  border-radius: 28px; background: #0463d4; color: #f0fff4;
+}
+.sv-hero::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background-image: linear-gradient(rgba(255,255,255,.12) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.12) 1px, transparent 1px);
+  background-size: 44px 44px; -webkit-mask-image: linear-gradient(to bottom, #000 10%, transparent 95%); mask-image: linear-gradient(to bottom, #000 10%, transparent 95%);
+}
+.sv-hero > * { position: relative; }
+.sv-hero-num { flex: none; font-size: clamp(86px, 13vw, 140px); font-weight: 600; line-height: 1; letter-spacing: -0.05em; color: #01092d; }
+.sv-hero-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.sv-hero-kicker { font-size: 13px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #01092d; }
+.sv-hero-title { margin: 0; font-size: clamp(26px, 4vw, 40px); line-height: 1.1; font-weight: 800; color: #f0fff4; }
+.sv-hero-intro { margin: 0; max-width: 56ch; font-size: 15px; line-height: 1.5; color: #f0fff4; }
+.sv-hero-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.sv-hero-meta span { padding: 5px 13px; border-radius: 999px; background: rgba(255,255,255,.18); color: #fff; font-size: 13px; font-weight: 700; }
+.sv-hero-act { flex: none; display: flex; flex-direction: column; gap: 10px; width: 210px; }
+.sv-hero-go { min-height: 46px; border: 0; border-radius: 14px; background: #01092d; color: #fff; font: inherit; font-size: 15px; font-weight: 800; cursor: pointer; }
+.sv-hero-go:focus-visible, .sv-pdf-hero:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+.sv-hero .sv-pdf-hero { background: #fff; border-color: #fff; color: #0464de; }
+.sv-hero .sv-pdf-hero:hover { color: #032c7b; }
+@media (max-width: 800px) {
+  .sv-hero { flex-direction: column; align-items: flex-start; gap: 14px; padding: 22px 20px; }
+  .sv-hero-act { width: 100%; flex-direction: row; }
+  .sv-hero-act > * { flex: 1 1 0; }
+}
+
+/* one exercise at a time, an arrow on each side */
+.sv-vw { display: flex; align-items: center; gap: 14px; }
+.sv-vw-main { flex: 1 1 auto; min-width: 0; }
+.sv-vw-arrow {
+  flex: none; align-self: flex-start; position: sticky; top: calc(50vh - 26px); width: 52px; height: 52px; border: 1px solid var(--color-border); border-radius: 50%;
+  background: var(--color-surface); color: var(--color-primary); font: inherit; font-size: 30px; line-height: 1; cursor: pointer;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--color-primary) 12%, transparent);
+}
+.sv-vw-arrow:hover:not(:disabled) { border-color: var(--color-primary); }
+.sv-vw-arrow:focus-visible { outline: 3px solid var(--color-primary); outline-offset: 2px; }
+.sv-vw-arrow:disabled { opacity: 0.35; cursor: not-allowed; box-shadow: none; }
+html[dir="rtl"] .sv-vw-arrow { transform: scaleX(-1); }
+.sv-vw-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; font-size: 13px; font-weight: 600; color: var(--color-text-muted); }
+.sv-vw-name { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sv-vw-name.is-next { text-align: end; }
+.sv-vw-dots { display: flex; gap: 6px; flex: none; }
+.sv-vw-dot { width: 9px; height: 9px; padding: 0; border: 0; border-radius: 999px; background: color-mix(in srgb, var(--color-text) 14%, transparent); cursor: pointer; }
+.sv-vw-dot.is-done { background: var(--color-accent); }
+.sv-vw-dot.is-on { width: 22px; background: var(--color-primary); }
+.sv-vw-dot:disabled { cursor: not-allowed; opacity: 0.6; }
+@media (max-width: 800px) {
+  .sv-vw { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .sv-vw-main { grid-column: 1 / -1; grid-row: 1; }
+  .sv-vw-arrow { grid-row: 2; width: 100%; height: 46px; border-radius: 14px; }
+  .sv-vw-name { display: none; }
+  .sv-vw-foot { justify-content: center; }
+}

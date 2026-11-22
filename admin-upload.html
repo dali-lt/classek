@@ -409,6 +409,13 @@
           rappel: data.rappel || "",
           quiz: Array.isArray(data.quiz) ? data.quiz : [],
           exerciseCount: data.exercises.length,
+          // série: the intro of its banner and the level of each exercise (the cards show how they are spread)
+          intro: data.kind === "serie" && typeof data.intro === "string" ? data.intro.slice(0, 300) : "",
+          intro_ar: data.kind === "serie" && typeof data.intro_ar === "string" ? data.intro_ar.slice(0, 300) : "",
+          exDiff: data.kind === "serie" ? data.exercises.reduce(function (o, e) {
+            o[e.id] = e.difficulty === "bac" || e.difficulty === "medium" ? e.difficulty : "easy";
+            return o;
+          }, {}) : null,
           updatedAt: sdk.serverTimestamp(),
         });
         data.exercises.forEach(function (ex) {

@@ -67,6 +67,7 @@ A série or a devoir is a normal chapter file with a few extra fields. It is upl
 |---|---|---|
 | `kind` | both | `"serie"` or `"devoir"` (missing = normal chapter) |
 | `serieLevel` | série | `1` Facile · `2` Moyen · `3` Difficile · `4` Très difficile (required) |
+| `intro` / `intro_ar` | série | optional one-line blurb (max 300 chars) shown in the série hero |
 | `pdf` | série | the printable version, a file of the site: `docs/pdf/series/serie-1-revision-bases-final.pdf` (the exact file name; shown as a PDF button on the card and in the série) |
 | `topics` | série | up to 3 short labels shown as chips (or the single `topic`) |
 | `minutes` | série | estimated time, shown on the card |
