@@ -3595,8 +3595,8 @@ function serieHero(ch, title) {
 /* one exercise at a time with an arrow on each side (and ← → on the keyboard); an exercise not reached yet stays locked */
 function serieViewer(ch, exs, selIdx, curId, det) {
   var st0 = statusOf(ch.id);
-  var locked = function (k) {
-    return !st0[exs[k].id] && !!curId && curId !== exs[k].id;
+  var locked = function () {
+    return false; // a série is free: any exercise, in any order
   };
   var goTo = function (k) {
     if (k < 0 || k >= exs.length || locked(k)) return;
@@ -3622,8 +3622,7 @@ function serieViewer(ch, exs, selIdx, curId, det) {
   };
   var vw = el("div", "sv-vw");
   var main = el("div", "sv-vw-main");
-  main.append(det);
-  var foot = el("div", "sv-vw-foot");
+  var bar = el("div", "sv-vw-bar");
   var nm = function (k) {
     return k >= 0 && k < exs.length ? (k < 9 ? "0" : "") + (k + 1) + " · " + (exs[k].label || "") : "";
   };
@@ -3631,16 +3630,18 @@ function serieViewer(ch, exs, selIdx, curId, det) {
   exs.forEach(function (e, k) {
     var d = el("button", "sv-vw-dot" + (k === selIdx ? " is-on" : st0[e.id] ? " is-done" : ""));
     d.type = "button";
-    d.disabled = locked(k);
     d.setAttribute("aria-label", nm(k));
+    d.title = nm(k);
     d.addEventListener("click", function () {
       goTo(k);
     });
     dots.append(d);
   });
-  foot.append(el("span", "sv-vw-name is-prev", nm(selIdx - 1)), dots, el("span", "sv-vw-name is-next", nm(selIdx + 1)));
-  main.append(foot);
-  vw.append(arrow(-1), main, arrow(1));
+  var mid = el("div", "sv-vw-mid");
+  mid.append(dots, el("span", "sv-vw-count", (selIdx + 1) + " / " + exs.length));
+  bar.append(arrow(-1), mid, arrow(1));
+  main.append(bar, det);
+  vw.append(main);
   return vw;
 }
 document.addEventListener("keydown", function (e) {
@@ -4351,7 +4352,7 @@ function splitQuestions(text) {
   var cur = null;
   lines.forEach(function (line) {
     if (/^\s*```/.test(line)) inFence = !inFence;
-    var m = !inFence ? /^\s*(\d+)\)\s+(.*)$/.exec(line) : null;
+    var m = !inFence ? /^\s*(?:\*\*)?(\d+)\)(?:\*\*)?\s+(.*)$/.exec(line) : null;
     if (m && Number(m[1]) === qs.length + 1) {
       cur = { n: qs.length + 1, lines: [m[2]] };
       qs.push(cur);
@@ -5007,7 +5008,7 @@ function exerciseCard(ch, ex, index) {
   var isOpenCard = true; // the page shows one exercise at a time (the one picked on the path), always open
   // exercises come one at a time: the ones after the one the student has reached stay locked until it is finished
   var reachedId = currentExerciseId(ch);
-  var locked = !st && !!reachedId && !reached && ch.kind !== "devoir";
+  var locked = !st && !!reachedId && !reached && ch.kind !== "devoir" && ch.kind !== "serie";
   if (locked) isOpenCard = false;
   var card = el(
     "article",
@@ -5141,6 +5142,8 @@ function exerciseCard(ch, ex, index) {
       boxes.push(bx.ta);
       wraps.push(bx.wrap);
       bindCells(qh, bx.ta, !!st);
+      // a question answered in the cells of its table needs no separate box (the box stays, hidden, as the stored answer)
+      if (qh.querySelector("input.ch-cell") && !asksForCode(q.text)) bx.wrap.style.display = "none";
     });
   } else {
     var labelText = t("answerLabel") + (CODE_LABEL[ex.lang] ? " · " + CODE_LABEL[ex.lang] : "");
@@ -5766,7 +5769,7 @@ function exParcours(ch, exs, selIdx, curId) {
     exs.forEach(function (e, k) {
       var diff = e.difficulty === "bac" || e.difficulty === "medium" ? e.difficulty : "easy";
       var s2 = st[e.id];
-      var lockedE = !s2 && !!curId && curId !== e.id;
+      var lockedE = !s2 && !!curId && curId !== e.id && !(ch && ch.kind === "serie");
       var n = el("button", "ex-node d-" + diff + (s2 ? " is-" + s2 : "") + (lockedE ? " is-locked" : "") + (e.id === curId ? " is-cur" : "") + (k === selIdx ? " is-sel" : ""));
       n.type = "button";
       n.style.width = n.style.height = size + "px";
@@ -6910,7 +6913,7 @@ function exercisesPart(ch) {
     var want = openEx[ch.id];
     var selIdx = -1;
     exs.forEach(function (e, i) {
-      var lockedE = !st0[e.id] && !!curId && curId !== e.id && ch.kind !== "devoir";
+      var lockedE = !st0[e.id] && !!curId && curId !== e.id && ch.kind !== "devoir" && ch.kind !== "serie";
       if (e.id === want && !lockedE) selIdx = i;
     });
     if (selIdx < 0) {
