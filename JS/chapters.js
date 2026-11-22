@@ -2397,6 +2397,7 @@ function mdBlocks(text, opts) {
         var aligns = cellsOf(lines[i + 1]).map(function (c) {
           return c.charAt(0) === ":" && c.slice(-1) === ":" ? "center" : "";
         });
+        var heads = cellsOf(l);
         var addRow = function (parent, cs, tag) {
           var tr = el("tr");
           cs.forEach(function (c, k) {
@@ -2407,6 +2408,19 @@ function mdBlocks(text, opts) {
             var td = el(tag);
             if (aligns[k]) td.style.textAlign = aligns[k];
             fill(td, c);
+            if (tag === "td" && c === "" && opts && opts.cells) {
+              // an empty cell of a série table is a field to fill in (its value goes into the answer box, see bindCells)
+              var inp = el("input", "ch-cell");
+              inp.type = "text";
+              inp.maxLength = 60;
+              inp.spellcheck = false;
+              inp.setAttribute("autocomplete", "off");
+              inp.setAttribute("autocapitalize", "off");
+              inp.dataset.row = cs[0];
+              inp.dataset.col = heads[k] || "";
+              inp.setAttribute("aria-label", (heads[k] || "") + " " + cs[0]);
+              td.append(inp);
+            }
             tr.append(td);
           });
           parent.append(tr);
@@ -4608,6 +4622,59 @@ function asksForCode(text) {
     return CODE_VERB.test(piece) && CODE_OBJECT.test(piece);
   });
 }
+/* The empty cells of a table in a série are fields to fill in. Their values live in the answer box, one line "▸ 3 → 7" per cell
+   (so they are saved, counted and locked like any answer); the box is the source, the cells a convenient view of it. */
+function bindCells(root, ta, locked) {
+  var cells = Array.prototype.slice.call(root.querySelectorAll("input.ch-cell"));
+  if (!cells.length) return;
+  var cols = {};
+  cells.forEach(function (c) {
+    cols[c.dataset.col] = 1;
+  });
+  var multi = Object.keys(cols).length > 1;
+  var keyOf = function (c) {
+    return c.dataset.row + (multi ? " · " + c.dataset.col : "");
+  };
+  var lines = function () {
+    return String(ta.value || "").split("\n");
+  };
+  var read = function () {
+    var map = {};
+    lines().forEach(function (ln) {
+      var m = /^▸ (.*?) → (.*)$/.exec(ln);
+      if (m) map[m[1]] = m[2];
+    });
+    return map;
+  };
+  var fillFromBox = function () {
+    var map = read();
+    cells.forEach(function (c) {
+      c.value = map[keyOf(c)] || "";
+    });
+  };
+  fillFromBox();
+  cells.forEach(function (c) {
+    c.disabled = !!locked;
+    c.addEventListener("input", function () {
+      var map = read();
+      var rest = lines().filter(function (ln) {
+        return ln.indexOf("▸ ") !== 0;
+      });
+      var out = [];
+      cells.forEach(function (x) {
+        var v = x.value.trim();
+        if (v) out.push("▸ " + keyOf(x) + " → " + v);
+      });
+      // cells that belong to another table of the same box keep their line
+      Object.keys(map).forEach(function (k) {
+        if (!cells.some(function (x) { return keyOf(x) === k; })) out.push("▸ " + k + " → " + map[k]);
+      });
+      var tail = rest.join("\n").replace(/^\n+/, "");
+      ta.value = out.join("\n") + (out.length && tail ? "\n\n" : "") + tail;
+      ta.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+  });
+}
 function answerBox(ch, ex, boxId, placeholder, onInput, rows, asCode) {
   // an exercise of Programmation that asks to write code gets the code window, in the language it names (else the one the student uses)
   var progCode = !!asCode && (ex.lang === "algo" || ex.lang === "python" || (!ex.lang && ch.subject === "prog"));
@@ -4994,7 +5061,8 @@ function exerciseCard(ch, ex, index) {
       }, 0);
     }
   });
-  panel.append(sum, head, md(split ? split.intro : ex.statement));
+  var cellsOn = ch.kind === "serie";
+  panel.append(sum, head, md(split ? split.intro : ex.statement, { cells: cellsOn && !split }));
   // an exercise can point to an animation ("viz": "tri-bulles"): a round button opens the same split-screen box as in the course
   if (ex.viz && hasAlgoViz(ex.viz)) {
     var vz = el("button", "ex-viz");
@@ -5066,12 +5134,13 @@ function exerciseCard(ch, ex, index) {
     split.questions.forEach(function (q) {
       var item = el("div", "ex-q");
       var qh = el("div", "ex-q-head");
-      qh.append(el("span", "ex-q-n", String(q.n)), md(q.text));
+      qh.append(el("span", "ex-q-n", String(q.n)), md(q.text, { cells: cellsOn }));
       var bx = answerBox(ch, ex, String(q.n), tf("qPlaceholder", { n: q.n }), onType, undefined, asksForCode(q.text));
       item.append(qh, bx.wrap);
       work.append(item);
       boxes.push(bx.ta);
       wraps.push(bx.wrap);
+      bindCells(qh, bx.ta, !!st);
     });
   } else {
     var labelText = t("answerLabel") + (CODE_LABEL[ex.lang] ? " · " + CODE_LABEL[ex.lang] : "");
@@ -5080,6 +5149,7 @@ function exerciseCard(ch, ex, index) {
     var bx1 = answerBox(ch, ex, "0", t("answerPlaceholder"), onType, 4, asksForCode(ex.statement));
     label.append(bx1.wrap);
     boxes.push(bx1.ta);
+    if (cellsOn && !split) bindCells(panel, bx1.ta, !!st);
     (bx1.extra || []).forEach(function (b) {
       boxes.push(b); // style.css, script.js: locked after the evaluation, and counted when checking for an empty answer
     });

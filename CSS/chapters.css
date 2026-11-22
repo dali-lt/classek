@@ -5075,3 +5075,7 @@ html[dir="rtl"] .sv-vw-arrow { transform: scaleX(-1); }
 .ch-content .ch-table-wrap tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--color-primary) 4%, transparent); }
 .ch-content .ch-table-wrap td:first-child, .ch-content .ch-table-wrap th:first-child { width: 44px; text-align: center; color: var(--color-text-muted); font-weight: 700; }
 .ch-content .ch-table-wrap td code { white-space: nowrap; }
+
+.ch-cell { width: 100%; min-width: 96px; padding: 6px 10px; border: 1px solid color-mix(in srgb, var(--color-text) 16%, transparent); border-radius: 8px; background: var(--color-surface); color: var(--color-text); font: 500 13px/1.2 "Space Mono", ui-monospace, monospace; }
+.ch-cell:focus { outline: 2px solid var(--color-primary); outline-offset: 0; border-color: transparent; }
+.ch-cell:disabled { background: transparent; border-color: transparent; opacity: 1; }
