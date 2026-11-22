@@ -2434,6 +2434,27 @@ function mdBlocks(text, opts) {
           i++;
         }
         tb.append(thead, tbody);
+        // size the columns by what they hold: an index column stays narrow, a column to fill in gets a comfortable field, text takes the rest
+        var rowsEl = Array.prototype.slice.call(tbody.children);
+        var hasFill = false;
+        heads.forEach(function (hd, k) {
+          var cellsK = rowsEl.map(function (r) {
+            return r.children[k];
+          });
+          if (!cellsK.length || cellsK.some(function (c) { return !c || r_span(c); })) return;
+          var txt = cellsK.map(function (c) {
+            return c.textContent.trim();
+          });
+          var cls = "";
+          if (opts && opts.cells && cellsK.every(function (c) { return c.querySelector("input.ch-cell"); })) cls = "col-fill";
+          else if (/^(n°|n|#|no)$/i.test(hd.trim()) && txt.every(function (x) { return x.length <= 3; })) cls = "col-idx";
+          if (!cls) return;
+          if (cls === "col-fill") hasFill = true;
+          [thead.firstChild.children[k]].concat(cellsK).forEach(function (c) {
+            if (c) c.classList.add(cls);
+          });
+        });
+        tb.classList.add("tb-fit"); // every table is as wide as its content (and centred), a fill-in one too
         host.append(tb);
       } else if (LI.test(l)) {
         var stack = [];
@@ -4344,6 +4365,9 @@ function exPath(index, prevDone) {
 }
 
 /* ---------------- statement: "intro, then 1) 2) 3)" -> one answer box per question ---------------- */
+function r_span(c) {
+  return (c.colSpan || 1) > 1;
+}
 function splitQuestions(text) {
   var lines = String(text || "").split("\n");
   var inFence = false;
@@ -5063,6 +5087,7 @@ function exerciseCard(ch, ex, index) {
     }
   });
   var cellsOn = ch.kind === "serie";
+  var introCode = !!split && asksForCode(split.intro); // « Écrire les fonctions suivantes. » then the questions only name them
   panel.append(sum, head, md(split ? split.intro : ex.statement, { cells: cellsOn && !split }));
   // an exercise can point to an animation ("viz": "tri-bulles"): a round button opens the same split-screen box as in the course
   if (ex.viz && hasAlgoViz(ex.viz)) {
@@ -5136,7 +5161,7 @@ function exerciseCard(ch, ex, index) {
       var item = el("div", "ex-q");
       var qh = el("div", "ex-q-head");
       qh.append(el("span", "ex-q-n", String(q.n)), md(q.text, { cells: cellsOn }));
-      var bx = answerBox(ch, ex, String(q.n), tf("qPlaceholder", { n: q.n }), onType, undefined, asksForCode(q.text));
+      var bx = answerBox(ch, ex, String(q.n), tf("qPlaceholder", { n: q.n }), onType, undefined, asksForCode(q.text) || (introCode && !/\|[ \t]*\|[ \t]*(\n|$)/.test(q.text)));
       item.append(qh, bx.wrap);
       work.append(item);
       boxes.push(bx.ta);
