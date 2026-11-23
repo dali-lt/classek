@@ -5217,6 +5217,80 @@ html[dir="rtl"] .sv-card:hover .sv-go { transform: translateX(-3px); }
   .sv-card:hover, .sv-card:hover .sv-go { transform: none; }
 }
 
+/* ================= Séries: where to continue, exercises per level, the course as a line of circles ================= */
+.sv-top { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 16px; margin-bottom: 16px; }
+.sv-next {
+  display: flex; flex-direction: column; gap: 16px; min-width: 0;
+  padding: 24px 26px; border-radius: 28px; background: #01092d; color: #fff;
+}
+:root[data-theme="dark"] .sv-next { box-shadow: inset 0 0 0 1px var(--color-border); }
+.sv-next-k { font-size: 12px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #aee37b; }
+.sv-next-row { display: flex; align-items: center; gap: 18px; min-width: 0; }
+.sv-next-ring { position: relative; flex: none; width: 88px; height: 88px; }
+.sv-next-ring svg { display: block; width: 100%; height: 100%; }
+.sv-next-track { fill: none; stroke: #1a2552; stroke-width: 10; }
+.sv-next-arc { fill: none; stroke: #aee37b; stroke-width: 10; stroke-linecap: round; }
+.sv-next-ring b { position: absolute; inset: 0; display: grid; place-items: center; font-size: 21px; font-weight: 800; }
+.sv-next-tx { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.sv-next-t { margin: 0; font-size: 24px; font-weight: 800; line-height: 1.15; overflow-wrap: anywhere; }
+.sv-next-m { margin: 0; font-size: 14px; color: #b8c3e6; }
+.sv-next.is-all { gap: 8px; }
+.sv-next-go {
+  align-self: flex-start; display: inline-flex; align-items: center; gap: 10px;
+  padding: 13px 22px; border: 0; border-radius: 999px; background: #aee37b; color: #01092d;
+  font: inherit; font-size: 15px; font-weight: 800; cursor: pointer; transition: transform 0.15s ease;
+}
+.sv-next-go:hover { transform: translateY(-2px); }
+.sv-next-go:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+.sv-next-arrow svg { display: block; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+html[dir="rtl"] .sv-next-arrow svg { transform: scaleX(-1); }
+
+.sv-lvls { display: flex; flex-direction: column; justify-content: center; gap: 14px; min-width: 0; padding: 22px 26px; border: 1px solid var(--color-border); border-radius: 28px; background: var(--color-surface); }
+.sv-lvls-t { margin: 0; font-size: 17px; font-weight: 800; }
+.sv-lvl { display: flex; flex-direction: column; gap: 6px; }
+.sv-lvl-h { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; font-weight: 700; }
+.sv-lvl-n { display: inline-flex; align-items: center; gap: 8px; }
+.sv-lvl-n i { width: 10px; height: 10px; border-radius: 50%; background: var(--color-accent); }
+.sv-lvl.is-medium .sv-lvl-n i, .sv-lvl.is-medium .sv-lvl-bar span { background: var(--color-primary); }
+.sv-lvl.is-bac .sv-lvl-n i, .sv-lvl.is-bac .sv-lvl-bar span { background: var(--color-navy); }
+:root[data-theme="dark"] .sv-lvl.is-bac .sv-lvl-n i, :root[data-theme="dark"] .sv-lvl.is-bac .sv-lvl-bar span { background: #e6f0fc; }
+.sv-lvl-c { font-variant-numeric: tabular-nums; color: var(--color-text-muted); }
+.sv-lvl-bar { height: 12px; border-radius: 999px; background: color-mix(in srgb, var(--color-text) 10%, transparent); overflow: hidden; }
+.sv-lvl-bar span { display: block; height: 100%; min-width: 12px; border-radius: 999px; background: var(--color-accent); }
+.sv-lvl-bar span[style*="width: 0%"] { min-width: 0; }
+
+.sv-strip { margin-bottom: 20px; padding: 18px 24px 8px; border: 1px solid var(--color-border); border-radius: 24px; background: var(--color-surface); }
+.sv-strip-h { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 12px; }
+.sv-strip-h h3 { margin: 0; font-size: 16px; font-weight: 800; }
+.sv-strip-h span { font-size: 13px; color: var(--color-text-muted); }
+.sv-strip-svg { display: block; width: 100%; height: auto; overflow: visible; }
+.sv-strip-seg { fill: none; stroke: color-mix(in srgb, var(--color-text) 14%, transparent); stroke-width: 5; stroke-linecap: round; }
+.sv-strip-seg.is-on { stroke: var(--color-accent); }
+html[dir="rtl"] .sv-strip-svg { transform: scaleX(-1); }
+html[dir="rtl"] .sv-strip-svg .sv-sn-t { transform-box: fill-box; transform-origin: center; transform: scaleX(-1); }
+.sv-sn { cursor: pointer; outline: none; }
+.sv-sn-c { fill: var(--color-surface); stroke: color-mix(in srgb, var(--color-text) 18%, transparent); stroke-width: 2; transition: transform 0.15s ease; transform-box: fill-box; transform-origin: center; }
+.sv-sn:hover .sv-sn-c { transform: scale(1.1); }
+.sv-sn:focus-visible .sv-sn-c { stroke: var(--color-primary); stroke-width: 4; }
+.sv-sn-t { font-size: 14px; font-weight: 800; fill: var(--color-text-muted); }
+.sv-sn.is-done .sv-sn-c { fill: var(--color-accent); stroke: none; }
+.sv-sn-ck { stroke: #01092d; stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
+.sv-sn.is-prog .sv-sn-c, .sv-sn.is-here .sv-sn-c { fill: var(--color-primary); stroke: none; }
+.sv-sn.is-prog .sv-sn-t, .sv-sn.is-here .sv-sn-t { fill: #fff; }
+.sv-sn-halo { fill: color-mix(in srgb, var(--color-primary) 28%, transparent); }
+
+@media (max-width: 980px) { .sv-top { grid-template-columns: 1fr; } }
+/* phones: only the "next step" card; the state of each série is on its card */
+@media (max-width: 720px) {
+  .sv-lvls, .sv-strip { display: none; }
+  .sv-next { padding: 20px; border-radius: 24px; }
+  .sv-next-ring { width: 72px; height: 72px; }
+  .sv-next-ring b { font-size: 17px; }
+  .sv-next-t { font-size: 20px; }
+  .sv-next-go { align-self: stretch; justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) { .sv-next-go, .sv-sn-c { transition: none; } }
+
 /* ---- v59: the banner button is the thinking timer (série) + the alert that drops from the top ---- */
 .sv-hero-go { position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 0 14px; transition: background-color 0.15s ease; }
 .tmb-main, .tmb-hover { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; }

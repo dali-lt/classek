@@ -99,6 +99,18 @@ var STR = {
     pathTitle: "Ton parcours",
     pathHint: "Les séries suivent l’ordre du cours. Dans chaque série, les exercices montent du facile au niveau Bac.",
     lvlStrip: "Tes exercices par niveau :",
+    nextKicker: "Ta prochaine étape",
+    nextKickerNew: "Ton point de départ",
+    nextEx: "Exercice {i} sur {n}",
+    nextMin: "environ {m} min",
+    nextGo: "Continuer",
+    nextGoNew: "Commencer",
+    nextBravo: "Bravo",
+    nextAllDone: "Toutes les séries sont terminées",
+    nextAllHint: "Revois celles que tu veux dans la liste ci-dessous.",
+    lvlTitle: "Tes exercices par niveau",
+    stripTitle: "Ton avancement dans le cours",
+    stripCount: "{d} / {n} terminées",
     mixEasy: "{n} faciles",
     mixMedium: "{n} moyens",
     mixBac: "{n} Bac",
@@ -412,6 +424,18 @@ var STR = {
     pathTitle: "طريقك",
     pathHint: "السيريات تتبع ترتيب الدرس. في كل سيري، التمارين تطلع من السهل لمستوى الباك.",
     lvlStrip: "تمارينك حسب المستوى :",
+    nextKicker: "خطوتك الجاية",
+    nextKickerNew: "نقطة البداية متاعك",
+    nextEx: "التمرين {i} من {n}",
+    nextMin: "حوالي {m} دقيقة",
+    nextGo: "كمّل",
+    nextGoNew: "ابدا",
+    nextBravo: "برافو",
+    nextAllDone: "كمّلت كل السيريات",
+    nextAllHint: "ارجع للّي تحب في القائمة اللي تحت.",
+    lvlTitle: "تمارينك حسب المستوى",
+    stripTitle: "تقدّمك في الدرس",
+    stripCount: "{d} / {n} مكمّلين",
     mixEasy: "{n} سهل",
     mixMedium: "{n} متوسط",
     mixBac: "{n} باك",
@@ -3477,107 +3501,84 @@ function fmtMinutes(m) {
   return Math.floor(m / 60) + " h" + (r ? " " + (r < 10 ? "0" : "") + r : "");
 }
 
-/* the winding line of the séries, in the order of the course; the first one not finished is "Tu es ici" */
-function seriesPath(list, numbers, curId) {
-  var card = el("section", "ex-parcours sv-route");
-  var txt = el("div", "ex-parcours-text");
-  txt.append(el("h3", "", t("pathTitle")), el("p", "", t("pathHint")));
-  var map = el("div", "ex-map sv-map");
-  card.append(txt, map);
-  var NS = "http://www.w3.org/2000/svg";
-  var lastW = 0;
-  var draw = function () {
-    if (!map.isConnected) return;
-    var W = map.clientWidth;
-    if (!W || W === lastW) return;
-    lastW = W;
-    var size = W < 560 ? 46 : 58;
-    var perRow = Math.max(2, Math.min(list.length, Math.floor(W / (size + 62))));
-    var dy = size * 0.85;
-    var lab = 54; // room for the label above / under a circle
-    var rowH = lab + size + dy + lab + 22;
-    var rows = Math.ceil(list.length / perRow);
-    var step = W / perRow;
-    var pts = list.map(function (c, k) {
-      var r = Math.floor(k / perRow);
-      var j = k % perRow;
-      var col = r % 2 ? perRow - 1 - j : j; // snake: the second row runs the other way
-      return { x: (col + 0.5) * step, y: lab + size / 2 + r * rowH + (k % 2 ? dy : 0), r: r };
-    });
-    map.textContent = "";
-    map.style.height = rows * rowH + "px";
-    var svg = document.createElementNS(NS, "svg");
-    svg.setAttribute("class", "ex-map-line");
-    svg.setAttribute("aria-hidden", "true");
-    svg.setAttribute("viewBox", "0 0 " + W + " " + rows * rowH);
-    for (var i = 0; i < pts.length - 1; i++) {
-      var a = pts[i];
-      var b = pts[i + 1];
-      var d;
-      if (b.r !== a.r) {
-        var out = (a.x > W / 2 ? 1 : -1) * Math.min(36, W * 0.1);
-        d = "M" + a.x + " " + a.y + " C " + (a.x + out * 1.6) + " " + (a.y + 10) + ", " + (b.x + out * 1.6) + " " + (b.y - 10) + ", " + b.x + " " + b.y;
-      } else {
-        var dir = b.y > a.y ? 1 : -1;
-        var amp = size * 0.55;
-        d = "M" + a.x + " " + a.y + " C " + (a.x + (b.x - a.x) * 0.9) + " " + (a.y - dir * amp) + ", " + (a.x + (b.x - a.x) * 0.1) + " " + (b.y + dir * amp) + ", " + b.x + " " + b.y;
-      }
-      var path = document.createElementNS(NS, "path");
-      path.setAttribute("d", d);
-      path.setAttribute("class", "ex-map-seg" + (serieState(list[i]) === "done" ? " is-on" : ""));
-      svg.append(path);
+/* The top of the séries tab: where to continue (the first série not finished, and its next exercise), the exercises done per
+   level, and the whole course as a line of numbered circles. Phones keep only the first one: the cards below already tell each state. */
+var SV_NS = "http://www.w3.org/2000/svg";
+function svgEl(name, attrs) {
+  var n = document.createElementNS(SV_NS, name);
+  Object.keys(attrs || {}).forEach(function (k) {
+    n.setAttribute(k, attrs[k]);
+  });
+  return n;
+}
+var SV_FINISHED = { done: 1, mid: 1, review: 1 };
+function pad2(n) {
+  return (n < 10 ? "0" : "") + n;
+}
+/* the next exercise of a série: the first one (in the order the série lists them) that is not finished yet */
+function nextExercise(ch) {
+  var ids = ch.exDiff && typeof ch.exDiff === "object" ? Object.keys(ch.exDiff) : [];
+  var st = statusOf(ch.id);
+  for (var i = 0; i < ids.length; i++) {
+    if (!SV_FINISHED[st[ids[i]]]) {
+      var d = ch.exDiff[ids[i]];
+      return { id: ids[i], at: i + 1, of: ids.length, diff: d === "bac" || d === "medium" ? d : "easy" };
     }
-    map.append(svg);
-    list.forEach(function (c, k) {
-      var p = pts[k];
-      var st = serieState(c);
-      var total = exTotal(c);
-      var pct = total ? Math.min(100, (doneCount(c) / total) * 100) : 0;
-      var here = c.id === curId;
-      var node = el("button", "sv-pn is-" + st + (here ? " is-here" : ""));
-      node.type = "button";
-      node.style.left = p.x - size / 2 + "px";
-      node.style.top = p.y - size / 2 + "px";
-      node.style.width = node.style.height = size + "px";
-      node.setAttribute("aria-label", tf("serieN", { n: numbers[c.id] }) + " : " + titleOf(c));
-      var ring = document.createElementNS(NS, "svg");
-      ring.setAttribute("viewBox", "0 0 36 36");
-      ring.setAttribute("aria-hidden", "true");
-      var track = document.createElementNS(NS, "circle");
-      var arc = document.createElementNS(NS, "circle");
-      [track, arc].forEach(function (cc) {
-        cc.setAttribute("cx", "18");
-        cc.setAttribute("cy", "18");
-        cc.setAttribute("r", "15.5");
-      });
-      track.setAttribute("class", "sv-pn-track");
-      arc.setAttribute("class", "sv-pn-arc");
-      var C = 2 * Math.PI * 15.5;
-      arc.setAttribute("stroke-dasharray", (C * pct) / 100 + " " + C);
-      arc.setAttribute("transform", "rotate(-90 18 18)");
-      ring.append(track, arc);
-      node.append(ring, el("span", "sv-pn-n", st === "done" ? "✓" : String(numbers[c.id])));
-      node.addEventListener("click", function () {
-        openChapter(c.id);
-      });
-      map.append(node);
-      var up = k % 2 === 0;
-      var cap = el("span", "sv-pl " + (up ? "is-up" : "is-down"));
-      cap.style.left = p.x - Math.min(step - 8, 150) / 2 + "px";
-      cap.style.width = Math.min(step - 8, 150) + "px";
-      cap.style.top = (up ? p.y - size / 2 - 50 : p.y + size / 2 + 6) + "px";
-      cap.append(el("b", "", tf("serieN", { n: numbers[c.id] })), el("small", "", titleOf(c)));
-      if (here) cap.append(el("i", "sv-pl-here", t("tagHere")));
-      map.append(cap);
-    });
-  };
-  window.requestAnimationFrame(draw);
-  if (window.ResizeObserver) new ResizeObserver(draw).observe(map);
+  }
+  return null;
+}
+function nextCard(list, numbers, curId) {
+  var cur = list.filter(function (c) {
+    return c.id === curId;
+  })[0];
+  var card = el("section", "sv-next");
+  var started = list.some(function (c) {
+    return doneCount(c) > 0;
+  });
+  if (!cur) {
+    card.classList.add("is-all");
+    card.append(el("span", "sv-next-k", t("nextBravo")), el("h3", "sv-next-t", t("nextAllDone")), el("p", "sv-next-m", t("nextAllHint")));
+    return card;
+  }
+  var total = exTotal(cur);
+  var p = total ? Math.min(100, (doneCount(cur) / total) * 100) : 0;
+  card.append(el("span", "sv-next-k", t(started ? "nextKicker" : "nextKickerNew")));
+  var row = el("div", "sv-next-row");
+  var ring = el("div", "sv-next-ring");
+  var svg = svgEl("svg", { viewBox: "0 0 100 100", "aria-hidden": "true" });
+  var C = 2 * Math.PI * 42;
+  svg.append(
+    svgEl("circle", { cx: 50, cy: 50, r: 42, class: "sv-next-track" }),
+    svgEl("circle", { cx: 50, cy: 50, r: 42, class: "sv-next-arc", "stroke-dasharray": (C * p) / 100 + " " + C, transform: "rotate(-90 50 50)" })
+  );
+  ring.append(svg, el("b", "", Math.round(p) + " %"));
+  var tx = el("div", "sv-next-tx");
+  var h = el("h3", "sv-next-t", tf("serieN", { n: numbers[cur.id] }) + " · " + titleOf(cur));
+  h.setAttribute("dir", "auto");
+  tx.append(h);
+  var nx = nextExercise(cur);
+  var bits = [];
+  if (nx) {
+    bits.push(tf("nextEx", { i: nx.at, n: nx.of }), t("d_" + nx.diff));
+    if (cur.minutes && nx.of) bits.push(tf("nextMin", { m: Math.max(1, Math.round(cur.minutes / nx.of)) }));
+  } else bits.push(tf("serieMetaNoMin", { n: total }));
+  tx.append(el("p", "sv-next-m", bits.join(" · ")));
+  row.append(ring, tx);
+  var go = el("button", "sv-next-go");
+  go.type = "button";
+  var lab = el("span", "", t(doneCount(cur) > 0 ? "nextGo" : "nextGoNew"));
+  var ic = el("span", "sv-next-arrow");
+  ic.innerHTML = ARROW_SVG; // static, trusted SVG
+  go.append(lab, ic);
+  go.addEventListener("click", function () {
+    if (nx) openEx[cur.id] = nx.id; // the viewer opens on that exercise
+    openChapter(cur.id);
+  });
+  card.append(row, go);
   return card;
 }
-
-/* "Tes exercices par niveau": done / total per difficulty, over every série that tells its levels */
-function levelStrip(list) {
+/* "Tes exercices par niveau": a bar per difficulty, over every série that tells its levels */
+function levelBars(list) {
   var tot = { easy: 0, medium: 0, bac: 0 };
   var dn = { easy: 0, medium: 0, bac: 0 };
   var any = false;
@@ -3588,18 +3589,84 @@ function levelStrip(list) {
     Object.keys(c.exDiff).forEach(function (id) {
       var k = c.exDiff[id] === "bac" || c.exDiff[id] === "medium" ? c.exDiff[id] : "easy";
       tot[k]++;
-      if (st[id] === "done" || st[id] === "mid" || st[id] === "review") dn[k]++;
+      if (SV_FINISHED[st[id]]) dn[k]++;
     });
   });
   if (!any) return null;
-  var box = el("div", "sv-levels");
-  box.append(el("b", "", t("lvlStrip")));
+  var box = el("section", "sv-lvls");
+  box.append(el("h3", "sv-lvls-t", t("lvlTitle")));
   ["easy", "medium", "bac"].forEach(function (k) {
     if (!tot[k]) return;
-    var chip = el("span", "sv-lv is-" + k);
-    chip.append(el("i", ""), el("span", "", t("d_" + k)), el("b", "", dn[k] + " / " + tot[k]));
-    box.append(chip);
+    var r = el("div", "sv-lvl is-" + k);
+    var head = el("div", "sv-lvl-h");
+    var nm = el("span", "sv-lvl-n");
+    nm.append(el("i", ""), document.createTextNode(t("d_" + k)));
+    head.append(nm, el("span", "sv-lvl-c", dn[k] + " / " + tot[k]));
+    var bar = el("div", "sv-lvl-bar");
+    var fill = el("span", "");
+    fill.style.width = Math.min(100, (dn[k] / tot[k]) * 100) + "%";
+    bar.append(fill);
+    r.append(head, bar);
+    box.append(r);
   });
+  return box;
+}
+/* "Ton avancement dans le cours": the séries as numbered circles on a gently winding line */
+function seriesStrip(list, numbers, curId) {
+  var n = list.length;
+  var box = el("section", "sv-strip");
+  var head = el("div", "sv-strip-h");
+  var doneN = list.filter(function (c) {
+    return serieState(c) === "done";
+  }).length;
+  head.append(el("h3", "", t("stripTitle")), el("span", "", tf("stripCount", { d: doneN, n: n })));
+  var W = 1000;
+  var padX = 56;
+  var R = 19;
+  var svg = svgEl("svg", { viewBox: "0 0 " + W + " 100", class: "sv-strip-svg", role: "group", "aria-label": t("stripTitle") });
+  var pts = list.map(function (c, k) {
+    return { x: n > 1 ? padX + (k * (W - 2 * padX)) / (n - 1) : W / 2, y: k % 2 ? 70 : 30 };
+  });
+  for (var i = 0; i < n - 1; i++) {
+    var a = pts[i];
+    var b = pts[i + 1];
+    var mx = (b.x - a.x) / 2;
+    svg.append(
+      svgEl("path", {
+        d: "M" + a.x + " " + a.y + " C" + (a.x + mx) + " " + a.y + " " + (b.x - mx) + " " + b.y + " " + b.x + " " + b.y,
+        class: "sv-strip-seg" + (serieState(list[i]) === "done" ? " is-on" : ""),
+      })
+    );
+  }
+  list.forEach(function (c, k) {
+    var p = pts[k];
+    var st = serieState(c);
+    var g = svgEl("g", { class: "sv-sn is-" + st + (c.id === curId ? " is-here" : ""), tabindex: "0", role: "link", "aria-label": tf("serieN", { n: numbers[c.id] }) + " : " + titleOf(c) });
+    var tip = svgEl("title", {});
+    tip.textContent = tf("serieN", { n: numbers[c.id] }) + " : " + titleOf(c);
+    g.append(tip);
+    if (c.id === curId) g.append(svgEl("circle", { cx: p.x, cy: p.y, r: R + 6, class: "sv-sn-halo" }));
+    g.append(svgEl("circle", { cx: p.x, cy: p.y, r: R, class: "sv-sn-c" }));
+    if (st === "done") {
+      g.append(svgEl("path", { d: "M" + (p.x - 7) + " " + (p.y + 1) + " l5 5.5 l9 -11", class: "sv-sn-ck", fill: "none" }));
+    } else {
+      var tx = svgEl("text", { x: p.x, y: p.y + 5, "text-anchor": "middle", class: "sv-sn-t" });
+      tx.textContent = pad2(numbers[c.id]);
+      g.append(tx);
+    }
+    var open = function () {
+      openChapter(c.id);
+    };
+    g.addEventListener("click", open);
+    g.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        open();
+      }
+    });
+    svg.append(g);
+  });
+  box.append(head, svg);
   return box;
 }
 
@@ -3612,7 +3679,7 @@ function serieCard(ch, no, here) {
   var p = total ? (done / total) * 100 : 0;
   var st = serieState(ch);
   var card = el("article", "sv-card st-" + st + (here ? " is-here" : ""));
-  var num = el("div", "sv-num", String(no));
+  var num = el("div", "sv-num", pad2(no));
   num.setAttribute("aria-hidden", "true");
   var body = el("div", "sv-body");
   if (st !== "new") body.append(el("span", "sv-st", t(st === "done" ? "svDone" : "stProg")));
@@ -3672,10 +3739,11 @@ function renderSeries(host, sub) {
     return serieState(c) !== "done";
   })[0];
   var curId = cur ? cur.id : "";
-  var route = seriesPath(list, numbers, curId);
-  var strip = levelStrip(list);
-  if (strip) route.append(strip);
-  host.append(route);
+  var top = el("div", "sv-top");
+  top.append(nextCard(list, numbers, curId));
+  var lv = levelBars(list);
+  if (lv) top.append(lv);
+  host.append(top, seriesStrip(list, numbers, curId));
   var grid = el("div", "sv-grid");
   list.forEach(function (c) {
     grid.append(serieCard(c, numbers[c.id], c.id === curId));
