@@ -99,18 +99,6 @@ var STR = {
     pathTitle: "Ton parcours",
     pathHint: "Les séries suivent l’ordre du cours. Dans chaque série, les exercices montent du facile au niveau Bac.",
     lvlStrip: "Tes exercices par niveau :",
-    nextKicker: "Ta prochaine étape",
-    nextKickerNew: "Ton point de départ",
-    nextEx: "Exercice {i} sur {n}",
-    nextMin: "environ {m} min",
-    nextGo: "Continuer",
-    nextGoNew: "Commencer",
-    nextBravo: "Bravo",
-    nextAllDone: "Toutes les séries sont terminées",
-    nextAllHint: "Revois celles que tu veux dans la liste ci-dessous.",
-    lvlTitle: "Tes exercices par niveau",
-    stripTitle: "Ton avancement dans le cours",
-    stripCount: "{d} / {n} terminées",
     mixEasy: "{n} faciles",
     mixMedium: "{n} moyens",
     mixBac: "{n} Bac",
@@ -204,6 +192,16 @@ var STR = {
     thinkWait: "Réfléchis encore {t}",
     thinkStart: "Commencer à réfléchir · {t}",
     thinkStop: "Arrêter et recommencer",
+    thinkPause: "Pause",
+    thinkPauseTitle: "Mettre le chronomètre en pause",
+    thinkResume: "Reprendre",
+    thinkResumeTitle: "Relancer le chronomètre",
+    thinkStartTitle: "Lancer le chronomètre de cet exercice",
+    thinkDone: "Solution débloquée",
+    thinkLocked: "Disponible quand le chronomètre est terminé ({t}).",
+    tmTop: "Tu écris sans chronomètre : lance-le, sinon tu n’auras pas la correction.",
+    tmTopPaused: "Le chronomètre est en pause : relance-le pour débloquer la correction.",
+    tmTopGo: "Lancer",
     fbAsk: "Ton avis sur cet exercice ?",
     fbEasy: "Facile",
     fbOk: "Bien",
@@ -414,18 +412,6 @@ var STR = {
     pathTitle: "طريقك",
     pathHint: "السيريات تتبع ترتيب الدرس. في كل سيري، التمارين تطلع من السهل لمستوى الباك.",
     lvlStrip: "تمارينك حسب المستوى :",
-    nextKicker: "خطوتك الجاية",
-    nextKickerNew: "نقطة البداية متاعك",
-    nextEx: "التمرين {i} من {n}",
-    nextMin: "حوالي {m} دقيقة",
-    nextGo: "كمّل",
-    nextGoNew: "ابدا",
-    nextBravo: "برافو",
-    nextAllDone: "كمّلت كل السيريات",
-    nextAllHint: "ارجع للّي تحب في القائمة اللي تحت.",
-    lvlTitle: "تمارينك حسب المستوى",
-    stripTitle: "تقدّمك في الدرس",
-    stripCount: "{d} / {n} مكمّلين",
     mixEasy: "{n} سهل",
     mixMedium: "{n} متوسط",
     mixBac: "{n} باك",
@@ -519,6 +505,16 @@ var STR = {
     thinkWait: "فكّر زادة {t}",
     thinkStart: "ابدأ التفكير · {t}",
     thinkStop: "أوقف وابدأ من جديد",
+    thinkPause: "إيقاف مؤقت",
+    thinkPauseTitle: "أوقف العدّاد مؤقتا",
+    thinkResume: "استئناف",
+    thinkResumeTitle: "شغّل العدّاد من جديد",
+    thinkStartTitle: "شغّل عدّاد هذا التمرين",
+    thinkDone: "الحلّ مفتوح",
+    thinkLocked: "يتفتح كي يكمل العدّاد ({t}).",
+    tmTop: "تكتب بلا عدّاد: شغّلو، وإلا ما تلقاش التصحيح.",
+    tmTopPaused: "العدّاد موقّف: رجّعو باش يتفتح التصحيح.",
+    tmTopGo: "شغّل",
     fbAsk: "رأيك في التمرين؟",
     fbEasy: "سهل",
     fbOk: "مناسب",
@@ -660,6 +656,9 @@ var THINK_KEY = "classledger:think:";
 var thinkSpent = {}; // "chapterId/exId" -> seconds the exercise has been open and on screen
 var thinkTimers = {}; // "chapterId/exId" -> { card, update }
 var thinkTick = 0;
+var THINK_PAUSE_KEY = "classledger:thinkp:";
+var thinkPaused = {}; // "chapterId/exId" -> true while the student has paused the countdown
+var thinkHero = null; // the start/timer button of the série banner: { el, update }
 function thinkNeed(ex, diff) {
   if (ex.think != null && ex.think !== "" && isFinite(Number(ex.think)) && Number(ex.think) >= 0) {
     return Math.min(3600, Math.round(Number(ex.think)));
@@ -678,10 +677,16 @@ function loadThink() {
   } catch (e) {
     thinkSpent = {};
   }
+  try {
+    thinkPaused = JSON.parse(localStorage.getItem(THINK_PAUSE_KEY + ctx.uid) || "{}") || {};
+  } catch (e) {
+    thinkPaused = {};
+  }
 }
 function saveThink() {
   try {
     localStorage.setItem(THINK_KEY + ctx.uid, JSON.stringify(thinkSpent));
+    localStorage.setItem(THINK_PAUSE_KEY + ctx.uid, JSON.stringify(thinkPaused));
   } catch (e) {}
 }
 function startThinkTicker() {
@@ -695,12 +700,92 @@ function startThinkTicker() {
         return;
       }
       if (thinkSpent[k] === undefined) return; // the student has not pressed "start" yet
+      if (thinkPaused[k]) return; // paused
       if (tm.card.classList.contains("is-collapsed")) return; // a closed exercise does not count
       thinkSpent[k] = (thinkSpent[k] || 0) + 1;
       tm.update();
     });
+    if (thinkHero) {
+      if (thinkHero.el.isConnected) thinkHero.update();
+      else thinkHero = null;
+    }
+    if (topAlert && thinkInfoByKey(topAlert.key).running) hideTopAlert(); // the timer is running: the alert has done its job
     if (thinkTick % 5 === 0) saveThink();
   }, 1000);
+}
+/* The thinking timer of an exercise, as the série page needs it (the banner button, the alert, the solution button). */
+function thinkInfoByKey(key) {
+  var cur = S.cur && S.cur.exercises ? S.cur.exercises : [];
+  var id = key.slice(key.indexOf("/") + 1);
+  var ex = cur.filter(function (e) {
+    return e.id === id;
+  })[0];
+  var ch = S.cur ? { id: S.cur.id, kind: "serie" } : null;
+  return ex && ch ? thinkInfo(ch, ex) : { key: key, running: false, timed: false };
+}
+function thinkInfo(ch, ex) {
+  var key = ch.id + "/" + ex.id;
+  var st = statusOf(ch.id)[ex.id];
+  var diff = ex.difficulty === "bac" || ex.difficulty === "medium" ? ex.difficulty : "easy";
+  var need = st || ch.kind === "devoir" ? 0 : thinkNeed(ex, diff);
+  var started = thinkSpent[key] !== undefined;
+  var left = Math.max(0, need - (thinkSpent[key] || 0));
+  var paused = started && !!thinkPaused[key];
+  var finished = need > 0 && started && left <= 0;
+  return { key: key, diff: diff, need: need, timed: need > 0, started: started, left: left, paused: paused, finished: finished, running: started && !paused && !finished };
+}
+function thinkRepaint(key) {
+  if (thinkTimers[key]) thinkTimers[key].update();
+  if (thinkHero && thinkHero.el.isConnected) thinkHero.update();
+  if (topAlert && topAlert.key === key && thinkInfoByKey(key).running) hideTopAlert();
+}
+function thinkStart(key) {
+  if (thinkSpent[key] === undefined) thinkSpent[key] = 0; // "start": the countdown begins now
+  delete thinkPaused[key]; // ... or goes on after a pause
+  saveThink();
+  thinkRepaint(key);
+}
+function thinkPause(key) {
+  thinkPaused[key] = true;
+  saveThink();
+  thinkRepaint(key);
+}
+/* The alert that drops from the top of the page when the student starts to write while the timer is not running. */
+var topAlert = null; // { el, key }
+var topAlertTimer = 0;
+var nudgedAt = {}; // "chapterId/exId" -> when the alert was last shown
+function hideTopAlert() {
+  clearTimeout(topAlertTimer);
+  if (topAlert) topAlert.el.remove();
+  topAlert = null;
+}
+function typingNudge(ch, ex) {
+  var i = thinkInfo(ch, ex);
+  if (!i.timed || i.running || i.finished) return;
+  var now = Date.now();
+  if (nudgedAt[i.key] && now - nudgedAt[i.key] < 45000) return; // once in a while, not at every key
+  nudgedAt[i.key] = now;
+  hideTopAlert();
+  var d = el("div", "tm-alert tm-top");
+  d.setAttribute("role", "alert");
+  var ico = el("span", "tm-alert-ico");
+  ico.innerHTML = SW_ICON.clock; // static, trusted SVG
+  var go = el("button", "tm-alert-go");
+  go.type = "button";
+  go.innerHTML = SW_ICON.play; // static, trusted SVG
+  go.append(el("span", "", t(i.paused ? "thinkResume" : "tmTopGo")));
+  go.addEventListener("click", function () {
+    thinkStart(i.key);
+    hideTopAlert();
+  });
+  var x = el("button", "tm-top-x", "×");
+  x.type = "button";
+  x.setAttribute("aria-label", t("pgClose"));
+  x.addEventListener("click", hideTopAlert);
+  d.append(ico, el("span", "tm-alert-t", t(i.paused ? "tmTopPaused" : "tmTop")), go, x);
+  document.body.append(d);
+  topAlert = { el: d, key: i.key };
+  topAlertTimer = setTimeout(hideTopAlert, 9000);
 }
 var ratings = {}; // "chapterId/exId" -> "easy" | "ok" | "hard" (the student's own opinion)
 
@@ -1089,6 +1174,8 @@ var SW_ICON = {
   mine: "<svg " + SW_ICON_ATTR + '><rect x="3" y="4" width="18" height="13" rx="2.5"/><path d="M8 21h8M12 17v4"/></svg>',
   clock: "<svg " + SW_ICON_ATTR + '><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></svg>',
   play: "<svg " + SW_ICON_ATTR + '><path d="M7 4.5v15l12-7.5z"/></svg>',
+  pause: "<svg " + SW_ICON_ATTR + '><path d="M8 5v14M16 5v14"/></svg>',
+  check: "<svg " + SW_ICON_ATTR + '><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>',
   bulb: "<svg " + SW_ICON_ATTR + '><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg>',
 };
 // the orange "start the chrono" alert shown outside the editor (devoir page, exercises): same colour, icon and words everywhere
@@ -3390,84 +3477,107 @@ function fmtMinutes(m) {
   return Math.floor(m / 60) + " h" + (r ? " " + (r < 10 ? "0" : "") + r : "");
 }
 
-/* The top of the séries tab: where to continue (the first série not finished, and its next exercise), the exercises done per
-   level, and the whole course as a line of numbered circles. Phones keep only the first one: the cards below already tell each state. */
-var SV_NS = "http://www.w3.org/2000/svg";
-function svgEl(name, attrs) {
-  var n = document.createElementNS(SV_NS, name);
-  Object.keys(attrs || {}).forEach(function (k) {
-    n.setAttribute(k, attrs[k]);
-  });
-  return n;
-}
-var SV_FINISHED = { done: 1, mid: 1, review: 1 };
-function pad2(n) {
-  return (n < 10 ? "0" : "") + n;
-}
-/* the next exercise of a série: the first one (in the order the série lists them) that is not finished yet */
-function nextExercise(ch) {
-  var ids = ch.exDiff && typeof ch.exDiff === "object" ? Object.keys(ch.exDiff) : [];
-  var st = statusOf(ch.id);
-  for (var i = 0; i < ids.length; i++) {
-    if (!SV_FINISHED[st[ids[i]]]) {
-      var d = ch.exDiff[ids[i]];
-      return { id: ids[i], at: i + 1, of: ids.length, diff: d === "bac" || d === "medium" ? d : "easy" };
+/* the winding line of the séries, in the order of the course; the first one not finished is "Tu es ici" */
+function seriesPath(list, numbers, curId) {
+  var card = el("section", "ex-parcours sv-route");
+  var txt = el("div", "ex-parcours-text");
+  txt.append(el("h3", "", t("pathTitle")), el("p", "", t("pathHint")));
+  var map = el("div", "ex-map sv-map");
+  card.append(txt, map);
+  var NS = "http://www.w3.org/2000/svg";
+  var lastW = 0;
+  var draw = function () {
+    if (!map.isConnected) return;
+    var W = map.clientWidth;
+    if (!W || W === lastW) return;
+    lastW = W;
+    var size = W < 560 ? 46 : 58;
+    var perRow = Math.max(2, Math.min(list.length, Math.floor(W / (size + 62))));
+    var dy = size * 0.85;
+    var lab = 54; // room for the label above / under a circle
+    var rowH = lab + size + dy + lab + 22;
+    var rows = Math.ceil(list.length / perRow);
+    var step = W / perRow;
+    var pts = list.map(function (c, k) {
+      var r = Math.floor(k / perRow);
+      var j = k % perRow;
+      var col = r % 2 ? perRow - 1 - j : j; // snake: the second row runs the other way
+      return { x: (col + 0.5) * step, y: lab + size / 2 + r * rowH + (k % 2 ? dy : 0), r: r };
+    });
+    map.textContent = "";
+    map.style.height = rows * rowH + "px";
+    var svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("class", "ex-map-line");
+    svg.setAttribute("aria-hidden", "true");
+    svg.setAttribute("viewBox", "0 0 " + W + " " + rows * rowH);
+    for (var i = 0; i < pts.length - 1; i++) {
+      var a = pts[i];
+      var b = pts[i + 1];
+      var d;
+      if (b.r !== a.r) {
+        var out = (a.x > W / 2 ? 1 : -1) * Math.min(36, W * 0.1);
+        d = "M" + a.x + " " + a.y + " C " + (a.x + out * 1.6) + " " + (a.y + 10) + ", " + (b.x + out * 1.6) + " " + (b.y - 10) + ", " + b.x + " " + b.y;
+      } else {
+        var dir = b.y > a.y ? 1 : -1;
+        var amp = size * 0.55;
+        d = "M" + a.x + " " + a.y + " C " + (a.x + (b.x - a.x) * 0.9) + " " + (a.y - dir * amp) + ", " + (a.x + (b.x - a.x) * 0.1) + " " + (b.y + dir * amp) + ", " + b.x + " " + b.y;
+      }
+      var path = document.createElementNS(NS, "path");
+      path.setAttribute("d", d);
+      path.setAttribute("class", "ex-map-seg" + (serieState(list[i]) === "done" ? " is-on" : ""));
+      svg.append(path);
     }
-  }
-  return null;
-}
-function nextCard(list, numbers, curId) {
-  var cur = list.filter(function (c) {
-    return c.id === curId;
-  })[0];
-  var card = el("section", "sv-next");
-  var started = list.some(function (c) {
-    return doneCount(c) > 0;
-  });
-  if (!cur) {
-    card.classList.add("is-all");
-    card.append(el("span", "sv-next-k", t("nextBravo")), el("h3", "sv-next-t", t("nextAllDone")), el("p", "sv-next-m", t("nextAllHint")));
-    return card;
-  }
-  var total = exTotal(cur);
-  var p = total ? Math.min(100, (doneCount(cur) / total) * 100) : 0;
-  card.append(el("span", "sv-next-k", t(started ? "nextKicker" : "nextKickerNew")));
-  var row = el("div", "sv-next-row");
-  var ring = el("div", "sv-next-ring");
-  var svg = svgEl("svg", { viewBox: "0 0 100 100", "aria-hidden": "true" });
-  var C = 2 * Math.PI * 42;
-  svg.append(
-    svgEl("circle", { cx: 50, cy: 50, r: 42, class: "sv-next-track" }),
-    svgEl("circle", { cx: 50, cy: 50, r: 42, class: "sv-next-arc", "stroke-dasharray": (C * p) / 100 + " " + C, transform: "rotate(-90 50 50)" })
-  );
-  ring.append(svg, el("b", "", Math.round(p) + " %"));
-  var tx = el("div", "sv-next-tx");
-  var h = el("h3", "sv-next-t", tf("serieN", { n: numbers[cur.id] }) + " · " + titleOf(cur));
-  h.setAttribute("dir", "auto");
-  tx.append(h);
-  var nx = nextExercise(cur);
-  var bits = [];
-  if (nx) {
-    bits.push(tf("nextEx", { i: nx.at, n: nx.of }), t("d_" + nx.diff));
-    if (cur.minutes && nx.of) bits.push(tf("nextMin", { m: Math.max(1, Math.round(cur.minutes / nx.of)) }));
-  } else bits.push(tf("serieMetaNoMin", { n: total }));
-  tx.append(el("p", "sv-next-m", bits.join(" · ")));
-  row.append(ring, tx);
-  var go = el("button", "sv-next-go");
-  go.type = "button";
-  var lab = el("span", "", t(doneCount(cur) > 0 ? "nextGo" : "nextGoNew"));
-  var ic = el("span", "sv-next-arrow");
-  ic.innerHTML = ARROW_SVG; // static, trusted SVG
-  go.append(lab, ic);
-  go.addEventListener("click", function () {
-    if (nx) openEx[cur.id] = nx.id; // the viewer opens on that exercise
-    openChapter(cur.id);
-  });
-  card.append(row, go);
+    map.append(svg);
+    list.forEach(function (c, k) {
+      var p = pts[k];
+      var st = serieState(c);
+      var total = exTotal(c);
+      var pct = total ? Math.min(100, (doneCount(c) / total) * 100) : 0;
+      var here = c.id === curId;
+      var node = el("button", "sv-pn is-" + st + (here ? " is-here" : ""));
+      node.type = "button";
+      node.style.left = p.x - size / 2 + "px";
+      node.style.top = p.y - size / 2 + "px";
+      node.style.width = node.style.height = size + "px";
+      node.setAttribute("aria-label", tf("serieN", { n: numbers[c.id] }) + " : " + titleOf(c));
+      var ring = document.createElementNS(NS, "svg");
+      ring.setAttribute("viewBox", "0 0 36 36");
+      ring.setAttribute("aria-hidden", "true");
+      var track = document.createElementNS(NS, "circle");
+      var arc = document.createElementNS(NS, "circle");
+      [track, arc].forEach(function (cc) {
+        cc.setAttribute("cx", "18");
+        cc.setAttribute("cy", "18");
+        cc.setAttribute("r", "15.5");
+      });
+      track.setAttribute("class", "sv-pn-track");
+      arc.setAttribute("class", "sv-pn-arc");
+      var C = 2 * Math.PI * 15.5;
+      arc.setAttribute("stroke-dasharray", (C * pct) / 100 + " " + C);
+      arc.setAttribute("transform", "rotate(-90 18 18)");
+      ring.append(track, arc);
+      node.append(ring, el("span", "sv-pn-n", st === "done" ? "✓" : String(numbers[c.id])));
+      node.addEventListener("click", function () {
+        openChapter(c.id);
+      });
+      map.append(node);
+      var up = k % 2 === 0;
+      var cap = el("span", "sv-pl " + (up ? "is-up" : "is-down"));
+      cap.style.left = p.x - Math.min(step - 8, 150) / 2 + "px";
+      cap.style.width = Math.min(step - 8, 150) + "px";
+      cap.style.top = (up ? p.y - size / 2 - 50 : p.y + size / 2 + 6) + "px";
+      cap.append(el("b", "", tf("serieN", { n: numbers[c.id] })), el("small", "", titleOf(c)));
+      if (here) cap.append(el("i", "sv-pl-here", t("tagHere")));
+      map.append(cap);
+    });
+  };
+  window.requestAnimationFrame(draw);
+  if (window.ResizeObserver) new ResizeObserver(draw).observe(map);
   return card;
 }
-/* "Tes exercices par niveau": a bar per difficulty, over every série that tells its levels */
-function levelBars(list) {
+
+/* "Tes exercices par niveau": done / total per difficulty, over every série that tells its levels */
+function levelStrip(list) {
   var tot = { easy: 0, medium: 0, bac: 0 };
   var dn = { easy: 0, medium: 0, bac: 0 };
   var any = false;
@@ -3478,84 +3588,18 @@ function levelBars(list) {
     Object.keys(c.exDiff).forEach(function (id) {
       var k = c.exDiff[id] === "bac" || c.exDiff[id] === "medium" ? c.exDiff[id] : "easy";
       tot[k]++;
-      if (SV_FINISHED[st[id]]) dn[k]++;
+      if (st[id] === "done" || st[id] === "mid" || st[id] === "review") dn[k]++;
     });
   });
   if (!any) return null;
-  var box = el("section", "sv-lvls");
-  box.append(el("h3", "sv-lvls-t", t("lvlTitle")));
+  var box = el("div", "sv-levels");
+  box.append(el("b", "", t("lvlStrip")));
   ["easy", "medium", "bac"].forEach(function (k) {
     if (!tot[k]) return;
-    var r = el("div", "sv-lvl is-" + k);
-    var head = el("div", "sv-lvl-h");
-    var nm = el("span", "sv-lvl-n");
-    nm.append(el("i", ""), document.createTextNode(t("d_" + k)));
-    head.append(nm, el("span", "sv-lvl-c", dn[k] + " / " + tot[k]));
-    var bar = el("div", "sv-lvl-bar");
-    var fill = el("span", "");
-    fill.style.width = Math.min(100, (dn[k] / tot[k]) * 100) + "%";
-    bar.append(fill);
-    r.append(head, bar);
-    box.append(r);
+    var chip = el("span", "sv-lv is-" + k);
+    chip.append(el("i", ""), el("span", "", t("d_" + k)), el("b", "", dn[k] + " / " + tot[k]));
+    box.append(chip);
   });
-  return box;
-}
-/* "Ton avancement dans le cours": the séries as numbered circles on a gently winding line */
-function seriesStrip(list, numbers, curId) {
-  var n = list.length;
-  var box = el("section", "sv-strip");
-  var head = el("div", "sv-strip-h");
-  var doneN = list.filter(function (c) {
-    return serieState(c) === "done";
-  }).length;
-  head.append(el("h3", "", t("stripTitle")), el("span", "", tf("stripCount", { d: doneN, n: n })));
-  var W = 1000;
-  var padX = 56;
-  var R = 19;
-  var svg = svgEl("svg", { viewBox: "0 0 " + W + " 100", class: "sv-strip-svg", role: "group", "aria-label": t("stripTitle") });
-  var pts = list.map(function (c, k) {
-    return { x: n > 1 ? padX + (k * (W - 2 * padX)) / (n - 1) : W / 2, y: k % 2 ? 70 : 30 };
-  });
-  for (var i = 0; i < n - 1; i++) {
-    var a = pts[i];
-    var b = pts[i + 1];
-    var mx = (b.x - a.x) / 2;
-    svg.append(
-      svgEl("path", {
-        d: "M" + a.x + " " + a.y + " C" + (a.x + mx) + " " + a.y + " " + (b.x - mx) + " " + b.y + " " + b.x + " " + b.y,
-        class: "sv-strip-seg" + (serieState(list[i]) === "done" ? " is-on" : ""),
-      })
-    );
-  }
-  list.forEach(function (c, k) {
-    var p = pts[k];
-    var st = serieState(c);
-    var g = svgEl("g", { class: "sv-sn is-" + st + (c.id === curId ? " is-here" : ""), tabindex: "0", role: "link", "aria-label": tf("serieN", { n: numbers[c.id] }) + " : " + titleOf(c) });
-    var tip = svgEl("title", {});
-    tip.textContent = tf("serieN", { n: numbers[c.id] }) + " : " + titleOf(c);
-    g.append(tip);
-    if (c.id === curId) g.append(svgEl("circle", { cx: p.x, cy: p.y, r: R + 6, class: "sv-sn-halo" }));
-    g.append(svgEl("circle", { cx: p.x, cy: p.y, r: R, class: "sv-sn-c" }));
-    if (st === "done") {
-      g.append(svgEl("path", { d: "M" + (p.x - 7) + " " + (p.y + 1) + " l5 5.5 l9 -11", class: "sv-sn-ck", fill: "none" }));
-    } else {
-      var tx = svgEl("text", { x: p.x, y: p.y + 5, "text-anchor": "middle", class: "sv-sn-t" });
-      tx.textContent = pad2(numbers[c.id]);
-      g.append(tx);
-    }
-    var open = function () {
-      openChapter(c.id);
-    };
-    g.addEventListener("click", open);
-    g.addEventListener("keydown", function (e) {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        open();
-      }
-    });
-    svg.append(g);
-  });
-  box.append(head, svg);
   return box;
 }
 
@@ -3568,7 +3612,7 @@ function serieCard(ch, no, here) {
   var p = total ? (done / total) * 100 : 0;
   var st = serieState(ch);
   var card = el("article", "sv-card st-" + st + (here ? " is-here" : ""));
-  var num = el("div", "sv-num", pad2(no));
+  var num = el("div", "sv-num", String(no));
   num.setAttribute("aria-hidden", "true");
   var body = el("div", "sv-body");
   if (st !== "new") body.append(el("span", "sv-st", t(st === "done" ? "svDone" : "stProg")));
@@ -3628,11 +3672,10 @@ function renderSeries(host, sub) {
     return serieState(c) !== "done";
   })[0];
   var curId = cur ? cur.id : "";
-  var top = el("div", "sv-top");
-  top.append(nextCard(list, numbers, curId));
-  var lv = levelBars(list);
-  if (lv) top.append(lv);
-  host.append(top, seriesStrip(list, numbers, curId));
+  var route = seriesPath(list, numbers, curId);
+  var strip = levelStrip(list);
+  if (strip) route.append(strip);
+  host.append(route);
   var grid = el("div", "sv-grid");
   list.forEach(function (c) {
     grid.append(serieCard(c, numbers[c.id], c.id === curId));
@@ -3641,6 +3684,98 @@ function renderSeries(host, sub) {
 }
 
 /* the top of a série: its number, title and intro on the blue banner, then what it holds and where to go next */
+/* the exercise the série page shows now (the one the arrows / dots picked; else the one the student has reached) */
+function serieSelected(ch) {
+  var cur = S.cur;
+  if (!cur || cur.id !== ch.id || cur.loading || cur.failed || !cur.exercises || !cur.exercises.length) return null;
+  var exs = cur.exercises;
+  var i = exs.findIndex(function (e) {
+    return e.id === openEx[ch.id];
+  });
+  if (i < 0) {
+    var curId = currentExerciseId(ch);
+    i = exs.findIndex(function (e) {
+      return e.id === curId;
+    });
+    if (i < 0) i = exs.length - 1;
+  }
+  return { ex: exs[i], index: i };
+}
+/* The big button of the banner: "Commencer" starts the thinking timer of the exercise on screen and becomes that timer;
+   pointing at it while it runs turns it into "Pause" (a tap pauses too); paused it says "Reprendre"; when the time is up it
+   leads to the solution button. Without a timed exercise it only takes the student to the exercises, as before. */
+function heroTimerButton(ch, label) {
+  var go = el("button", "sv-hero-go");
+  go.type = "button";
+  var mode = "";
+  var timeEl = null;
+  var toExercises = function () {
+    if (curTab(ch) !== "ex") pickTab("ex");
+    else {
+      var d = document.querySelector(".ex-detail");
+      if (d) d.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+  var part = function (icon, text, cls) {
+    var sp = el("span", cls || "tmb-main");
+    if (icon) sp.innerHTML = icon; // static, trusted SVG
+    var b = el("b", "tmb-t", text);
+    sp.append(b);
+    return { sp: sp, b: b };
+  };
+  var paint = function () {
+    var sel = serieSelected(ch);
+    var i = sel ? thinkInfo(ch, sel.ex) : null;
+    var m = !i || !i.timed ? "plain" : i.finished ? "done" : i.running ? "run" : i.paused ? "paused" : "idle";
+    if (m === "run" && mode === "run" && timeEl) {
+      // a tick: only the numbers move (the button keeps its hover state)
+      timeEl.textContent = mmss(i.left);
+      go.style.setProperty("--tp", Math.min(100, ((i.need - i.left) / i.need) * 100) + "%");
+      go.setAttribute("aria-label", t("thinkPauseTitle") + " · " + mmss(i.left));
+      return;
+    }
+    mode = m;
+    timeEl = null;
+    go.className = "sv-hero-go is-" + m;
+    go.textContent = "";
+    go.removeAttribute("aria-label");
+    go.title = "";
+    if (m === "plain" || m === "idle") {
+      go.append(part("", label).sp);
+      if (m === "idle") go.title = t("thinkStartTitle");
+    } else if (m === "run") {
+      var run = part(SW_ICON.clock, mmss(i.left));
+      timeEl = run.b;
+      var hov = part(SW_ICON.pause, t("thinkPause"), "tmb-hover");
+      go.append(run.sp, hov.sp);
+      go.title = t("thinkPauseTitle");
+      go.setAttribute("aria-label", t("thinkPauseTitle") + " · " + mmss(i.left));
+    } else if (m === "paused") {
+      go.append(part(SW_ICON.play, t("thinkResume") + " · " + mmss(i.left)).sp);
+      go.title = t("thinkResumeTitle");
+    } else {
+      go.append(part(SW_ICON.check, t("thinkDone")).sp);
+      go.title = t("showSolution");
+    }
+    if (i && i.timed) go.style.setProperty("--tp", Math.min(100, ((i.need - i.left) / i.need) * 100) + "%");
+  };
+  go.addEventListener("click", function () {
+    var sel = serieSelected(ch);
+    var i = sel ? thinkInfo(ch, sel.ex) : null;
+    if (!i || !i.timed) return toExercises();
+    if (i.finished) {
+      var sb = document.querySelector(".ex-detail .pc-btn:not(:disabled)");
+      return sb ? sb.scrollIntoView({ behavior: "smooth", block: "center" }) : toExercises();
+    }
+    if (i.running) return thinkPause(i.key);
+    var wasIdle = !i.started;
+    thinkStart(i.key);
+    if (wasIdle || curTab(ch) !== "ex") toExercises(); // the exercise must be on screen: time only counts for the one that is shown
+  });
+  thinkHero = { el: go, update: paint };
+  paint();
+  return go;
+}
 function serieHero(ch, title) {
   var no = serieNo(ch, 0);
   var total = exTotal(ch);
@@ -3662,15 +3797,7 @@ function serieHero(ch, title) {
   tx.append(meta);
   hero.append(tx);
   var act = el("div", "sv-hero-act");
-  var go = el("button", "sv-hero-go", t(st === "done" ? "btnReview" : st === "prog" ? "btnCont" : "btnStart"));
-  go.type = "button";
-  go.addEventListener("click", function () {
-    if (curTab(ch) !== "ex") pickTab("ex");
-    else {
-      var d = document.querySelector(".ex-detail");
-      if (d) d.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  });
+  var go = heroTimerButton(ch, t(st === "done" ? "btnReview" : st === "prog" ? "btnCont" : "btnStart"));
   act.append(go);
   var pdf = pdfLink(ch, "sv-pdf sv-pdf-hero");
   if (pdf) act.append(pdf);
@@ -5218,6 +5345,7 @@ function exerciseCard(ch, ex, index) {
   var refresh = function () {};
   var onType = function () {
     refresh();
+    if (ch.kind === "serie") typingNudge(ch, ex); // writing without the timer: a reminder drops from the top
   };
   if (hasQ) {
     // nothing here: the fields of the answers panel are the answers
@@ -5294,6 +5422,7 @@ function exerciseCard(ch, ex, index) {
       if (st || needT <= 0) return true;
       return started() && timeLeft() <= 0;
     };
+    var timerOnTop = ch.kind === "serie"; // in a série the timer is the banner button: here the solution only waits for it
     // icon-only button while the countdown runs: stops it and goes back to "Commencer"
     var stopBtn = el("button", "pc-stop");
     stopBtn.type = "button";
@@ -5307,6 +5436,16 @@ function exerciseCard(ch, ex, index) {
       paintShow();
     });
     var paintShow = function () {
+      if (timerOnTop) {
+        var ok = unlocked();
+        show.disabled = !ok;
+        show.textContent = t("showSolution");
+        show.classList.remove("is-timing", "is-start");
+        show.classList.toggle("is-locked", !ok);
+        show.title = ok ? "" : tf("thinkLocked", { t: mmss(needT) });
+        stopBtn.hidden = true;
+        return;
+      }
       var l = timeLeft();
       var waiting = !st && needT > 0 && started() && l > 0;
       stopBtn.hidden = !waiting;
@@ -5325,7 +5464,7 @@ function exerciseCard(ch, ex, index) {
       paintShow0();
       thinkWarn.hidden = !(!st && needT > 0 && !started());
     };
-    if (needT > 0) work.append(thinkWarn);
+    if (needT > 0 && !timerOnTop) work.append(thinkWarn);
     paintShow();
     refresh = paintShow;
     if (needT > 0) thinkTimers[key] = { card: card, update: paintShow };
@@ -7002,6 +7141,7 @@ function exercisesPart(ch) {
     var curId = currentExerciseId(ch);
     var want = openEx[ch.id];
     var selIdx = -1;
+    if (topAlert && ch.kind === "serie") hideTopAlert(); // a new page of the exercises: the old reminder is stale
     exs.forEach(function (e, i) {
       var lockedE = !st0[e.id] && !!curId && curId !== e.id && ch.kind !== "devoir" && ch.kind !== "serie";
       if (e.id === want && !lockedE) selIdx = i;
